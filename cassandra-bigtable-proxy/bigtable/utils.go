@@ -27,12 +27,7 @@ const (
 	DefaultProfileId = "default"
 )
 
-var (
-	appliedTrue  = message.Column{0x01}
-	appliedFalse = message.Column{0x00}
-)
-
-// sortpkData sorts the primary key columns of each table based on their precedence.
+// sortPkData sorts the primary key columns of each table based on their precedence.
 // The function takes a map where the keys are table names and the values are slices of columns.
 // It returns the same map with the columns sorted by their primary key precedence.
 //
@@ -42,13 +37,13 @@ var (
 //
 // Returns:
 // - A map with the same structure as the input, but with the columns sorted by primary key precedence.
-func sortpkData(pkMetadata map[string][]tableConfig.Column) map[string][]tableConfig.Column {
+func sortPkData(pkMetadata map[string][]tableConfig.Column) map[string][]tableConfig.Column {
 
-	for tableName, column := range pkMetadata {
-		sort.Slice(column, func(i, j int) bool {
-			return column[i].PkPrecedence < column[j].PkPrecedence
+	for tableName, columns := range pkMetadata {
+		sort.Slice(columns, func(i, j int) bool {
+			return columns[i].PkPrecedence < columns[j].PkPrecedence
 		})
-		pkMetadata[tableName] = column
+		pkMetadata[tableName] = columns
 	}
 	return pkMetadata
 }
@@ -74,9 +69,9 @@ func GetProfileId(profileId string) string {
 //
 //	the application status ([applied]) and the corresponding row data indicating true or false.
 func GenerateAppliedRowsResult(keyspace string, tableName string, applied bool) *message.RowsResult {
-	row := appliedTrue
-	if !applied {
-		row = appliedFalse
+	row := message.Column{0x00}
+	if applied {
+		row = message.Column{0x01}
 	}
 	return &message.RowsResult{
 		Metadata: &message.RowsMetadata{

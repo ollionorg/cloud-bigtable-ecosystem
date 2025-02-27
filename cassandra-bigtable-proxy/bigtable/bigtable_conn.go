@@ -50,8 +50,8 @@ func createBigtableClient(ctx context.Context, config ConnConfig, instanceID str
 	}
 
 	client, err := bigtable.NewClientWithConfig(ctx, config.GCPProjectID, instanceID, bigtable.ClientConfig{
-		AppProfile:      config.AppID,
-		MetricsProvider: config.Meterics,
+		AppProfile:      config.AppProfileID,
+		MetricsProvider: config.Metrics,
 	}, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Bigtable client for instance %s: %v", instanceID, err)

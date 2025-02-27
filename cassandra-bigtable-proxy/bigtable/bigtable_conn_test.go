@@ -32,7 +32,7 @@ func TestCreateClientsForInstances(t *testing.T) {
 		GCPProjectID:  "test-project",
 		InstanceIDs:   "test-instance1,test-instance2",
 		NumOfChannels: 1,
-		AppID:         "test-app",
+		AppProfileID:  "test-app",
 	}
 
 	clients, err := CreateClientsForInstances(ctx, config)

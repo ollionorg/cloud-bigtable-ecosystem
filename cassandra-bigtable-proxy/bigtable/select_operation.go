@@ -44,41 +44,40 @@ import (
 //   - *message.RowsResult: The result of the select statement.
 //   - time.Duration: The total elapsed time for the operation.
 //   - error: Error if the select statement execution fails.
-func (btc *BigtableClient) SelectStatement(ctx context.Context, query rh.QueryMetadata) (*message.RowsResult, time.Duration, error) {
+func (btc *BigtableClient) SelectStatement(ctx context.Context, query rh.QueryMetadata) (*message.RowsResult, time.Time, error) {
 	var columnMetadata []*message.ColumnMetadata
 	var mapKeyArray []string
 	var data message.RowSet
-	var start time.Time
-	var totalElapsedTime time.Duration
+	var bigtableEnd time.Time
+
 	rowMap, err := btc.ExecuteBigtableQuery(ctx, query)
+	bigtableEnd = time.Now()
 	if err != nil {
-		return nil, totalElapsedTime, err
+		return nil, bigtableEnd, err
 	}
 	columnMetadata, mapKeyArray, err = btc.ResponseHandler.BuildMetadata(rowMap, query)
 	if err != nil {
-		return nil, totalElapsedTime, err
+		return nil, bigtableEnd, err
 	}
-	rowLen := len(rowMap)
 
-	for i := 0; i < rowLen; i++ {
+	for i := range len(rowMap) {
 		mr, err := btc.ResponseHandler.BuildResponseRow(rowMap[strconv.Itoa(i)], query, columnMetadata, mapKeyArray)
 
 		if err != nil {
-			return nil, totalElapsedTime, err
+			return nil, bigtableEnd, err
 		}
 		if len(mr) != 0 {
 			data = append(data, mr)
 		}
-		totalElapsedTime += time.Since(start)
+
 	}
 
-	start = time.Now()
 	if len(columnMetadata) == 0 {
 		//TODO Ensure ColumnMetadata  returned is in same order as columns in table
 		columnMetadata, err = btc.TableConfig.GetMetadataForSelectedColumns(query.TableName, query.SelectedColumns, query.KeyspaceName)
 		if err != nil {
 			btc.Logger.Error("error while fetching columnMetadata from config -", zap.Error(err))
-			return nil, totalElapsedTime, err
+			return nil, bigtableEnd, err
 		}
 	}
 
@@ -96,8 +95,7 @@ func (btc *BigtableClient) SelectStatement(ctx context.Context, query rh.QueryMe
 		sortedResult = sortRowsResultBySelectedColumns(result, query.SelectedColumns)
 	}
 
-	totalElapsedTime += time.Since(start)
-	return sortedResult, totalElapsedTime, nil
+	return sortedResult, bigtableEnd, nil
 
 }
 
@@ -145,7 +143,7 @@ func sortRowsResultBySelectedColumns(result *message.RowsResult, selectedColumns
 	return result
 }
 
-// executeBigtableQuery - Executes a Bigtable query using the provided context and query metadata.
+// ExecuteBigtableQuery() - Executes a Bigtable query using the provided context and query metadata.
 //
 // Parameters:
 //   - ctx: Context for the operation, used for cancellation and deadlines.
@@ -156,12 +154,12 @@ func sortRowsResultBySelectedColumns(result *message.RowsResult, selectedColumns
 //   - error: Error if the query execution fails.
 func (btc *BigtableClient) ExecuteBigtableQuery(ctx context.Context, query rh.QueryMetadata) (map[string]map[string]interface{}, error) {
 
-	_, ok := btc.Client[query.KeyspaceName]
+	_, ok := btc.Clients[query.KeyspaceName]
 	if !ok {
 		return nil, fmt.Errorf("invalid keySpace")
 	}
-	var InstanceName string = fmt.Sprintf("projects/%s/instances/%s", btc.BigTableConfig.GCPProjectID, query.KeyspaceName)
-	var ProfileId string = GetProfileId(btc.BigTableConfig.ProfileId)
+	var InstanceName string = fmt.Sprintf("projects/%s/instances/%s", btc.BigtableConfig.GCPProjectID, query.KeyspaceName)
+	var ProfileId string = GetProfileId(btc.BigtableConfig.AppProfileID)
 	md := metadata.Pairs("x-goog-request-params", requestParamsHeaderValue(InstanceName, ProfileId))
 	ctxMD := metadata.NewOutgoingContext(ctx, md)
 
@@ -198,11 +196,8 @@ func (btc *BigtableClient) ExecuteBigtableQuery(ctx context.Context, query rh.Qu
 		}
 		switch r := resp.Response.(type) {
 		case *btpb.ExecuteQueryResponse_Metadata:
-			fmt.Println("Received metadata")
 			cfs = resp.GetMetadata().GetProtoSchema().GetColumns()
 		case *btpb.ExecuteQueryResponse_Results:
-			fmt.Println("Received results")
-			// parseProtoRowsBatch(r.Results.GetProtoRowsBatch())
 			rowMapData, err = btc.ResponseHandler.GetRows(r, cfs, query, &rowCount, rowMapData)
 			if err != nil {
 				return nil, err
@@ -240,33 +235,45 @@ func constructRequestValues(value interface{}) (*btpb.Value, error) {
 		}, nil
 	default:
 		val := reflect.ValueOf(value)
-		if val.Kind() == reflect.Slice {
-			arrayValues := make([]*btpb.Value, val.Len())
-			var elementType *btpb.Type
-			for i := 0; i < val.Len(); i++ {
-				elem := val.Index(i).Interface()
-				btpbValue, err := constructRequestValues(elem)
-				if err != nil {
-					return nil, fmt.Errorf("unsupported element type in array: %v", err)
-				}
-				arrayValues[i] = btpbValue
 
-				// Set the elementType based on the first element; assume homogeneous types
-				if elementType == nil {
-					elementType = btpbValue.Type
-				}
-			}
+		// Return early if value is not a slice
+		if val.Kind() != reflect.Slice {
+			return nil, fmt.Errorf("unsupported type: %T", value)
+		}
 
-			if elementType == nil {
-				return nil, fmt.Errorf("array has no valid elements: %T", value)
-			}
-
+		// Return early if slice is empty
+		if val.Len() == 0 {
 			return &btpb.Value{
-				Kind: &btpb.Value_ArrayValue{ArrayValue: &btpb.ArrayValue{Values: arrayValues}},
-				Type: &btpb.Type{Kind: &btpb.Type_ArrayType{ArrayType: &btpb.Type_Array{ElementType: elementType}}},
+				Kind: &btpb.Value_ArrayValue{ArrayValue: &btpb.ArrayValue{Values: []*btpb.Value{}}},
+				Type: &btpb.Type{Kind: &btpb.Type_ArrayType{ArrayType: &btpb.Type_Array{ElementType: nil}}},
 			}, nil
 		}
-		return nil, fmt.Errorf("unsupported type: %T", value)
+
+		// Process array values
+		arrayValues := make([]*btpb.Value, val.Len())
+		var elementType *btpb.Type
+
+		for i := 0; i < val.Len(); i++ {
+			elem := val.Index(i).Interface()
+			btpbValue, err := constructRequestValues(elem)
+			if err != nil {
+				return nil, fmt.Errorf("unsupported element type in array: %v", err)
+			}
+
+			// Ensure homogeneous array
+			if elementType == nil {
+				elementType = btpbValue.Type
+			} else if !reflect.DeepEqual(elementType, btpbValue.Type) {
+				return nil, fmt.Errorf("heterogeneous array detected: elements must be of the same type")
+			}
+
+			arrayValues[i] = btpbValue
+		}
+
+		return &btpb.Value{
+			Kind: &btpb.Value_ArrayValue{ArrayValue: &btpb.ArrayValue{Values: arrayValues}},
+			Type: &btpb.Type{Kind: &btpb.Type_ArrayType{ArrayType: &btpb.Type_Array{ElementType: elementType}}},
+		}, nil
 	}
 }
 

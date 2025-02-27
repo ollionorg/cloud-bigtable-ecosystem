@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type MutationColumnData struct {
+type ColumnData struct {
 	ColumnFamily string
 	Name         string
 	Contents     []byte
@@ -33,8 +33,8 @@ type MutationColumnData struct {
 
 type MutationData struct {
 	MutationType   string
-	MutationRowKey string
-	MutationColumn []MutationColumnData
+	RowKey         string
+	MutationColumn []ColumnData
 	ColumnFamily   string
 }
 
@@ -43,32 +43,27 @@ type BulkOperationResponse struct {
 }
 
 type BigtableClient struct {
-	Client          map[string]*bigtable.Client
+	Clients         map[string]*bigtable.Client
 	Logger          *zap.Logger
 	SqlClient       btpb.BigtableClient
-	BigTableConfig  BigTableConfig
+	BigtableConfig  BigtableConfig
 	ResponseHandler rh.ResponseHandlerIface
 	TableConfig     *tableConfig.TableConfig
 	grpcConn        *grpc.ClientConn
 }
 
-type BigTableConfig struct {
-	DatabaseName    string
-	ConfigTableName string
-	NumOfChannels   int
-	InstanceName    string
-	GCPProjectID    string
-	MaxSessions     uint64
-	MinSessions     uint64
-	StaleReads      int
-	KeyspaceFlatter bool
-	ColumnFamily    string
-	ProfileId       string
+type BigtableConfig struct {
+	SchemaMappingTable  string
+	NumOfChannels       int
+	InstanceID          string
+	GCPProjectID        string
+	DefaultColumnFamily string
+	AppProfileID        string
 }
 type ConnConfig struct {
 	InstanceIDs   string
 	NumOfChannels int
 	GCPProjectID  string
-	AppID         string
-	Meterics      bigtable.MetricsProvider
+	AppProfileID  string
+	Metrics       bigtable.MetricsProvider
 }
