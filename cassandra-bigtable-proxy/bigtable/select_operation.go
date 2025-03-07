@@ -29,7 +29,7 @@ import (
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
@@ -45,8 +45,6 @@ import (
 //   - time.Duration: The total elapsed time for the operation.
 //   - error: Error if the select statement execution fails.
 func (btc *BigtableClient) SelectStatement(ctx context.Context, query rh.QueryMetadata) (*message.RowsResult, time.Time, error) {
-	var columnMetadata []*message.ColumnMetadata
-	var mapKeyArray []string
 	var data message.RowSet
 	var bigtableEnd time.Time
 
@@ -55,7 +53,7 @@ func (btc *BigtableClient) SelectStatement(ctx context.Context, query rh.QueryMe
 	if err != nil {
 		return nil, bigtableEnd, err
 	}
-	columnMetadata, mapKeyArray, err = btc.ResponseHandler.BuildMetadata(rowMap, query)
+	columnMetadata, mapKeyArray, err := btc.ResponseHandler.BuildMetadata(rowMap, query)
 	if err != nil {
 		return nil, bigtableEnd, err
 	}
@@ -74,7 +72,7 @@ func (btc *BigtableClient) SelectStatement(ctx context.Context, query rh.QueryMe
 
 	if len(columnMetadata) == 0 {
 		//TODO Ensure ColumnMetadata  returned is in same order as columns in table
-		columnMetadata, err = btc.TableConfig.GetMetadataForSelectedColumns(query.TableName, query.SelectedColumns, query.KeyspaceName)
+		columnMetadata, err = btc.SchemaMappingConfig.GetMetadataForSelectedColumns(query.TableName, query.SelectedColumns, query.KeyspaceName)
 		if err != nil {
 			btc.Logger.Error("error while fetching columnMetadata from config -", zap.Error(err))
 			return nil, bigtableEnd, err
@@ -115,7 +113,7 @@ func (btc *BigtableClient) SelectStatement(ctx context.Context, query rh.QueryMe
 // 1. Constructs a map to track the desired order of the columns based on the selectedColumns.
 // 2. Sorts the Columns in the Metadata field of the RowsResult using the order defined in selectedColumns.
 // 3. Rearranges the Data rows so that each row's elements align correctly with the newly ordered metadata columns.
-func sortRowsResultBySelectedColumns(result *message.RowsResult, selectedColumns []tableConfig.SelectedColumns) *message.RowsResult {
+func sortRowsResultBySelectedColumns(result *message.RowsResult, selectedColumns []schemaMapping.SelectedColumns) *message.RowsResult {
 	// Step 1: Create a map for the order of SelectedColumns by `Name`
 	columnOrder := make(map[string]int)
 	for i, col := range selectedColumns {
@@ -158,9 +156,12 @@ func (btc *BigtableClient) ExecuteBigtableQuery(ctx context.Context, query rh.Qu
 	if !ok {
 		return nil, fmt.Errorf("invalid keySpace")
 	}
-	var InstanceName string = fmt.Sprintf("projects/%s/instances/%s", btc.BigtableConfig.GCPProjectID, query.KeyspaceName)
-	var ProfileId string = GetProfileId(btc.BigtableConfig.AppProfileID)
-	md := metadata.Pairs("x-goog-request-params", requestParamsHeaderValue(InstanceName, ProfileId))
+	var instanceName string = fmt.Sprintf("projects/%s/instances/%s", btc.BigtableConfig.GCPProjectID, query.KeyspaceName)
+	var appProfileId string = GetProfileId(btc.BigtableConfig.AppProfileID)
+
+	// Construct the x-goog-request-params header
+	paramHeaders := fmt.Sprintf("name=%s&app_profile_id=%s", url.QueryEscape(instanceName), appProfileId)
+	md := metadata.Pairs("x-goog-request-params", paramHeaders)
 	ctxMD := metadata.NewOutgoingContext(ctx, md)
 
 	newParams, err := constructRequestParams(query.Params)
@@ -169,7 +170,7 @@ func (btc *BigtableClient) ExecuteBigtableQuery(ctx context.Context, query rh.Qu
 	}
 
 	req := &btpb.ExecuteQueryRequest{
-		InstanceName: InstanceName,
+		InstanceName: instanceName,
 		Query:        query.Query,
 		DataFormat: &btpb.ExecuteQueryRequest_ProtoFormat{
 			ProtoFormat: &btpb.ProtoFormat{},
@@ -233,6 +234,13 @@ func constructRequestValues(value interface{}) (*btpb.Value, error) {
 			Kind: &btpb.Value_FloatValue{FloatValue: v},
 			Type: &btpb.Type{Kind: &btpb.Type_Float64Type{}},
 		}, nil
+
+	case float32:
+		return &btpb.Value{
+			Kind: &btpb.Value_FloatValue{FloatValue: float64(v)},
+			Type: &btpb.Type{Kind: &btpb.Type_Float32Type{}},
+		}, nil
+
 	default:
 		val := reflect.ValueOf(value)
 
@@ -295,16 +303,4 @@ func constructRequestParams(inputParams map[string]interface{}) (map[string]*btp
 		newParams[key] = btpbValue
 	}
 	return newParams, nil
-}
-
-// requestParamsHeaderValue - Constructs a string for the x-goog-request-params header used in Bigtable requests.
-//
-// Parameters:
-//   - instance: string representing the Bigtable instance name.
-//   - app_profile: string representing the app profile ID.
-//
-// Returns:
-//   - string: Formatted string for the x-goog-request-params header.
-func requestParamsHeaderValue(instance string, app_profile string) string {
-	return fmt.Sprintf("name=%s&app_profile_id=%s", url.QueryEscape(instance), app_profile)
 }

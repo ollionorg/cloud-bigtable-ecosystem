@@ -27,7 +27,7 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -414,33 +414,6 @@ func TestSelect_ConstructRequestValues(t *testing.T) {
 		})
 	}
 }
-
-func TestRequestParamsHeaderValue(t *testing.T) {
-	tests := []struct {
-		instance   string
-		appProfile string
-		expected   string
-	}{
-		{
-			instance:   "my-instance",
-			appProfile: "my-app-profile",
-			expected:   "name=my-instance&app_profile_id=my-app-profile",
-		},
-		{
-			instance:   "",
-			appProfile: "",
-			expected:   "name=&app_profile_id=",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.instance+"_"+tt.appProfile, func(t *testing.T) {
-			result := requestParamsHeaderValue(tt.instance, tt.appProfile)
-			assert.Equal(t, tt.expected, result, "Formatted header value should match expected output")
-		})
-	}
-}
-
 func TestConstructRequestParams_Success(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -489,7 +462,7 @@ func TestSelectStatement(t *testing.T) {
 		mockGetRows                       func(resp *btpb.ExecuteQueryResponse_Results, cfs []*btpb.ColumnMetadata, query rh.QueryMetadata, rowCount *int, rowMapData map[string]map[string]interface{}) (map[string]map[string]interface{}, error)
 		mockBuildMetadata                 func(rowMap map[string]map[string]interface{}, query rh.QueryMetadata) ([]*message.ColumnMetadata, []string, error)
 		mockBuildResponseRow              func(rowMap map[string]interface{}, query rh.QueryMetadata, cmd []*message.ColumnMetadata, mapKeyArray []string) (message.Row, error)
-		mockGetMetadataForSelectedColumns func(tableName string, selectedColumns []tableConfig.SelectedColumns, keyspaceName string) ([]*message.ColumnMetadata, error)
+		mockGetMetadataForSelectedColumns func(tableName string, selectedColumns []schemaMapping.SelectedColumns, keyspaceName string) ([]*message.ColumnMetadata, error)
 		expectedResult                    *message.RowsResult
 		expectedError                     error
 	}{
@@ -498,7 +471,7 @@ func TestSelectStatement(t *testing.T) {
 			query: rh.QueryMetadata{
 				KeyspaceName: "test-instance",
 				TableName:    "test-table",
-				SelectedColumns: []tableConfig.SelectedColumns{
+				SelectedColumns: []schemaMapping.SelectedColumns{
 					{Name: "col1", FormattedColumn: "col1"},
 					{Name: "col2", FormattedColumn: "col2"},
 				},

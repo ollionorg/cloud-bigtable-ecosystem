@@ -20,7 +20,7 @@ import (
 
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 //
 // Returns:
 // - A map with the same structure as the input, but with the columns sorted by primary key precedence.
-func sortPkData(pkMetadata map[string][]tableConfig.Column) map[string][]tableConfig.Column {
+func sortPkData(pkMetadata map[string][]schemaMapping.Column) map[string][]schemaMapping.Column {
 
 	for tableName, columns := range pkMetadata {
 		sort.Slice(columns, func(i, j int) bool {

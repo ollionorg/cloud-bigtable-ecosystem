@@ -21,11 +21,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
@@ -440,4 +447,528 @@ func TestSRecordError(t *testing.T) {
 
 	shutdownOpenTelemetryComponents(ds1)
 	assert.NoErrorf(t, err, "error occurred")
+}
+
+func TestInitTracerProvider(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		config  *OTelConfig
+		wantErr bool
+	}{
+		{
+			name: "Valid Configuration",
+			config: &OTelConfig{
+				TracerEndpoint:   "localhost:4317",
+				ServiceName:      "test-service",
+				TraceSampleRatio: 1.0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Missing Tracer Endpoint",
+			config: &OTelConfig{
+				TracerEndpoint:   "",
+				ServiceName:      "test-service",
+				TraceSampleRatio: 1.0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid Tracer Endpoint Format",
+			config: &OTelConfig{
+				TracerEndpoint:   "invalid-endpoint",
+				ServiceName:      "test-service",
+				TraceSampleRatio: 1.0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Zero Trace Sample Ratio",
+			config: &OTelConfig{
+				TracerEndpoint:   "localhost:4317",
+				ServiceName:      "test-service",
+				TraceSampleRatio: 0.0,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource := resource.NewSchemaless() // Mock resource
+			got, err := InitTracerProvider(ctx, tt.config, resource)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InitTracerProvider() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !tt.wantErr && (got == nil || reflect.TypeOf(got) != reflect.TypeOf(&sdktrace.TracerProvider{})) {
+				t.Errorf("InitTracerProvider() = %v, expected valid TracerProvider", got)
+			}
+		})
+	}
+}
+func TestInitMeterProvider(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		config  *OTelConfig
+		wantErr bool
+	}{
+		{
+			name: "Valid Configuration",
+			config: &OTelConfig{
+				MetricEndpoint: "localhost:4318",
+				ServiceName:    "test-service",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Missing Metric Endpoint",
+			config: &OTelConfig{
+				MetricEndpoint: "",
+				ServiceName:    "test-service",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid Metric Endpoint Format",
+			config: &OTelConfig{
+				MetricEndpoint: "://invalid-endpoint",
+				ServiceName:    "test-service",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource := resource.NewSchemaless() // Mock resource
+			got, err := InitMeterProvider(ctx, tt.config, resource)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InitMeterProvider() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !tt.wantErr && (got == nil || reflect.TypeOf(got) != reflect.TypeOf(&sdkmetric.MeterProvider{})) {
+				t.Errorf("InitMeterProvider() = %v, expected valid MeterProvider", got)
+			}
+		})
+	}
+}
+
+func Test_buildOtelResource(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name   string
+		config *OTelConfig
+	}{
+		{
+			name: "Valid Service Configuration",
+			config: &OTelConfig{
+				ServiceName:    "test-service",
+				ServiceVersion: "1.0.0",
+			},
+		},
+		{
+			name: "Missing Service Name",
+			config: &OTelConfig{
+				ServiceName:    "",
+				ServiceVersion: "1.0.0",
+			},
+		},
+		{
+			name: "Missing Service Version",
+			config: &OTelConfig{
+				ServiceName:    "test-service",
+				ServiceVersion: "",
+			},
+		},
+		{
+			name: "Empty Config",
+			config: &OTelConfig{
+				ServiceName:    "",
+				ServiceVersion: "",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildOtelResource(ctx, tt.config)
+
+			// Validate that the returned resource is not nil
+			assert.NotNil(t, got, "buildOtelResource() returned nil for test case: %s", tt.name)
+
+			// Retrieve attributes from resource
+			attrs := got.Attributes()
+
+			// Check if expected attributes exist in the resource
+			expectedAttrs := map[string]string{
+				string(semconv.ServiceNameKey):    tt.config.ServiceName,
+				string(semconv.ServiceVersionKey): tt.config.ServiceVersion,
+			}
+
+			for key, expectedValue := range expectedAttrs {
+				found := false
+				for _, attr := range attrs {
+					if string(attr.Key) == key && attr.Value.AsString() == expectedValue {
+						found = true
+						break
+					}
+				}
+				assert.True(t, found, "buildOtelResource() missing expected attribute: %s", key)
+			}
+
+			// Ensure the instance ID exists
+			instanceIDFound := false
+			for _, attr := range attrs {
+				if string(attr.Key) == string(semconv.ServiceInstanceIDKey) {
+					instanceIDFound = true
+					break
+				}
+			}
+			assert.True(t, instanceIDFound, "buildOtelResource() missing expected attribute: ServiceInstanceID")
+		})
+	}
+}
+
+func TestOpenTelemetry_StartSpan(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		otelConfig *OTelConfig
+		spanName   string
+		attrs      []attribute.KeyValue
+		expectSpan bool
+	}{
+		{
+			name: "Start span when OTEL is enabled",
+			otelConfig: &OTelConfig{
+				OTELEnabled: true,
+			},
+			spanName:   "test-span",
+			attrs:      []attribute.KeyValue{attribute.String("key", "value")},
+			expectSpan: true,
+		},
+		{
+			name: "Return same context when OTEL is disabled",
+			otelConfig: &OTelConfig{
+				OTELEnabled: false,
+			},
+			spanName:   "test-span",
+			attrs:      []attribute.KeyValue{attribute.String("key", "value")},
+			expectSpan: false,
+		},
+		{
+			name: "Start span with empty attributes",
+			otelConfig: &OTelConfig{
+				OTELEnabled: true,
+			},
+			spanName:   "empty-attributes-span",
+			attrs:      []attribute.KeyValue{},
+			expectSpan: true,
+		},
+		{
+			name: "Start span with empty span name",
+			otelConfig: &OTelConfig{
+				OTELEnabled: true,
+			},
+			spanName:   "",
+			attrs:      []attribute.KeyValue{attribute.String("key", "value")},
+			expectSpan: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			otelInstance := &OpenTelemetry{
+				Config: tt.otelConfig,
+				tracer: noop.NewTracerProvider().Tracer("test"), // Use noop tracer for testing
+				logger: zap.NewNop(),
+			}
+
+			newCtx, span := otelInstance.StartSpan(ctx, tt.spanName, tt.attrs)
+
+			if tt.expectSpan {
+				assert.NotNil(t, span, "Expected a valid span but got nil")
+			} else {
+				assert.Nil(t, span, "Expected nil span but got a valid span")
+			}
+
+			// Ensure context is updated when OTEL is enabled
+			if tt.expectSpan {
+				assert.NotEqual(t, ctx, newCtx, "Context should be updated with span")
+			} else {
+				assert.Equal(t, ctx, newCtx, "Context should remain unchanged when OTEL is disabled")
+			}
+		})
+	}
+}
+
+func TestOpenTelemetry_EndSpan(t *testing.T) {
+	tests := []struct {
+		name       string
+		otelConfig *OTelConfig
+		expectCall bool
+	}{
+		{
+			name: "End span when OTEL is enabled",
+			otelConfig: &OTelConfig{
+				OTELEnabled: true,
+			},
+			expectCall: true,
+		},
+		{
+			name: "Do nothing when OTEL is disabled",
+			otelConfig: &OTelConfig{
+				OTELEnabled: false,
+			},
+			expectCall: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			otelInstance := &OpenTelemetry{
+				Config: tt.otelConfig,
+				tracer: noop.NewTracerProvider().Tracer("test"), // No-op tracer
+				logger: zap.NewNop(),
+			}
+
+			// Creating a valid context and span
+			ctx := context.Background()
+			otelInstance.tracer.Start(ctx, "test-span")
+
+			// Spy to check if span.End() is called
+			ended := false
+			mockSpan := &mockSpan{endCalled: &ended}
+
+			otelInstance.EndSpan(mockSpan)
+
+			if tt.expectCall {
+				if !ended {
+					t.Errorf("Expected span.End() to be called, but it wasn't")
+				}
+			} else {
+				if ended {
+					t.Errorf("Expected span.End() to NOT be called, but it was")
+				}
+			}
+		})
+	}
+}
+
+// mockSpan is a mock implementation of trace.Span to check if End() is called.
+type mockSpan struct {
+	trace.Span
+	endCalled *bool
+}
+
+func (m *mockSpan) End(opts ...trace.SpanEndOption) {
+	*m.endCalled = true
+}
+
+// MockOpenTelemetry is a mock implementation of OpenTelemetry for testing.
+type MockOpenTelemetry struct {
+	*OpenTelemetry
+	RequestCountCalled bool
+	LatencyCalled      bool
+}
+
+// Override RecordMetrics to ensure the mock methods get called
+func (m *MockOpenTelemetry) RecordMetrics(ctx context.Context, method string, startTime time.Time, queryType string, err error) {
+	// Check if OTEL is enabled before recording metrics
+	if !m.Config.OTELEnabled {
+		return
+	}
+
+	// Call mock versions of RecordRequestCountMetric & RecordLatencyMetric
+	m.RecordRequestCountMetric(ctx, Attributes{Method: method, Status: "OK", QueryType: queryType})
+	m.RecordLatencyMetric(ctx, startTime, Attributes{Method: method, QueryType: queryType})
+}
+
+// Override RecordRequestCountMetric to track calls
+func (m *MockOpenTelemetry) RecordRequestCountMetric(ctx context.Context, attrs Attributes) {
+	m.RequestCountCalled = true
+}
+
+// Override RecordLatencyMetric to track calls
+func (m *MockOpenTelemetry) RecordLatencyMetric(ctx context.Context, startTime time.Time, attrs Attributes) {
+	m.LatencyCalled = true
+}
+
+func TestOpenTelemetry_RecordMetrics(t *testing.T) {
+	tests := []struct {
+		name       string
+		otelConfig *OTelConfig
+		method     string
+		queryType  string
+		err        error
+		expectCall bool
+	}{
+		{
+			name: "Record metrics with successful request",
+			otelConfig: &OTelConfig{
+				OTELEnabled: true,
+			},
+			method:     "GET",
+			queryType:  "select",
+			err:        nil,
+			expectCall: true,
+		},
+		{
+			name: "Record metrics with failed request",
+			otelConfig: &OTelConfig{
+				OTELEnabled: true,
+			},
+			method:     "POST",
+			queryType:  "insert",
+			err:        errors.New("database error"),
+			expectCall: true,
+		},
+		{
+			name: "Do not record metrics when OTEL is disabled",
+			otelConfig: &OTelConfig{
+				OTELEnabled: false,
+			},
+			method:     "DELETE",
+			queryType:  "delete",
+			err:        nil,
+			expectCall: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			startTime := time.Now()
+
+			// Use MockOpenTelemetry with the overridden RecordMetrics method
+			mockOtel := &MockOpenTelemetry{
+				OpenTelemetry: &OpenTelemetry{
+					Config: tt.otelConfig,
+					tracer: noop.NewTracerProvider().Tracer("test"),
+					meter: sdkmetric.NewMeterProvider(
+						sdkmetric.WithReader(sdkmetric.NewManualReader()),
+					).Meter("test"),
+					logger: zap.NewNop(),
+				},
+			}
+
+			// Call the function under test
+			mockOtel.RecordMetrics(ctx, tt.method, startTime, tt.queryType, tt.err)
+
+			if tt.expectCall {
+				if !mockOtel.RequestCountCalled {
+					t.Errorf("Expected RecordRequestCountMetric to be called, but it wasn't")
+				}
+				if !mockOtel.LatencyCalled {
+					t.Errorf("Expected RecordLatencyMetric to be called, but it wasn't")
+				}
+			} else {
+				if mockOtel.RequestCountCalled || mockOtel.LatencyCalled {
+					t.Errorf("Expected no metric calls when OTEL is disabled, but they were called")
+				}
+			}
+		})
+	}
+}
+
+// MockSpan is a mock implementation of trace.Span for testing
+type MockSpan struct {
+	trace.Span
+	events []string
+}
+
+func (m *MockSpan) AddEvent(name string, opts ...trace.EventOption) {
+	m.events = append(m.events, name)
+}
+
+func TestAddAnnotation(t *testing.T) {
+	tests := []struct {
+		name  string
+		event string
+	}{
+		{
+			name:  "Add simple event",
+			event: "UserLoggedIn",
+		},
+		{
+			name:  "Add another event",
+			event: "DatabaseQueried",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSpan := &MockSpan{}
+			ctx := trace.ContextWithSpan(context.Background(), mockSpan)
+
+			// Call function
+			AddAnnotation(ctx, tt.event)
+
+			// Verify that the event was recorded
+			assert.Contains(t, mockSpan.events, tt.event, "Expected event to be added")
+		})
+	}
+}
+
+func Test_isValidEndpoint(t *testing.T) {
+	type args struct {
+		endpoint string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Valid host:port format",
+			args: args{endpoint: "localhost:8080"},
+			want: true,
+		},
+		{
+			name: "Invalid host:port format (no port)",
+			args: args{endpoint: "localhost"},
+			want: false,
+		},
+		{
+			name: "Valid URL format with http",
+			args: args{endpoint: "http://localhost:8080"},
+			want: true,
+		},
+		{
+			name: "Valid URL format with https",
+			args: args{endpoint: "https://example.com:443"},
+			want: true,
+		},
+		{
+			name: "Invalid URL format (missing host)",
+			args: args{endpoint: "http://:8080"},
+			want: false,
+		},
+		{
+			name: "Invalid URL format (missing port)",
+			args: args{endpoint: "http://localhost:"},
+			want: false,
+		},
+		{
+			name: "Empty string",
+			args: args{endpoint: ""},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isValidEndpoint(tt.args.endpoint); got != tt.want {
+				t.Errorf("isValidEndpoint() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

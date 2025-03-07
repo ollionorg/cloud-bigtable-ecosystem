@@ -28,7 +28,7 @@ import (
 	"cloud.google.com/go/bigtable/bttest"
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -277,68 +277,6 @@ func TestDeleteRow(t *testing.T) {
 	assert.Empty(t, row)
 }
 
-func TestDeleteAllRows(t *testing.T) {
-	client, ctx, err := getClient(conn)
-	if err != nil {
-		t.Fatalf("Failed to create Bigtable client: %v", err)
-	}
-
-	adminClient, err := bigtable.NewAdminClient(ctx, "project", "instance", option.WithGRPCConn(conn))
-	if err != nil {
-		t.Fatalf("Failed to create Bigtable admin client: %v", err)
-	}
-
-	// Create table
-	err = adminClient.CreateTable(ctx, "test-table-delete-all")
-	if err != nil {
-		t.Fatalf("Failed to create table: %v", err)
-	}
-
-	err = adminClient.CreateColumnFamily(ctx, "test-table-delete-all", "cf1")
-	if err != nil {
-		t.Fatalf("Failed to create column family: %v", err)
-	}
-
-	btc := NewBigtableClient(client, zap.NewNop(), nil, BigtableConfig{}, nil, nil, nil)
-
-	// Insert initial rows
-	initialData1 := &translator.InsertQueryMap{
-		Table:                "test-table-delete-all",
-		RowKey:               "test-row1",
-		Columns:              []translator.Column{{ColumnFamily: "cf1", Name: "col1"}},
-		Values:               []interface{}{[]byte("value1")},
-		DeleteColumnFamilies: []string{},
-		Keyspace:             "keyspace",
-	}
-	_, err = btc.InsertRow(ctx, initialData1)
-	assert.NoError(t, err)
-
-	initialData2 := &translator.InsertQueryMap{
-		Table:                "test-table-delete-all",
-		RowKey:               "test-row2",
-		Columns:              []translator.Column{{ColumnFamily: "cf1", Name: "col1"}},
-		Values:               []interface{}{[]byte("value2")},
-		DeleteColumnFamilies: []string{},
-		Keyspace:             "keyspace",
-	}
-	_, err = btc.InsertRow(ctx, initialData2)
-	assert.NoError(t, err)
-
-	// Delete all rows
-	err = btc.DeleteAllRows(ctx, "test-table-delete-all", "keyspace")
-	assert.NoError(t, err)
-
-	// Verify deletion
-	tbl := client["keyspace"].Open("test-table-delete-all")
-	row1, err := tbl.ReadRow(ctx, "test-row1")
-	assert.NoError(t, err)
-	assert.Empty(t, row1)
-
-	row2, err := tbl.ReadRow(ctx, "test-row2")
-	assert.NoError(t, err)
-	assert.Empty(t, row2)
-}
-
 func TestGetTableConfigs(t *testing.T) {
 	client, ctx, err := getClient(conn)
 	if err != nil {
@@ -376,11 +314,11 @@ func TestGetTableConfigs(t *testing.T) {
 
 	btc := NewBigtableClient(client, zap.NewNop(), nil, BigtableConfig{}, nil, nil, nil)
 
-	tableMetadata, pkMetadata, err := btc.GetTableConfigs(ctx, "keyspace", "config-table")
+	tableMetadata, pkMetadata, err := btc.GetSchemaMappingConfigs(ctx, "keyspace", "config-table")
 
 	assert.NoError(t, err)
 
-	var expectedPkMetadata = map[string][]tableConfig.Column{
+	var expectedPkMetadata = map[string][]schemaMapping.Column{
 		"TestTable": {
 			{
 				ColumnName:   "TestColumn",
@@ -389,16 +327,17 @@ func TestGetTableConfigs(t *testing.T) {
 				PkPrecedence: 1,
 				IsCollection: false,
 				Metadata: message.ColumnMetadata{
-					Table: "TestTable",
-					Name:  "TestColumn",
-					Index: 0,
-					Type:  datatype.Varchar,
+					Keyspace: "keyspace",
+					Table:    "TestTable",
+					Name:     "TestColumn",
+					Index:    0,
+					Type:     datatype.Varchar,
 				},
 			},
 		},
 	}
 
-	expectedTableMetaData := map[string]map[string]*tableConfig.Column{
+	expectedTableMetaData := map[string]map[string]*schemaMapping.Column{
 		"TestTable": {
 			"TestColumn": {
 				ColumnName:   "TestColumn",
@@ -407,10 +346,11 @@ func TestGetTableConfigs(t *testing.T) {
 				PkPrecedence: 1,
 				IsCollection: false,
 				Metadata: message.ColumnMetadata{
-					Table: "TestTable",
-					Name:  "TestColumn",
-					Index: 0,
-					Type:  datatype.Varchar,
+					Keyspace: "keyspace",
+					Table:    "TestTable",
+					Name:     "TestColumn",
+					Index:    0,
+					Type:     datatype.Varchar,
 				},
 			},
 		},
@@ -449,21 +389,21 @@ func TestApplyBulkMutation(t *testing.T) {
 		{
 			RowKey:       "test-row1",
 			MutationType: "Insert",
-			MutationColumn: []ColumnData{
+			Columns: []ColumnData{
 				{ColumnFamily: "cf1", Name: "col1", Contents: []byte("value1")},
 			},
 		},
 		{
 			RowKey:       "test-row2",
 			MutationType: "Insert",
-			MutationColumn: []ColumnData{
+			Columns: []ColumnData{
 				{ColumnFamily: "cf1", Name: "col1", Contents: []byte("value2")},
 			},
 		},
 		{
 			RowKey:       "test-row1",
 			MutationType: "Update",
-			MutationColumn: []ColumnData{
+			Columns: []ColumnData{
 				{ColumnFamily: "cf1", Name: "col1", Contents: []byte("updated-value1")},
 			},
 		},

@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,21 +54,6 @@ var (
 	attributeKeyQueryType = attribute.Key("query_type")
 )
 
-// TracerProvider defines the interface for creating traces.
-type TracerProvider interface {
-	InitTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error)
-}
-
-// MeterProvider defines the interface for creating meters.
-type MeterProvider interface {
-	InitMeterProvider(ctx context.Context) (*sdkmetric.MeterProvider, error)
-}
-
-// TelemetryInitializer defines the interface for initializing OpenTelemetry components.
-type TelemetryInitializer interface {
-	InitOpenTelemetry(ctx context.Context) (shutdown func(context.Context) error, err error)
-}
-
 // OTelConfig holds configuration for OpenTelemetry.
 type OTelConfig struct {
 	TracerEndpoint     string
@@ -89,73 +76,76 @@ const (
 // OpenTelemetry provides methods to setup tracing and metrics.
 type OpenTelemetry struct {
 	Config         *OTelConfig
-	TracerProvider *sdktrace.TracerProvider
-	MeterProvider  *sdkmetric.MeterProvider
-	Tracer         trace.Tracer
-	Meter          metric.Meter
-	requestCount   metric.Int64Counter   // Default noop
-	requestLatency metric.Int64Histogram // Default noop
-	Logger         *zap.Logger
-	attributeMap   []attribute.KeyValue
+	tracerProvider *sdktrace.TracerProvider
+	meterProvider  *sdkmetric.MeterProvider
+	tracer         trace.Tracer
+	meter          metric.Meter
+	requestCount   metric.Int64Counter
+	requestLatency metric.Int64Histogram
+	logger         *zap.Logger
 }
 
-// NewOpenTelemetry creates and initializes a new instance of OpenTelemetry, including
-// its Tracer and Meter providers, and returns Tracer and Meter instances.
+// NewOpenTelemetry() initializes OpenTelemetry tracing and metrics components.
+// It sets up the tracer and meter providers, configures health checks (if enabled),
+// and returns an OpenTelemetry instance along with a shutdown function.
+//
+// Parameters:
+//   - ctx: Context for managing OpenTelemetry lifecycle.
+//   - config: Configuration struct for OpenTelemetry settings.
+//   - logger: Logger instance for capturing OpenTelemetry logs.
+//
+// Returns:
+//   - *OpenTelemetry: A configured instance of OpenTelemetry.
+//   - func(context.Context) error: A shutdown function to clean up resources.
+//   - error: An error if initialization fails.
 func NewOpenTelemetry(ctx context.Context, config *OTelConfig, logger *zap.Logger) (*OpenTelemetry, func(context.Context) error, error) {
-	otelInst := &OpenTelemetry{Config: config, Logger: logger, attributeMap: []attribute.KeyValue{}}
+	otelInst := &OpenTelemetry{Config: config, logger: logger}
 	var err error
 	otelInst.Config.OTELEnabled = config.OTELEnabled
 	if !config.OTELEnabled {
-		otelInst.Config.OTELEnabled = config.OTELEnabled
 		return otelInst, nil, nil
 	}
-
-	// Construct attributes for Metrics
-	attributeMap := []attribute.KeyValue{
-		attributeKeyInstance.String(config.Instance),
-		attributeKeyDatabase.String(config.Database),
-	}
-	otelInst.attributeMap = append(otelInst.attributeMap, attributeMap...)
 
 	if config.HealthCheckEnabled {
 		resp, err := http.Get("http://" + config.HealthCheckEp)
 		if err != nil {
-			return otelInst, nil, err
+			return nil, nil, err
 		}
 		if resp.StatusCode != 200 {
-			return otelInst, nil, errors.New("OTEL collector service is not up and running")
+			return nil, nil, errors.New("OTEL collector service is not up and running")
 		}
 		logger.Info("OTEL health check complete")
 	}
 	var shutdownFuncs []func(context.Context) error
-	resource := otelInst.createResource(ctx)
+	otelResource := buildOtelResource(ctx, config)
 
-	// Initialize TracerProvider
-	otelInst.TracerProvider, err = otelInst.InitTracerProvider(ctx, resource)
+	// Initialize tracerProvider
+	otelInst.tracerProvider, err = InitTracerProvider(ctx, config, otelResource)
 	if err != nil {
 		logger.Error("error while initializing the tracer provider", zap.Error(err))
 		return nil, nil, err
 	}
-	otel.SetTracerProvider(otelInst.TracerProvider)
-	otelInst.Tracer = otelInst.TracerProvider.Tracer(config.ServiceName)
-	shutdownFuncs = append(shutdownFuncs, otelInst.TracerProvider.Shutdown)
+	otel.SetTracerProvider(otelInst.tracerProvider)
+	otelInst.tracer = otelInst.tracerProvider.Tracer(config.ServiceName)
+	shutdownFuncs = append(shutdownFuncs, otelInst.tracerProvider.Shutdown)
 
 	// Initialize MeterProvider
-	otelInst.MeterProvider, err = otelInst.InitMeterProvider(ctx, resource)
+	//otelInst.meterProvider, err = otelInst.InitMeterProvider(ctx, otelResource)
+	otelInst.meterProvider, err = InitMeterProvider(ctx, config, otelResource)
 	if err != nil {
 		logger.Error("error while initializing the meter provider", zap.Error(err))
 		return nil, nil, err
 	}
-	otel.SetMeterProvider(otelInst.MeterProvider)
-	otelInst.Meter = otelInst.MeterProvider.Meter(config.ServiceName)
-	shutdownFuncs = append(shutdownFuncs, otelInst.MeterProvider.Shutdown)
+	otel.SetMeterProvider(otelInst.meterProvider)
+	otelInst.meter = otelInst.meterProvider.Meter(config.ServiceName)
+	shutdownFuncs = append(shutdownFuncs, otelInst.meterProvider.Shutdown)
 	shutdown := shutdownOpenTelemetryComponents(shutdownFuncs)
-	otelInst.requestCount, err = otelInst.Meter.Int64Counter(requestCountMetric, metric.WithDescription("Records metric for number of query requests coming in"), metric.WithUnit("1"))
+	otelInst.requestCount, err = otelInst.meter.Int64Counter(requestCountMetric, metric.WithDescription("Records metric for number of query requests coming in"), metric.WithUnit("1"))
 	if err != nil {
 		logger.Error("error during registering instrument for metric bigtable/cassandra_adapter/request_count", zap.Error(err))
-		return otelInst, shutdown, err
+		return nil, nil, err
 	}
-	otelInst.requestLatency, err = otelInst.Meter.Int64Histogram(latencyMetric,
+	otelInst.requestLatency, err = otelInst.meter.Int64Histogram(latencyMetric,
 		metric.WithDescription("Records latency for all query operations"),
 		metric.WithExplicitBucketBoundaries(0.0, 0.0010, 0.0013, 0.0016, 0.0020, 0.0024, 0.0031, 0.0038, 0.0048, 0.0060,
 			0.0075, 0.0093, 0.0116, 0.0146, 0.0182, 0.0227, 0.0284, 0.0355, 0.0444, 0.0555, 0.0694, 0.0867,
@@ -166,12 +156,19 @@ func NewOpenTelemetry(ctx context.Context, config *OTelConfig, logger *zap.Logge
 		metric.WithUnit("ms"))
 	if err != nil {
 		logger.Error("error during registering instrument for metric bigtable/cassandra_adapter/roundtrip_latencies", zap.Error(err))
-		return otelInst, shutdown, err
+		return nil, nil, err
 	}
 	return otelInst, shutdown, nil
 }
 
-// shutdownOpenTelemetryComponents cleanly shuts down all OpenTelemetry components initialized.
+// shutdownOpenTelemetryComponents() aggregates multiple shutdown functions into a single callable function.
+// It iterates over all shutdown functions, executing them sequentially.
+//
+// Parameters:
+//   - shutdownFuncs: A slice of shutdown functions for OpenTelemetry components.
+//
+// Returns:
+//   - func(context.Context) error: A single shutdown function that cleans up all initialized components.
 func shutdownOpenTelemetryComponents(shutdownFuncs []func(context.Context) error) func(context.Context) error {
 	return func(ctx context.Context) error {
 		var shutdownErr error
@@ -184,17 +181,32 @@ func shutdownOpenTelemetryComponents(shutdownFuncs []func(context.Context) error
 	}
 }
 
-// InitTracerProvider initializes the TracerProvider for OpenTelemetry. This function
-// configures a gRPC exporter for trace data, pointing to the configured TracerEndpoint.
-// It returns an initialized TracerProvider or an error if the initialization fails.
-func (o *OpenTelemetry) InitTracerProvider(ctx context.Context, resource *resource.Resource) (*sdktrace.TracerProvider, error) {
-	sampler := sdktrace.TraceIDRatioBased(o.Config.TraceSampleRatio)
+// InitTracerProvider() configures and initializes an OpenTelemetry TracerProvider.
+// It sets up a gRPC-based OTLP trace exporter and applies the sampling strategy.
+//
+// Parameters:
+//   - ctx: Context for managing initialization.
+//   - config: OpenTelemetry configuration settings.
+//   - resource: OpenTelemetry resource with metadata.
+//
+// Returns:
+//   - *sdktrace.TracerProvider: A configured TracerProvider instance.
+//   - error: An error if initialization fails.
+func InitTracerProvider(ctx context.Context, config *OTelConfig, resource *resource.Resource) (*sdktrace.TracerProvider, error) {
+	sampler := sdktrace.TraceIDRatioBased(config.TraceSampleRatio)
+	if config.TracerEndpoint == "" {
+		return nil, errors.New("tracer endpoint cannot be empty")
+	}
+	// Basic validation for incorrect endpoint format
+	if !isValidEndpoint(config.TracerEndpoint) {
+		return nil, errors.New("invalid tracer endpoint format")
+	}
+
 	traceExporter, err := otlptracegrpc.New(ctx,
-		otlptracegrpc.WithEndpoint(o.Config.TracerEndpoint),
+		otlptracegrpc.WithEndpoint(config.TracerEndpoint),
 		otlptracegrpc.WithInsecure(),
 	)
 	if err != nil {
-		o.Logger.Error("error while initializing the tracer", zap.Error(err))
 		return nil, err
 	}
 
@@ -206,18 +218,32 @@ func (o *OpenTelemetry) InitTracerProvider(ctx context.Context, resource *resour
 	return tp, nil
 }
 
-// InitMeterProvider initializes the MeterProvider for OpenTelemetry. This function sets up a gRPC exporter for metrics data,
-// targeting the configured MetricEndpoint.
-// It returns an initialized MeterProvider or an error if the setup fails. The MeterProvider is responsible for collecting and
-// exporting metrics from your application to an OpenTelemetry Collector or directly to a backend that supports OTLP over gRPC for metrics.
-func (o *OpenTelemetry) InitMeterProvider(ctx context.Context, resource *resource.Resource) (*sdkmetric.MeterProvider, error) {
+// InitMeterProvider() initializes an OpenTelemetry MeterProvider for collecting application metrics.
+// It configures a gRPC exporter to send metrics data and applies filtering to exclude unnecessary gRPC metrics.
+//
+// Parameters:
+//   - ctx: Context for managing initialization.
+//   - config: OpenTelemetry configuration settings.
+//   - resource: OpenTelemetry resource with metadata.
+//
+// Returns:
+//   - *sdkmetric.MeterProvider: A configured MeterProvider instance.
+//   - error: An error if initialization fails.
+func InitMeterProvider(ctx context.Context, config *OTelConfig, resource *resource.Resource) (*sdkmetric.MeterProvider, error) {
+	if config.MetricEndpoint == "" {
+		return nil, errors.New("metric endpoint cannot be empty")
+	}
+
+	// Basic validation for incorrect endpoint format
+	if !isValidEndpoint(config.MetricEndpoint) {
+		return nil, errors.New("invalid tracer endpoint format")
+	}
 	var views []sdkmetric.View
 	me, err := otlpmetricgrpc.New(ctx,
-		otlpmetricgrpc.WithEndpoint(o.Config.MetricEndpoint),
+		otlpmetricgrpc.WithEndpoint(config.MetricEndpoint),
 		otlpmetricgrpc.WithInsecure(),
 	)
 	if err != nil {
-		o.Logger.Error("error while initializing the meter", zap.Error(err))
 		return nil, err
 	}
 
@@ -236,8 +262,16 @@ func (o *OpenTelemetry) InitMeterProvider(ctx context.Context, resource *resourc
 	return mp, nil
 }
 
-// Function to create otel resource.
-func (o *OpenTelemetry) createResource(ctx context.Context) *resource.Resource {
+// buildOtelResource() creates an OpenTelemetry resource containing metadata about the service.
+// It uses GCP resource detectors and falls back to manually provided attributes if necessary.
+//
+// Parameters:
+//   - ctx: Context for managing initialization.
+//   - config: OpenTelemetry configuration settings.
+//
+// Returns:
+//   - *resource.Resource: A configured OpenTelemetry resource containing metadata.
+func buildOtelResource(ctx context.Context, config *OTelConfig) *resource.Resource {
 	res, err := resource.New(ctx,
 		resource.WithSchemaURL(semconv.SchemaURL),
 		// Use the GCP resource detector!
@@ -245,9 +279,9 @@ func (o *OpenTelemetry) createResource(ctx context.Context) *resource.Resource {
 		// Keep the default detectors
 		resource.WithTelemetrySDK(),
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String(o.Config.ServiceName),
+			semconv.ServiceNameKey.String(config.ServiceName),
 			semconv.ServiceInstanceIDKey.String(uuid.New().String()),
-			semconv.ServiceVersionKey.String(o.Config.ServiceVersion),
+			semconv.ServiceVersionKey.String(config.ServiceVersion),
 		),
 	)
 
@@ -255,9 +289,9 @@ func (o *OpenTelemetry) createResource(ctx context.Context) *resource.Resource {
 		// Default resource
 		return resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(o.Config.ServiceName),
+			semconv.ServiceNameKey.String(config.ServiceName),
 			semconv.ServiceInstanceIDKey.String(uuid.New().String()),
-			semconv.ServiceVersionKey.String(o.Config.ServiceVersion),
+			semconv.ServiceVersionKey.String(config.ServiceVersion),
 		)
 	}
 
@@ -265,18 +299,32 @@ func (o *OpenTelemetry) createResource(ctx context.Context) *resource.Resource {
 
 }
 
-// CreateTrace starts a new trace span based on provided context, name, attributes, and error.
-// It returns a new context containing the span.
+// StartSpan() creates and starts a new trace span in OpenTelemetry.
+// If OpenTelemetry is disabled, it returns the original context.
+//
+// Parameters:
+//   - ctx: The current execution context.
+//   - name: The name of the span to be created.
+//   - attrs: A list of attributes to associate with the span.
+//
+// Returns:
+//   - context.Context: The updated context containing the new span.
+//   - trace.Span: The created span instance.
 func (o *OpenTelemetry) StartSpan(ctx context.Context, name string, attrs []attribute.KeyValue) (context.Context, trace.Span) {
 	if !o.Config.OTELEnabled {
 		return ctx, nil
 	}
 
-	ctx, span := o.Tracer.Start(ctx, name, trace.WithAttributes(attrs...))
+	ctx, span := o.tracer.Start(ctx, name, trace.WithAttributes(attrs...))
 	return ctx, span
 }
 
-// RecordError records a new error under a span.
+// RecordError() logs an error inside an active trace span in OpenTelemetry.
+// It updates the span's status to indicate an error has occurred.
+//
+// Parameters:
+//   - span: The active trace span where the error should be recorded.
+//   - err: The error to be recorded in the span. If nil, the span is marked as OK.
 func (o *OpenTelemetry) RecordError(span trace.Span, err error) {
 	if !o.Config.OTELEnabled {
 		return
@@ -289,7 +337,11 @@ func (o *OpenTelemetry) RecordError(span trace.Span, err error) {
 	}
 }
 
-// EndSpan stops the span.
+// EndSpan() finalizes the current span in OpenTelemetry.
+// If OpenTelemetry is disabled, this function does nothing.
+//
+// Parameters:
+//   - span: The span to be ended.
 func (o *OpenTelemetry) EndSpan(span trace.Span) {
 	if !o.Config.OTELEnabled {
 		return
@@ -298,9 +350,16 @@ func (o *OpenTelemetry) EndSpan(span trace.Span) {
 	span.End()
 }
 
-// Function to records otel metrics on otel
-// Metrics: 1. request count; 2. latency
-func (o *OpenTelemetry) RecordMetrics(ctx context.Context, method string, start time.Time, queryType string, err error) {
+// RecordMetrics() records request count and latency metrics in OpenTelemetry.
+// It determines whether the request was successful or failed based on the error parameter.
+//
+// Parameters:
+//   - ctx: The execution context for OpenTelemetry.
+//   - method: The name of the method being recorded.
+//   - startTime: The start time of the request for latency calculation.
+//   - queryType: The type of query being executed (e.g., "select", "insert").
+//   - err: The error encountered, if any. Used to determine success/failure status.
+func (o *OpenTelemetry) RecordMetrics(ctx context.Context, method string, startTime time.Time, queryType string, err error) {
 	status := "OK"
 	if err != nil {
 		status = "failure"
@@ -310,43 +369,99 @@ func (o *OpenTelemetry) RecordMetrics(ctx context.Context, method string, start 
 		Status:    status,
 		QueryType: queryType,
 	})
-	o.RecordLatencyMetric(ctx, start, Attributes{
+	o.RecordLatencyMetric(ctx, startTime, Attributes{
 		Method:    method,
 		QueryType: queryType,
 	})
 }
 
-// RecordLatencyMetric adds the latency metric based on provided context, name, duration and attributes.
-func (o *OpenTelemetry) RecordLatencyMetric(ctx context.Context, duration time.Time, attrs Attributes) {
+// RecordLatencyMetric() records the latency of an operation in OpenTelemetry.
+// It dynamically builds metric attributes before sending the recorded value.
+//
+// Parameters:
+//   - ctx: The execution context.
+//   - startTime: The time when the operation started, used for latency calculation.
+//   - attrs: Additional attributes to associate with the latency metric.
+func (o *OpenTelemetry) RecordLatencyMetric(ctx context.Context, startTime time.Time, attrs Attributes) {
 	if !o.Config.OTELEnabled {
 		return
 	}
-	attr := o.attributeMap
+
+	// Build attributes dynamically
+	attr := []attribute.KeyValue{
+		attributeKeyInstance.String(o.Config.Instance),
+		attributeKeyDatabase.String(o.Config.Database),
+		attributeKeyMethod.String(attrs.Method),
+		attributeKeyQueryType.String(attrs.QueryType),
+	}
 	attr = append(attr, attributeKeyMethod.String(attrs.Method))
 	attr = append(attr, attributeKeyQueryType.String(attrs.QueryType))
-	o.requestLatency.Record(ctx, int64(time.Since(duration).Milliseconds()), metric.WithAttributes(attr...))
+	o.requestLatency.Record(ctx, int64(time.Since(startTime).Milliseconds()), metric.WithAttributes(attr...))
 }
 
-// RecordRequestCountMetric adds the request count based on provided context, name and attributes.
+// RecordRequestCountMetric() increments the request count metric in OpenTelemetry.
+// It dynamically builds metric attributes before sending the recorded value.
+//
+// Parameters:
+//   - ctx: The execution context.
+//   - attrs: Attributes associated with the request (e.g., method, status).
 func (o *OpenTelemetry) RecordRequestCountMetric(ctx context.Context, attrs Attributes) {
 	if !o.Config.OTELEnabled {
 		return
 	}
-	attr := o.attributeMap
+
+	// Build attributes dynamically
+	attr := []attribute.KeyValue{
+		attributeKeyInstance.String(o.Config.Instance),
+		attributeKeyDatabase.String(o.Config.Database),
+		attributeKeyMethod.String(attrs.Method),
+		attributeKeyQueryType.String(attrs.QueryType),
+		attributeKeyStatus.String(attrs.Status),
+	}
 	attr = append(attr, attributeKeyMethod.String(attrs.Method))
 	attr = append(attr, attributeKeyQueryType.String(attrs.QueryType))
 	attr = append(attr, attributeKeyStatus.String(attrs.Status))
 	o.requestCount.Add(ctx, 1, metric.WithAttributes(attr...))
 }
 
-// AddAnnotation add event to the span of the given ctx.
+// AddAnnotation() adds an event annotation to the active span in the given context.
+//
+// Parameters:
+//   - ctx: The execution context containing the span.
+//   - event: The event name to be added as an annotation.
 func AddAnnotation(ctx context.Context, event string) {
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(event)
 }
 
-// AddAnnotationWithAttr add event to the span of the given ctx with the necessary attributes.
+// AddAnnotationWithAttr() adds an event annotation with attributes to the active span.
+//
+// Parameters:
+//   - ctx: The execution context containing the span.
+//   - event: The event name to be added as an annotation.
+//   - attr: A list of attributes to attach to the annotation.
 func AddAnnotationWithAttr(ctx context.Context, event string, attr []attribute.KeyValue) {
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(event, trace.WithAttributes(attr...))
+}
+
+// isValidEndpoint checks if the given endpoint is a valid host:port format
+func isValidEndpoint(endpoint string) bool {
+	if strings.Contains(endpoint, "://") {
+		parsedURL, err := url.Parse(endpoint)
+		if err != nil {
+			return false
+		}
+		// Check if the original endpoint string had an empty host.
+		if strings.HasPrefix(endpoint, parsedURL.Scheme+"://:") {
+			return false
+		}
+		if parsedURL.Host == "" || parsedURL.Port() == "" {
+			return false
+		}
+		return true
+	}
+
+	parts := strings.Split(endpoint, ":")
+	return len(parts) == 2 && parts[0] != "" && parts[1] != ""
 }

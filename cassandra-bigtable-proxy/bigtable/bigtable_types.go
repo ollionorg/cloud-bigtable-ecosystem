@@ -20,7 +20,7 @@ import (
 	"cloud.google.com/go/bigtable"
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
 	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -32,10 +32,10 @@ type ColumnData struct {
 }
 
 type MutationData struct {
-	MutationType   string
-	RowKey         string
-	MutationColumn []ColumnData
-	ColumnFamily   string
+	MutationType string
+	RowKey       string
+	Columns      []ColumnData
+	ColumnFamily string
 }
 
 type BulkOperationResponse struct {
@@ -43,13 +43,13 @@ type BulkOperationResponse struct {
 }
 
 type BigtableClient struct {
-	Clients         map[string]*bigtable.Client
-	Logger          *zap.Logger
-	SqlClient       btpb.BigtableClient
-	BigtableConfig  BigtableConfig
-	ResponseHandler rh.ResponseHandlerIface
-	TableConfig     *tableConfig.TableConfig
-	grpcConn        *grpc.ClientConn
+	Clients             map[string]*bigtable.Client
+	Logger              *zap.Logger
+	SqlClient           btpb.BigtableClient
+	BigtableConfig      BigtableConfig
+	ResponseHandler     rh.ResponseHandlerIface
+	SchemaMappingConfig *schemaMapping.SchemaMappingConfig
+	grpcConn            *grpc.ClientConn
 }
 
 type BigtableConfig struct {

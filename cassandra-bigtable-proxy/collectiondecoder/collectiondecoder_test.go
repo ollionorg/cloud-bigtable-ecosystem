@@ -77,10 +77,24 @@ func TestDecodeCollection(t *testing.T) {
 				encoded: []byte{0, 0, 0, 2, // map length: 2
 					0, 0, 0, 3, 'o', 'n', 'e', // key 1: "one"
 					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1, // value 1: int64(1)
-					0, 0, 0, 3, 't', 'w', 'o', // key 2: "two"
+					0, 0, 0, 6, 'n', 'e', 'w', 'k', 'e', 'y', // key 2: "two"
 					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 2}, // value 2: int64(2)
 			},
-			want:    map[string]int64{"one": 1, "two": 2},
+			want:    map[string]int64{"one": 1, "newkey": 2},
+			wantErr: false,
+		},
+		{
+			name: "Decode List of Timestamps",
+			args: args{
+				dt:      datatype.NewListType(datatype.Bigint),
+				version: primitive.ProtocolVersion4,
+				encoded: []byte{
+					0, 0, 0, 2, // List length: 2
+					0, 0, 0, 8, 0, 0, 1, 142, 8, 246, 25, 208, // First timestamp (1709500000000 ms)
+					0, 0, 0, 8, 0, 0, 1, 142, 9, 126, 248, 224, // Second timestamp (1709600000000 ms)
+				},
+			},
+			want:    []int64{1709547330000, 1709556300000},
 			wantErr: false,
 		},
 		{
@@ -105,6 +119,36 @@ func TestDecodeCollection(t *testing.T) {
 			},
 			want:    nil,
 			wantErr: true,
+		},
+		{
+			name: "Decode Empty List",
+			args: args{
+				dt:      datatype.NewListType(datatype.Bigint), // List of Bigints
+				version: primitive.ProtocolVersion4,
+				encoded: []byte{0, 0, 0, 0}, // List length = 0
+			},
+			want:    []int64{}, // Expecting an empty slice
+			wantErr: false,
+		},
+		{
+			name: "Decode Empty Set",
+			args: args{
+				dt:      datatype.NewSetType(datatype.Varchar), // Set of Varchar
+				version: primitive.ProtocolVersion4,
+				encoded: []byte{0, 0, 0, 0}, // Set length = 0
+			},
+			want:    []string{}, // Expecting an empty slice
+			wantErr: false,
+		},
+		{
+			name: "Decode Empty Map",
+			args: args{
+				dt:      datatype.NewMapType(datatype.Varchar, datatype.Bigint), // Map<Varchar, Bigint>
+				version: primitive.ProtocolVersion4,
+				encoded: []byte{0, 0, 0, 0}, // Map length = 0
+			},
+			want:    map[string]int64{}, // Expecting an empty map
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -134,18 +178,120 @@ func TestDecodeListOrSet(t *testing.T) {
 		want    interface{}
 		wantErr bool
 	}{
-		/*{
+		{
+			name: "Decode List of Integers",
+			args: args{
+				elementType: datatype.Int, // CQL 'int' is a 4-byte integer
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 4, 0, 0, 0, 1, // int32(1)
+					0, 0, 0, 4, 0, 0, 0, 2, // int32(2)
+					0, 0, 0, 4, 0, 0, 0, 3, // int32(3)
+				}),
+				length: 3,
+			},
+			want:    []int32{1, 2, 3}, // Expecting int32 values
+			wantErr: false,
+		},
+		{
 			name: "Decode List of Bigints",
 			args: args{
 				elementType: datatype.Bigint,
 				version:     primitive.ProtocolVersion4,
-				reader: bytes.NewReader([]byte{0, 0, 0, 3, // list length: 3
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1, // element 1: int64(1)
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 2, // element 2: int64(2)
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 3}), // element 3: int64(3)
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1, // int64(1)
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 2, // int64(2)
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 3}), // int64(3)
 				length: 3,
 			},
 			want:    []int64{1, 2, 3},
+			wantErr: false,
+		},
+		{
+			name: "Decode List of Varchars",
+			args: args{
+				elementType: datatype.Varchar,
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o', // "hello"
+					0, 0, 0, 5, 'w', 'o', 'r', 'l', 'd'}), // "world"
+				length: 2,
+			},
+			want:    []string{"hello", "world"},
+			wantErr: false,
+		},
+		{
+			name: "Decode List of Timestamps",
+			args: args{
+				elementType: datatype.Bigint,
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 8, 0, 0, 1, 142, 8, 246, 25, 208, // First timestamp (1709500000000 ms)
+					0, 0, 0, 8, 0, 0, 1, 142, 9, 126, 248, 224, // Second timestamp (1709600000000 ms)
+				}),
+				length: 2,
+			},
+			want:    []int64{1709547330000, 1709556300000},
+			wantErr: false,
+		},
+		{
+			name: "Decode List of Booleans",
+			args: args{
+				elementType: datatype.Boolean,
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 1, 0x01, // true
+					0, 0, 0, 1, 0x00, // false
+					0, 0, 0, 1, 0x01, // true
+				}),
+				length: 3,
+			},
+			want:    []bool{true, false, true},
+			wantErr: false,
+		},
+		{
+			name: "Decode List of Floats",
+			args: args{
+				elementType: datatype.Float, // Assuming datatype.Float is float32
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 4, 0x3F, 0x80, 0x00, 0x00, // float 1.0
+					0, 0, 0, 4, 0x40, 0x00, 0x00, 0x00, // float 2.0
+					0, 0, 0, 4, 0x40, 0x40, 0x00, 0x00, // float 3.0
+				}),
+				length: 3,
+			},
+			want:    []float32{1.0, 2.0, 3.0},
+			wantErr: false,
+		},
+		{
+			name: "Decode List of Float64 (Double)",
+			args: args{
+				elementType: datatype.Double, // Assuming datatype.Double is float64
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 8, 0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // double 1.0
+					0, 0, 0, 8, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // double 2.0
+					0, 0, 0, 8, 0x40, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // double 3.0
+				}),
+				length: 3,
+			},
+			want:    []float64{1.0, 2.0, 3.0},
+			wantErr: false,
+		},
+		{
+			name: "Decode Set of Integers",
+			args: args{
+				elementType: datatype.Int, // CQL 'int' is a 4-byte integer
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 4, 0, 0, 0, 1, // int32(1)
+					0, 0, 0, 4, 0, 0, 0, 2, // int32(2)
+					0, 0, 0, 4, 0, 0, 0, 3, // int32(3)
+				}),
+				length: 3,
+			},
+			want:    []int32{1, 2, 3}, // Expecting int32 values
 			wantErr: false,
 		},
 		{
@@ -153,22 +299,104 @@ func TestDecodeListOrSet(t *testing.T) {
 			args: args{
 				elementType: datatype.Bigint,
 				version:     primitive.ProtocolVersion4,
-				reader: bytes.NewReader([]byte{0, 0, 0, 3, // set length: 3
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1, // element 1: int64(1)
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 2, // element 2: int64(2)
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 3}), // element 3: int64(3)
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1, // int64(1)
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 2, // int64(2)
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 3}), // int64(3)
 				length: 3,
 			},
-			want:    []int64{1, 2, 3},
+			want:    []int64{1, 2, 3}, // Expecting int64 values
 			wantErr: false,
-		},*/
+		},
+		{
+			name: "Decode Set of Varchars",
+			args: args{
+				elementType: datatype.Varchar,
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o', // "hello"
+					0, 0, 0, 5, 'w', 'o', 'r', 'l', 'd'}), // "world"
+				length: 2,
+			},
+			want:    []string{"hello", "world"},
+			wantErr: false,
+		},
+		{
+			name: "Decode Set of Timestamps",
+			args: args{
+				elementType: datatype.Bigint,
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 8, 0, 0, 1, 142, 8, 246, 25, 208, // First timestamp (1709500000000 ms)
+					0, 0, 0, 8, 0, 0, 1, 142, 9, 126, 248, 224, // Second timestamp (1709600000000 ms)
+				}),
+				length: 2,
+			},
+			want:    []int64{1709547330000, 1709556300000},
+			wantErr: false,
+		},
+		{
+			name: "Decode Set of Booleans",
+			args: args{
+				elementType: datatype.Boolean,
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 1, 0x01, // true
+					0, 0, 0, 1, 0x00, // false
+				}),
+				length: 2,
+			},
+			want:    []bool{true, false}, // SET should remove duplicates
+			wantErr: false,
+		},
+		{
+			name: "Decode Set of Floats",
+			args: args{
+				elementType: datatype.Float, // Assuming datatype.Float is float32
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 4, 0x3F, 0x80, 0x00, 0x00, // float 1.0
+					0, 0, 0, 4, 0x40, 0x00, 0x00, 0x00, // float 2.0
+					0, 0, 0, 4, 0x40, 0x40, 0x00, 0x00, // float 3.0
+				}),
+				length: 3,
+			},
+			want:    []float32{1.0, 2.0, 3.0},
+			wantErr: false,
+		},
+		{
+			name: "Decode Set of Float64 (Double)",
+			args: args{
+				elementType: datatype.Double, // Assuming datatype.Double is float64
+				version:     primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 8, 0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // double 1.0
+					0, 0, 0, 8, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // double 2.0
+					0, 0, 0, 8, 0x40, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // double 3.0
+				}),
+				length: 3,
+			},
+			want:    []float64{1.0, 2.0, 3.0},
+			wantErr: false,
+		},
+		{
+			name: "Failure with Invalid Length",
+			args: args{
+				elementType: datatype.Bigint,
+				version:     primitive.ProtocolVersion4,
+				reader:      bytes.NewReader([]byte{0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1}),
+				length:      2,
+			},
+			want:    nil,
+			wantErr: true,
+		},
 		{
 			name: "Failure with Invalid Encoded Data",
 			args: args{
 				elementType: datatype.Bigint,
 				version:     primitive.ProtocolVersion4,
 				reader:      bytes.NewReader([]byte{0x01, 0x02}),
-				length:      3,
+				length:      1,
 			},
 			want:    nil,
 			wantErr: true,
@@ -879,30 +1107,144 @@ func TestDecodeMap(t *testing.T) {
 		want    interface{}
 		wantErr bool
 	}{
-		/*{
-			name: "Decode Map of Varchar to Bigint",
+		{
+			name: "Decode Map of Text to Bigint",
 			args: args{
 				valueType: datatype.Bigint,
 				version:   primitive.ProtocolVersion4,
-				reader: bytes.NewReader([]byte{0, 0, 0, 2, // map length: 2
-					0, 0, 0, 3, 'o', 'n', 'e', // key 1: "one"
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1, // value 1: int64(1)
-					0, 0, 0, 3, 't', 'w', 'o', // key 2: "two"
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 2}), // value 2: int64(2)
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 3, 'o', 'n', 'e',
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 1,
+					0, 0, 0, 3, 't', 'w', 'o',
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 2,
+				}),
 				keyType: datatype.Varchar,
 				length:  2,
 			},
 			want:    map[string]int64{"one": 1, "two": 2},
 			wantErr: false,
-		},*/
+		},
+		{
+			name: "Decode Map of Timestamp to Float",
+			args: args{
+				valueType: datatype.Float,
+				version:   primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 8, 0, 0, 1, 142, 8, 246, 25, 208,
+					0, 0, 0, 4, 0x3F, 0x80, 0x00, 0x00,
+					0, 0, 0, 8, 0, 0, 1, 142, 9, 126, 248, 224,
+					0, 0, 0, 4, 0x40, 0x00, 0x00, 0x00,
+				}),
+				keyType: datatype.Timestamp,
+				length:  2,
+			},
+			want: map[time.Time]float32{
+				time.UnixMilli(1709547330000).UTC(): 1.0,
+				time.UnixMilli(1709556300000).UTC(): 2.0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Decode Map of Text to Boolean",
+			args: args{
+				valueType: datatype.Boolean,
+				version:   primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 3, 'a', 'c', 't',
+					0, 0, 0, 1, 0x01,
+					0, 0, 0, 4, 'f', 'a', 'l', 's',
+					0, 0, 0, 1, 0x00,
+				}),
+				keyType: datatype.Varchar,
+				length:  2,
+			},
+			want:    map[string]bool{"act": true, "fals": false},
+			wantErr: false,
+		},
+		{
+			name: "Decode Map of Text to Double",
+			args: args{
+				valueType: datatype.Double,
+				version:   primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 3, 'k', 'e', 'y',
+					0, 0, 0, 8, 0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0, 0, 0, 3, 'n', 'u', 'm',
+					0, 0, 0, 8, 0x40, 0x09, 0x21, 0xF9, 0xF0, 0x1B, 0x86, 0x6E,
+				}),
+				keyType: datatype.Varchar,
+				length:  2,
+			},
+			want:    map[string]float64{"key": 1.0, "num": 3.14159},
+			wantErr: false,
+		},
+		{
+			name: "Decode Empty Map",
+			args: args{
+				valueType: datatype.Bigint,
+				version:   primitive.ProtocolVersion4,
+				reader:    bytes.NewReader([]byte{}), // Empty map
+				keyType:   datatype.Varchar,
+				length:    0,
+			},
+			want:    map[string]int64{},
+			wantErr: false,
+		},
+		{
+			name: "Decode Map with Duplicate Keys",
+			args: args{
+				valueType: datatype.Bigint,
+				version:   primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 3, 'a', 'a', 'a',
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 5,
+					0, 0, 0, 3, 'a', 'a', 'a',
+					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 9,
+				}),
+				keyType: datatype.Varchar,
+				length:  2,
+			},
+			want:    map[string]int64{"aaa": 9}, // Last value should overwrite previous one
+			wantErr: false,
+		},
 		{
 			name: "Failure with Incomplete Encoded Map Data",
 			args: args{
 				valueType: datatype.Bigint,
 				version:   primitive.ProtocolVersion4,
-				reader: bytes.NewReader([]byte{0, 0, 0, 1, // map length: 1
-					0, 0, 0, 3, 'o', 'n', 'e', // key 1: "one"
-					0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0}), // incomplete value 1
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 3, 'o', 'n', 'e',
+					0, 0, 0, 8,
+				}),
+				keyType: datatype.Varchar,
+				length:  1,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Failure with Corrupt Encoded Data",
+			args: args{
+				valueType: datatype.Boolean,
+				version:   primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 4, 'b', 'a', 'd', '!',
+					0, 0, 0, 2, 0x03, 0x07, // Wrong boolean encoding (should be 1 byte)
+				}),
+				keyType: datatype.Varchar,
+				length:  1,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Failure with Partial Key",
+			args: args{
+				valueType: datatype.Float,
+				version:   primitive.ProtocolVersion4,
+				reader: bytes.NewReader([]byte{
+					0, 0, 0, 2, 't', 'e', // Truncated key
+				}),
 				keyType: datatype.Varchar,
 				length:  1,
 			},

@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/bigtable"
 	"google.golang.org/grpc"
@@ -32,7 +31,7 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	otelgo "github.com/ollionorg/cassandra-to-bigtable-proxy/otel"
 	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/utilities"
 	"go.uber.org/zap"
@@ -46,8 +45,8 @@ const (
 	bigtableSQLAPICallDone         = "Bigtable SQL API Call Done"
 	applyingDeleteMutation         = "Applying Delete Mutation"
 	deleteMutationApplied          = "Delete Mutation Applied"
-	fetchingTableConfig            = "Fetching Table Configurations"
-	tableConfigFetched             = "Table Configurations Fetched"
+	fetchingSchemaMappingConfig    = "Fetching Schema Mapping Configurations"
+	schemaMappingConfigFetched     = "Schema Mapping Configurations Fetched"
 	applyingBulkMutation           = "Applying Bulk Mutation"
 	bulkMutationApplied            = "Bulk Mutation Applied"
 	mutationTypeInsert             = "Insert"
@@ -56,39 +55,28 @@ const (
 	mutationTypeUpdate             = "Update"
 )
 
-type BigtableClientIface interface {
-	InsertRow(ctx context.Context, data *translator.InsertQueryMap) (*message.RowsResult, error)
-	UpdateRow(ctx context.Context, data *translator.UpdateQueryMap) (*message.RowsResult, error)
-	DeleteAllRows(ctx context.Context, tableName string, keyspace string) error
-	DeleteRow(ctx context.Context, data *translator.DeleteQueryMap) (*message.RowsResult, error)
-	GetTableConfigs(ctx context.Context, schemaMappingTable string, keyspace string) (map[string]map[string]*tableConfig.Column, map[string][]tableConfig.Column, error)
-	ApplyBulkMutation(ctx context.Context, tableName string, mutationData []MutationData, keyspace string) (BulkOperationResponse, error)
-	SelectStatement(ctx context.Context, query rh.QueryMetadata) (*message.RowsResult, time.Time, error)
-	DeleteRowsUsingTimestamp(ctx context.Context, tableName string, columns []string, rowkey string, columnFamily string, timestamp translator.TimestampInfo, keyspace string) error
-	ExecuteBigtableQuery(ctx context.Context, query rh.QueryMetadata) (map[string]map[string]interface{}, error)
-	Close()
-}
-
-// NewBigtableClient - Creates a new instance of BigtableClientIface.
+// NewBigtableClient - Creates a new instance of BigtableClient.
 //
 // Parameters:
 //   - client: Bigtable client.
 //   - logger: Logger instance.
 //   - sqlClient: Bigtable SQL client.
-//   - config: BigTableConfig configuration object.
+//   - config: BigtableConfig configuration object.
 //   - responseHandler: TypeHandler for response handling.
+//   - grpcConn: grpcConn for calling apis.
+//   - schemaMapping: schema mapping for response handling.
 //
 // Returns:
-//   - BigtableClientIface: New instance of BigtableClientIface.
-func NewBigtableClient(client map[string]*bigtable.Client, logger *zap.Logger, sqlClient btpb.BigtableClient, config BigtableConfig, responseHandler rh.ResponseHandlerIface, grpcConn *grpc.ClientConn, tableConfig *tableConfig.TableConfig) BigtableClientIface {
+//   - BigtableClient: New instance of BigtableClient
+func NewBigtableClient(client map[string]*bigtable.Client, logger *zap.Logger, sqlClient btpb.BigtableClient, config BigtableConfig, responseHandler rh.ResponseHandlerIface, grpcConn *grpc.ClientConn, schemaMapping *schemaMapping.SchemaMappingConfig) *BigtableClient {
 	return &BigtableClient{
-		Clients:         client,
-		Logger:          logger,
-		SqlClient:       sqlClient,
-		BigtableConfig:  config,
-		ResponseHandler: responseHandler,
-		TableConfig:     tableConfig,
-		grpcConn:        grpcConn,
+		Clients:             client,
+		Logger:              logger,
+		SqlClient:           sqlClient,
+		BigtableConfig:      config,
+		ResponseHandler:     responseHandler,
+		SchemaMappingConfig: schemaMapping,
+		grpcConn:            grpcConn,
 	}
 }
 
@@ -158,17 +146,17 @@ func (btc *BigtableClient) mutateRow(ctx context.Context, tableName, rowKey stri
 		}
 	}
 
-	// Apply mutation with conditions if required
-	predicateFilter := bigtable.CellsPerRowLimitFilter(1)
-	matched := true
-
 	if ifSpec.IfExists || ifSpec.IfNotExists {
+		predicateFilter := bigtable.CellsPerRowLimitFilter(1)
+		matched := true
 		conditionalMutation := bigtable.NewCondMutation(predicateFilter, mut, nil)
 		if ifSpec.IfNotExists {
 			conditionalMutation = bigtable.NewCondMutation(predicateFilter, nil, mut)
 		}
 
-		if err := tbl.Apply(ctx, rowKey, conditionalMutation, bigtable.GetCondMutationResult(&matched)); err != nil {
+		err := tbl.Apply(ctx, rowKey, conditionalMutation, bigtable.GetCondMutationResult(&matched))
+		otelgo.AddAnnotation(ctx, bigtableMutationApplied)
+		if err != nil {
 			return nil, err
 		}
 
@@ -176,11 +164,12 @@ func (btc *BigtableClient) mutateRow(ctx context.Context, tableName, rowKey stri
 	}
 
 	// If no conditions, apply the mutation directly
-	if err := tbl.Apply(ctx, rowKey, mut); err != nil {
+	err := tbl.Apply(ctx, rowKey, mut)
+	otelgo.AddAnnotation(ctx, bigtableMutationApplied)
+	if err != nil {
 		return nil, err
 	}
 
-	otelgo.AddAnnotation(ctx, bigtableMutationApplied)
 	return &message.RowsResult{
 		Metadata: &message.RowsMetadata{
 			LastContinuousPage: true,
@@ -275,18 +264,18 @@ func (btc *BigtableClient) DeleteRow(ctx context.Context, deleteQueryData *trans
 	return &response, nil
 }
 
-// GetTableConfigs - Retrieves table configurations from the specified config table.
+// GetSchemaMappingConfigs - Retrieves schema mapping configurations from the specified config table.
 //
 // Parameters:
 //   - ctx: Context for the operation, used for cancellation and deadlines.
 //   - schemaMappingTable: Name of the table containing the configuration.
 //
 // Returns:
-//   - map[string]map[string]*tableConfig.Column: Table metadata.
-//   - map[string][]tableConfig.Column: Primary key metadata.
+//   - map[string]map[string]*schemaMapping.Column: Table metadata.
+//   - map[string][]schemaMapping.Column: Primary key metadata.
 //   - error: Error if the retrieval fails.
-func (btc *BigtableClient) GetTableConfigs(ctx context.Context, keyspace, schemaMappingTable string) (map[string]map[string]*tableConfig.Column, map[string][]tableConfig.Column, error) {
-	otelgo.AddAnnotation(ctx, fetchingTableConfig)
+func (btc *BigtableClient) GetSchemaMappingConfigs(ctx context.Context, keyspace, schemaMappingTable string) (map[string]map[string]*schemaMapping.Column, map[string][]schemaMapping.Column, error) {
+	otelgo.AddAnnotation(ctx, fetchingSchemaMappingConfig)
 
 	client, ok := btc.Clients[keyspace]
 	if !ok {
@@ -296,12 +285,12 @@ func (btc *BigtableClient) GetTableConfigs(ctx context.Context, keyspace, schema
 	table := client.Open(schemaMappingTable)
 	filter := bigtable.LatestNFilter(1)
 
-	tableMetadata := make(map[string]map[string]*tableConfig.Column)
-	pkMetadata := make(map[string][]tableConfig.Column)
+	tableMetadata := make(map[string]map[string]*schemaMapping.Column)
+	pkMetadata := make(map[string][]schemaMapping.Column)
 
 	err := table.ReadRows(ctx, bigtable.InfiniteRange(""), func(row bigtable.Row) bool {
 		// Extract the row key and column values
-		var tableName, columnName, columnType string
+		var tableName, columnName, columnType, KeyType string
 		var isPrimaryKey, isCollection bool
 		var pkPrecedence int64
 
@@ -320,6 +309,8 @@ func (btc *BigtableClient) GetTableConfigs(ctx context.Context, keyspace, schema
 				pkPrecedence, _ = json.Number(string(item.Value)).Int64()
 			case "cf:IsCollection":
 				isCollection = string(item.Value) == "true"
+			case "cf:KeyType":
+				KeyType = string(item.Value)
 			}
 		}
 		cqlType, err := utilities.GetCassandraColumnType(columnType)
@@ -328,28 +319,29 @@ func (btc *BigtableClient) GetTableConfigs(ctx context.Context, keyspace, schema
 			return false
 		}
 		columnMetadata := message.ColumnMetadata{
-			Keyspace: "",
+			Keyspace: keyspace,
 			Table:    tableName,
 			Name:     columnName,
 			Type:     cqlType,
 		}
 
 		// Create a new column struct
-		column := tableConfig.Column{
+		column := schemaMapping.Column{
 			ColumnName:   columnName,
 			ColumnType:   columnType,
 			IsPrimaryKey: isPrimaryKey,
 			PkPrecedence: pkPrecedence,
 			IsCollection: isCollection,
 			Metadata:     columnMetadata,
+			KeyType:      KeyType,
 		}
 
 		if _, exists := tableMetadata[tableName]; !exists {
-			tableMetadata[tableName] = make(map[string]*tableConfig.Column)
+			tableMetadata[tableName] = make(map[string]*schemaMapping.Column)
 		}
 
 		if _, exists := pkMetadata[tableName]; !exists {
-			var pkSlice []tableConfig.Column
+			var pkSlice []schemaMapping.Column
 			pkMetadata[tableName] = pkSlice
 		}
 
@@ -371,48 +363,8 @@ func (btc *BigtableClient) GetTableConfigs(ctx context.Context, keyspace, schema
 	if len(tableMetadata) == 0 {
 		return nil, nil, fmt.Errorf("config table %s empty", schemaMappingTable)
 	}
-	otelgo.AddAnnotation(ctx, tableConfigFetched)
+	otelgo.AddAnnotation(ctx, schemaMappingConfigFetched)
 	return tableMetadata, sortPkData(pkMetadata), nil
-}
-
-// DeleteAllRows - Deletes all rows in the specified Bigtable table.
-//
-// Parameters:
-//   - ctx: Context for the operation, used for cancellation and deadlines.
-//   - tableName: Name of the table to delete all rows from.
-//
-// Returns:
-//   - error: Error if the deletion fails.
-func (btc *BigtableClient) DeleteAllRows(ctx context.Context, tableName, keyspace string) error {
-	client, ok := btc.Clients[keyspace]
-	if !ok {
-		return fmt.Errorf("invalid keySpace - `%s`", keyspace)
-	}
-
-	tbl := client.Open(tableName)
-
-	// Use an empty ReadOption array to fetch all rows (only keys are needed, no values)
-	var allKeys []string
-	err := tbl.ReadRows(ctx, bigtable.PrefixRange(""), func(row bigtable.Row) bool {
-		allKeys = append(allKeys, row.Key())
-		return true // Continue reading
-	}, bigtable.RowFilter(bigtable.StripValueFilter()))
-
-	if err != nil {
-		btc.Logger.Error("Failed to read rows for deletion", zap.Error(err))
-		return err
-	}
-
-	// Now delete all rows that were fetched
-	for _, key := range allKeys {
-		mut := bigtable.NewMutation()
-		mut.DeleteRow()
-		if err := tbl.Apply(ctx, key, mut); err != nil {
-			btc.Logger.Error("Failed to delete row", zap.String("RowKey", key), zap.Error(err))
-			// Optionally, continue deleting other rows even if some deletions fail
-		}
-	}
-	return nil
 }
 
 // DeleteRowsUsingTimestamp - Deletes specific column values in a row based on timestamp range in Bigtable.
@@ -465,7 +417,7 @@ func (btc *BigtableClient) ApplyBulkMutation(ctx context.Context, tableName stri
 		switch md.MutationType {
 		case mutationTypeInsert:
 			{
-				for _, column := range md.MutationColumn {
+				for _, column := range md.Columns {
 					mut.Set(column.ColumnFamily, column.Name, bigtable.Now(), column.Contents)
 				}
 			}
@@ -479,7 +431,7 @@ func (btc *BigtableClient) ApplyBulkMutation(ctx context.Context, tableName stri
 			}
 		case mutationTypeUpdate:
 			{
-				for _, column := range md.MutationColumn {
+				for _, column := range md.Columns {
 					mut.Set(column.ColumnFamily, column.Name, bigtable.Now(), column.Contents)
 				}
 			}

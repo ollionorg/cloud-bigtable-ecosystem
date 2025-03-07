@@ -71,7 +71,6 @@ func DecodeCollection(dt datatype.DataType, version primitive.ProtocolVersion, e
 // Returns:
 // - An interface{} containing the decoded elements as a slice of the appropriate type.
 // - An error if any decoding step fails.
-
 func decodeListOrSet(elementType datatype.DataType, version primitive.ProtocolVersion, reader *bytes.Reader, length int32) (interface{}, error) {
 	decodedElements := make([]interface{}, length)
 	for i := int32(0); i < length; i++ {
@@ -105,7 +104,6 @@ func decodeListOrSet(elementType datatype.DataType, version primitive.ProtocolVe
 // Returns:
 // - An interface{} containing the decoded map as a map[interface{}]interface{} with keys and values of the appropriate types.
 // - An error if any decoding step fails.
-
 func decodeMap(valueType datatype.DataType, version primitive.ProtocolVersion, reader *bytes.Reader, keyType datatype.DataType, length int32) (interface{}, error) {
 	decodedMap := make(map[interface{}]interface{}, length)
 	for i := int32(0); i < length; i++ {
@@ -151,7 +149,6 @@ func decodeMap(valueType datatype.DataType, version primitive.ProtocolVersion, r
 // Returns:
 // - An interface{} containing the converted slice of the appropriate type.
 // - An error if the type conversion fails or if the data type is unsupported.
-
 func ConvertToTypedSlice(decodedElements []interface{}, dt datatype.DataType) (interface{}, error) {
 	switch dt.GetDataTypeCode() {
 	case primitive.DataTypeCodeAscii, primitive.DataTypeCodeVarchar:
@@ -250,7 +247,6 @@ func ConvertToTypedSlice(decodedElements []interface{}, dt datatype.DataType) (i
 // Returns:
 // - An interface{} containing the converted map of the appropriate types for keys and values.
 // - An error if the type conversion fails or if the key or value data type is unsupported.
-
 func ConvertToTypedMap(decodedMap map[interface{}]interface{}, keyType, valueType datatype.DataType) (interface{}, error) {
 	switch keyType.GetDataTypeCode() {
 	case primitive.DataTypeCodeAscii, primitive.DataTypeCodeVarchar:
