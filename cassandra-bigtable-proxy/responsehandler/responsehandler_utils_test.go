@@ -25,7 +25,7 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	fakedata "github.com/ollionorg/cassandra-to-bigtable-proxy/fakedata"
 	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"go.uber.org/zap"
 )
 
@@ -76,7 +76,7 @@ func TestGetMapField(t *testing.T) {
 					KeyspaceName:        "xobni_derived",
 					IsStar:              false,
 					DefaultColumnFamily: "cf1",
-					SelectedColumns: []tableConfig.SelectedColumns{
+					SelectedColumns: []schemaMapping.SelectedColumns{
 						{
 							Name:   "map_with_key",
 							MapKey: "name",
@@ -96,7 +96,7 @@ func TestGetMapField(t *testing.T) {
 					KeyspaceName:        "xobni_derived",
 					IsStar:              false,
 					DefaultColumnFamily: "cf1",
-					SelectedColumns: []tableConfig.SelectedColumns{
+					SelectedColumns: []schemaMapping.SelectedColumns{
 						{
 							Name:   "map_with_key",
 							MapKey: "name",
@@ -120,7 +120,7 @@ func TestGetMapField(t *testing.T) {
 func TestTypeHandler_HandleTimestampMap(t *testing.T) {
 	type fields struct {
 		Logger              *zap.Logger
-		TableConfig         *tableConfig.TableConfig
+		SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 		ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 	}
 	type args struct {
@@ -138,8 +138,8 @@ func TestTypeHandler_HandleTimestampMap(t *testing.T) {
 		{
 			name: "Success For Int",
 			fields: fields{
-				Logger:      zap.NewExample(),
-				TableConfig: fakedata.GetTableConfig(),
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 			},
 			args: args{
 				mapData: map[string]interface{}{
@@ -156,8 +156,8 @@ func TestTypeHandler_HandleTimestampMap(t *testing.T) {
 		{
 			name: "Failed For float",
 			fields: fields{
-				Logger:      zap.NewExample(),
-				TableConfig: fakedata.GetTableConfig(),
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 			},
 			args: args{
 				mapData: map[string]interface{}{
@@ -176,7 +176,7 @@ func TestTypeHandler_HandleTimestampMap(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			th := &rh.TypeHandler{
 				Logger:              tt.fields.Logger,
-				TableConfig:         tt.fields.TableConfig,
+				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
 			}
 			err := th.HandleTimestampMap(tt.args.mapData, tt.args.mr, tt.args.elementType, tt.args.protocalV)
@@ -284,7 +284,7 @@ func TestGetMapType(t *testing.T) {
 func TestTypeHandler_decodeValue(t *testing.T) {
 	type fields struct {
 		Logger              *zap.Logger
-		TableConfig         *tableConfig.TableConfig
+		SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 		ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 	}
 	type args struct {
@@ -371,7 +371,7 @@ func TestTypeHandler_decodeValue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			th := &rh.TypeHandler{
 				Logger:              tt.fields.Logger,
-				TableConfig:         tt.fields.TableConfig,
+				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
 			}
 			got, err := th.DecodeValue(tt.args.byteArray, tt.args.elementType, tt.args.protocalV)

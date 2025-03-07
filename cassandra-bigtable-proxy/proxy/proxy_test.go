@@ -31,7 +31,7 @@ import (
 	otelgo "github.com/ollionorg/cassandra-to-bigtable-proxy/otel"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/proxycore"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -116,7 +116,7 @@ func TestOnEvent(t *testing.T) {
 // 	assert.Errorf(t, err, "function should return error")
 
 // 	res, err := getBigtableConnection(ctx, Config{
-// 		BigTableConfig: BigTableConfig{
+// 		BigtableSchemaConfig: BigtableSchemaConfig{
 // 			DatabaseName: "key_space",
 // 		},
 // 	})
@@ -636,12 +636,12 @@ func Test_ServeScenario2(t *testing.T) {
 // 		{Name: "test_hash", Type: datatype.Varchar, Index: 1},
 // 	}
 
-// 	tableConfig := &tableConfig.TableConfig{
-// 		TablesMetaData: []tableConfig.TableMetaData{
+// 	schemaMapping := &schemaMapping.SchemaMappingConfig{
+// 		TablesMetaData: []schemaMapping.TableMetaData{
 // 			{
 // 				TableName:    "test_table",
 // 				KeySpaceName: "key_space",
-// 				Columns: []tableConfig.Column{
+// 				Columns: []schemaMapping.Column{
 // 					{
 // 						ColumnName: "test_id",
 // 						ColumnType: "text",
@@ -670,8 +670,8 @@ func Test_ServeScenario2(t *testing.T) {
 // 	}
 
 // 	mockProxy := &Proxy{
-// 		tableConfig: tableConfig,
-// 		translator:  &translator.Translator{TableConfig: tableConfig},
+// 		schemaMapping: schemaMapping,
+// 		translator:  &translator.Translator{SchemaMappingConfig: schemaMapping},
 // 		logger:      zap.NewNop(),
 // 	}
 
@@ -769,16 +769,16 @@ func Test_ServeScenario2(t *testing.T) {
 // 		{Name: "test_hash", Type: datatype.Varchar, Index: 1},
 // 	}
 
-// 	tableConfig := &tableConfig.TableConfig{
-// 		TablesMetaData:  mockTableConfig,
+// 	schemaMapping := &schemaMapping.SchemaMappingConfig{
+// 		TablesMetaData:  mockTableSchemaConfig,
 // 		PkMetadataCache: mockPkMetadata,
 
 // 		Logger: zap.NewNop(),
 // 	}
 
 // 	mockProxy := &Proxy{
-// 		tableConfig: tableConfig,
-// 		translator:  &translator.Translator{TableConfig: tableConfig},
+// 		schemaMapping: schemaMapping,
+// 		translator:  &translator.Translator{SchemaMappingConfig: schemaMapping},
 // 		logger:      zap.NewNop(),
 // 	}
 
@@ -875,12 +875,12 @@ func Test_ServeScenario2(t *testing.T) {
 // 	}
 // 	newPath := strings.Replace(absolutePath, "/proxy/", "/", 1)
 // 	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", newPath)
-// 	tableConfig := &tableConfig.TableConfig{
-// 		TablesMetaData: []tableConfig.TableMetaData{
+// 	schemaMapping := &schemaMapping.SchemaMappingConfig{
+// 		TablesMetaData: []schemaMapping.TableMetaData{
 // 			{
 // 				TableName:    "test_table",
 // 				KeySpaceName: "key_space",
-// 				Columns: []tableConfig.Column{
+// 				Columns: []schemaMapping.Column{
 // 					{
 // 						ColumnName: "test_id",
 // 						ColumnType: "text",
@@ -908,8 +908,8 @@ func Test_ServeScenario2(t *testing.T) {
 // 	}
 
 // 	mockProxy := &Proxy{
-// 		tableConfig: tableConfig,
-// 		translator:  &translator.Translator{TableConfig: tableConfig},
+// 		schemaMapping: schemaMapping,
+// 		translator:  &translator.Translator{SchemaMappingConfig: schemaMapping},
 // 		logger:      zap.NewNop(),
 // 	}
 
@@ -1036,23 +1036,23 @@ var mockRawFrame = &frame.RawFrame{
 	},
 	Body: []byte{},
 }
-var tableConfigs = &tableConfig.TableConfig{
-	TablesMetaData:  mockTableConfig,
+var schemaConfigs = &schemaMapping.SchemaMappingConfig{
+	TablesMetaData:  mockTableSchemaConfig,
 	PkMetadataCache: mockPkMetadata,
 	Logger:          zap.NewNop(),
 }
 
 var mockProxy = &Proxy{
-	tableConfig: tableConfigs,
-	translator:  &translator.Translator{TableConfig: tableConfigs},
-	logger:      zap.NewNop(),
+	schemaMapping: schemaConfigs,
+	translator:    &translator.Translator{SchemaMappingConfig: schemaConfigs},
+	logger:        zap.NewNop(),
 }
 
 /*
 func Test_client_handleServerPreparedQuery(t *testing.T) {
 	mockProxy := &Proxy{
-		tableConfig: tableConfigs,
-		translator:  &translator.Translator{TableConfig: tableConfigs},
+		schemaMapping: schemaConfigs,
+		translator:  &translator.Translator{SchemaMappingConfig: schemaConfigs},
 		logger:      zap.NewNop(),
 		ctx:         context.Background(),
 		//bClient:     mockBigtableClient,
@@ -1178,7 +1178,7 @@ type MockBigtableClient struct {
 	InsertRowFunc          func(ctx context.Context, data *translator.InsertQueryMap) error
 	UpdateRowFunc          func(ctx context.Context, data *translator.UpdateQueryMap) error
 	DeleteRowFunc          func(ctx context.Context, data *translator.DeleteQueryMap) error
-	GetTableConfigsFunc    func(ctx context.Context, tableName string) (map[string]map[string]*tableConfig.Column, map[string][]tableConfig.Column, error)
+	GetSchemaConfigsFunc   func(ctx context.Context, tableName string) (map[string]map[string]*schemaMapping.Column, map[string][]schemaMapping.Column, error)
 	InsertErrorDetailsFunc func(ctx context.Context, query responsehandler.ErrorDetail)
 	ApplyBulkMutationFunc  func(ctx context.Context, tableName string, mutationData []bt.MutationData) (bt.BulkOperationResponse, error)
 }
@@ -1203,9 +1203,9 @@ func (m *MockBigtableClient) DeleteRow(ctx context.Context, data *translator.Del
 	}
 	return nil
 }
-func (m *MockBigtableClient) GetTableConfigs(ctx context.Context, tableName string) (map[string]map[string]*tableConfig.Column, map[string][]tableConfig.Column, error) {
-	if m.GetTableConfigsFunc != nil {
-		return m.GetTableConfigsFunc(ctx, tableName)
+func (m *MockBigtableClient) GetSchemaConfigs(ctx context.Context, tableName string) (map[string]map[string]*schemaMapping.Column, map[string][]schemaMapping.Column, error) {
+	if m.GetSchemaConfigsFunc != nil {
+		return m.GetSchemaConfigsFunc(ctx, tableName)
 	}
 	return nil, nil, nil
 }
@@ -1232,8 +1232,8 @@ var mockBigtableClient = &MockBigtableClient{
 	DeleteRowFunc: func(ctx context.Context, data *translator.DeleteQueryMap) error {
 		return nil
 	},
-	GetTableConfigsFunc: func(ctx context.Context, tableName string) (map[string]map[string]*tableConfig.Column, map[string][]tableConfig.Column, error) {
-		return map[string]map[string]*tableConfig.Column{}, map[string][]tableConfig.Column{}, nil
+	GetSchemaConfigsFunc: func(ctx context.Context, tableName string) (map[string]map[string]*schemaMapping.Column, map[string][]schemaMapping.Column, error) {
+		return map[string]map[string]*schemaMapping.Column{}, map[string][]schemaMapping.Column{}, nil
 	},
 	ApplyBulkMutationFunc: func(ctx context.Context, tableName string, mutationData []bt.MutationData) (bt.BulkOperationResponse, error) {
 		return bt.BulkOperationResponse{}, nil
@@ -1255,10 +1255,10 @@ var namedValues = map[string]*primitive.Value{
 func Test_handleExecutionForDeletePreparedQuery(t *testing.T) {
 
 	mockProxy := &Proxy{
-		tableConfig: tableConfigs,
-		translator:  &translator.Translator{TableConfig: tableConfigs},
-		logger:      zap.NewNop(),
-		ctx:         context.Background(),
+		schemaMapping: schemaConfigs,
+		translator:    &translator.Translator{SchemaMappingConfig: schemaConfigs},
+		logger:        zap.NewNop(),
+		ctx:           context.Background(),
 		//bClient:     mockBigtableClient, // update client to include all function
 		bClient: nil, // update client to include all function
 		otelInst: &otelgo.OpenTelemetry{Config: &otelgo.OTelConfig{
@@ -1333,8 +1333,8 @@ func Test_handleExecutionForDeletePreparedQuery(t *testing.T) {
 
 // func Test_client_handleExecutionForSelectPreparedQuery(t *testing.T) {
 // 	mockProxy := &Proxy{
-// 		tableConfig: tableConfigs,
-// 		translator:  &translator.Translator{TableConfig: tableConfigs},
+// 		schemaMapping: schemaConfigs,
+// 		translator:  &translator.Translator{SchemaMappingConfig: schemaConfigs},
 // 		logger:      zap.NewNop(),
 // 		ctx:         context.Background(),
 // 		bClient:     mockBigtableClient,
@@ -1408,8 +1408,8 @@ func Test_handleExecutionForDeletePreparedQuery(t *testing.T) {
 func Test_client_handleExecutionForInsertPreparedQuery(t *testing.T) {
 
 	mockProxy := &Proxy{
-		tableConfig: tableConfigs,
-		translator:  &translator.Translator{TableConfig: tableConfigs},
+		schemaMapping: schemaConfigs,
+		translator:  &translator.Translator{SchemaMappingConfig: schemaConfigs},
 		logger:      zap.NewNop(),
 		ctx:         context.Background(),
 		//bClient:     mockBigtableClient,
@@ -1523,8 +1523,8 @@ func (m *MockTranslator) TranslateUpdateQuerytoBigtable(query string) (*translat
 	func TestHandleQuery(t *testing.T) {
 		mockSender := &mockSender{}
 		mockProxy := &Proxy{
-			tableConfig: tableConfigs,
-			translator:  &translator.Translator{TableConfig: tableConfigs},
+			schemaMapping: schemaConfigs,
+			translator:  &translator.Translator{SchemaMappingConfig: schemaConfigs},
 			logger:      zap.NewNop(),
 			ctx:         context.Background(),
 			//bClient:     mockBigtableClient,
@@ -1803,14 +1803,14 @@ func Test_client_handlePrepare(t *testing.T) {
 	}
 }
 
-func createTableConfig() *tableConfig.TableConfig {
-	return &tableConfig.TableConfig{
-		TablesMetaData:  mockTableConfig,
+func createSchemaConfig() *schemaMapping.SchemaMappingConfig {
+	return &schemaMapping.SchemaMappingConfig{
+		TablesMetaData:  mockTableSchemaConfig,
 		PkMetadataCache: mockPkMetadata,
 	}
 }
 
-var mockTableConfig = map[string]map[string]map[string]*tableConfig.Column{
+var mockTableSchemaConfig = map[string]map[string]map[string]*schemaMapping.Column{
 
 	"keyspace": {
 		"test_table": {
@@ -1838,24 +1838,24 @@ var mockTableConfig = map[string]map[string]map[string]*tableConfig.Column{
 				},
 			},
 
-			"column1": &tableConfig.Column{
+			"column1": &schemaMapping.Column{
 				ColumnName:   "column1",
 				ColumnType:   "text",
 				IsPrimaryKey: true,
 				PkPrecedence: 1,
 			},
-			"column2": &tableConfig.Column{
+			"column2": &schemaMapping.Column{
 				ColumnName:   "column2",
 				ColumnType:   "blob",
 				IsPrimaryKey: false,
 			},
-			"column3": &tableConfig.Column{
+			"column3": &schemaMapping.Column{
 				ColumnName:   "column3",
 				ColumnType:   "boolean",
 				IsPrimaryKey: false,
 			},
 
-			"column10": &tableConfig.Column{
+			"column10": &schemaMapping.Column{
 				ColumnName:   "column10",
 				ColumnType:   "text",
 				IsPrimaryKey: true,
@@ -1863,7 +1863,7 @@ var mockTableConfig = map[string]map[string]map[string]*tableConfig.Column{
 			},
 		},
 		"user_info": {
-			"name": &tableConfig.Column{
+			"name": &schemaMapping.Column{
 				ColumnName:   "name",
 				ColumnType:   "text",
 				IsPrimaryKey: true,
@@ -1874,7 +1874,7 @@ var mockTableConfig = map[string]map[string]map[string]*tableConfig.Column{
 	},
 }
 
-var mockPkMetadata = map[string]map[string][]tableConfig.Column{
+var mockPkMetadata = map[string]map[string][]schemaMapping.Column{
 	"keyspace": {
 		"test_table": {
 			{

@@ -26,7 +26,7 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -56,6 +56,10 @@ var whereRegex = regexp.MustCompile(`(?i)\s+WHERE\s+(.+)`)
 // Looks for pattern  (?, ?, ?, ?), (?, '?, ?, '?') etc
 // Regex for using block - [ ]+\?[ ]*
 var re = regexp.MustCompile(`[<>=]+ *['?]{1,3}|\({1}[?,'\s]+\)|[ ']+\?[ ']*`)
+
+const PARTITION_KEY = "partition_key"
+const CLUSTERING = "clustering"
+const REGULAR = "regular"
 
 // computeProxyProcessingTime() calculates the actual proxy processing time
 // by excluding the Bigtable execution time from the total function execution time.
@@ -231,7 +235,7 @@ func getSystemQueryMetadataCache(keyspaceMetadataRows, tableMetadataRows, column
 // - A pointer to a SystemQueryMetadataCache, which contains structured metadata for keyspaces, tables, and columns.
 // - An error if any issue occurs while building the metadata cache.
 
-func ConstructSystemMetadataRows(tableMetaData map[string]map[string]map[string]*tableConfig.Column) (*SystemQueryMetadataCache, error) {
+func ConstructSystemMetadataRows(tableMetaData map[string]map[string]map[string]*schemaMapping.Column) (*SystemQueryMetadataCache, error) {
 
 	keyspaceMetadataRows := [][]interface{}{}
 	tableMetadataRows := [][]interface{}{}
@@ -262,9 +266,12 @@ func ConstructSystemMetadataRows(tableMetaData map[string]map[string]map[string]
 
 			// Iterate through columns
 			for columnName, column := range columns {
-				kind := "regular"
+				kind := REGULAR
 				if column.IsPrimaryKey {
-					kind = "partition_key"
+					kind = PARTITION_KEY
+					if column.KeyType == CLUSTERING {
+						kind = CLUSTERING
+					}
 				}
 
 				// Add column metadata
@@ -275,7 +282,7 @@ func ConstructSystemMetadataRows(tableMetaData map[string]map[string]map[string]
 		}
 	}
 
-	columnsMetadataRows = append(columnsMetadataRows, []interface{}{"system_schema", "columns", "kind", "none", "partition_key", 0, "text"})
+	columnsMetadataRows = append(columnsMetadataRows, []interface{}{"system_schema", "columns", "kind", "none", PARTITION_KEY, 0, "text"})
 
 	return getSystemQueryMetadataCache(keyspaceMetadataRows, tableMetadataRows, columnsMetadataRows)
 }

@@ -19,7 +19,7 @@ import (
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
 	"go.uber.org/zap"
 )
@@ -41,7 +41,7 @@ type QueryMetadata struct {
 	KeyspaceName             string
 	ProtocalV                primitive.ProtocolVersion
 	Params                   map[string]interface{}
-	SelectedColumns          []tableConfig.SelectedColumns
+	SelectedColumns          []schemaMapping.SelectedColumns
 	Paramkeys                []string
 	ParamValues              []interface{}
 	UsingTSCheck             string
@@ -58,7 +58,7 @@ type QueryMetadata struct {
 
 type TypeHandler struct {
 	Logger              *zap.Logger
-	TableConfig         *tableConfig.TableConfig
+	SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 	ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 }
 

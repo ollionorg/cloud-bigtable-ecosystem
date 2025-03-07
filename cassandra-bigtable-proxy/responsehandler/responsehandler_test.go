@@ -26,14 +26,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/fakedata"
 	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"go.uber.org/zap"
 )
 
 func TestTypeHandler_GetRows(t *testing.T) {
 	type fields struct {
 		Logger              *zap.Logger
-		TableConfig         *tableConfig.TableConfig
+		SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 		ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 	}
 	type args struct {
@@ -52,7 +52,7 @@ func TestTypeHandler_GetRows(t *testing.T) {
 			name: "Test case 1: Successful row retrieval",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         fakedata.GetTableConfig(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
 			},
 			args: args{
@@ -73,7 +73,7 @@ func TestTypeHandler_GetRows(t *testing.T) {
 			name: "Test case 2: Empty result without error",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         fakedata.GetTableConfig(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
 			},
 			args: args{
@@ -102,7 +102,7 @@ func TestTypeHandler_GetRows(t *testing.T) {
 			name: "Test case 3: selected select operation",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         fakedata.GetTableConfig(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
 			},
 			args: args{
@@ -114,7 +114,7 @@ func TestTypeHandler_GetRows(t *testing.T) {
 					KeyspaceName:        "test_keyspace",
 					IsStar:              false,
 					DefaultColumnFamily: "cf1",
-					SelectedColumns: []tableConfig.SelectedColumns{
+					SelectedColumns: []schemaMapping.SelectedColumns{
 						{
 							Name: "name",
 						},
@@ -128,7 +128,7 @@ func TestTypeHandler_GetRows(t *testing.T) {
 			name: "Test case 4: selected select operation for map operation",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         fakedata.GetTableConfig(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
 			},
 			args: args{
@@ -140,7 +140,7 @@ func TestTypeHandler_GetRows(t *testing.T) {
 					KeyspaceName:        "test_keyspace",
 					IsStar:              false,
 					DefaultColumnFamily: "cf1",
-					SelectedColumns: []tableConfig.SelectedColumns{
+					SelectedColumns: []schemaMapping.SelectedColumns{
 						{
 							Name: "name",
 						},
@@ -156,7 +156,7 @@ func TestTypeHandler_GetRows(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			th := &rh.TypeHandler{
 				Logger:              tt.fields.Logger,
-				TableConfig:         tt.fields.TableConfig,
+				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
 			}
 			rows := make(map[string]map[string]interface{})
@@ -240,7 +240,7 @@ func TestExtractUniqueKeys(t *testing.T) {
 func TestTypeHandler_HandleMapType(t *testing.T) {
 	type fields struct {
 		Logger              *zap.Logger
-		TableConfig         *tableConfig.TableConfig
+		SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 		ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 	}
 	type args struct {
@@ -259,7 +259,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Invalid interger map decoded",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -277,7 +277,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Invalid bigint map decoded",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -295,7 +295,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Invalid float map decoded",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -313,7 +313,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Invalid double map decoded",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -331,7 +331,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Invalid timestamp map decoded",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -349,7 +349,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "invalid integer map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -366,7 +366,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "invalid bigint map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -383,7 +383,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "invalid float map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -400,7 +400,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "invalid double map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -417,7 +417,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "invalid timestamp map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -434,7 +434,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "invalid boolean map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -451,7 +451,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Valid boolean map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -469,7 +469,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Invalid boolean map - incorrect value type",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -486,7 +486,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Valid string map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -504,7 +504,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Valid integer map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -522,7 +522,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Valid big int map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -540,7 +540,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Valid timestamp map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -557,7 +557,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Valid float map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -574,7 +574,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Valid double map",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -591,7 +591,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			name: "Unsupported element type",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				TableConfig:         nil,
+				SchemaMappingConfig: nil,
 				ColumnMetadataCache: nil,
 			},
 			args: args{
@@ -609,7 +609,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			th := rh.TypeHandler{
 				Logger:              tt.fields.Logger,
-				TableConfig:         tt.fields.TableConfig,
+				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
 			}
 			if err := th.HandleMapType(tt.args.mapData, tt.args.mr, tt.args.elementType, tt.args.protocalV); (err != nil) != tt.wantErr {
@@ -622,7 +622,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 func TestTypeHandler_HandleSetType(t *testing.T) {
 	type fields struct {
 		Logger              *zap.Logger
-		TableConfig         *tableConfig.TableConfig
+		SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 		ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 	}
 	type args struct {
@@ -924,7 +924,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			th := &rh.TypeHandler{
 				Logger:              tt.fields.Logger,
-				TableConfig:         tt.fields.TableConfig,
+				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
 			}
 			err := th.HandleSetType(tt.args.arr, tt.args.mr, tt.args.elementType, tt.args.protocalV)
@@ -938,7 +938,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 func TestTypeHandler_BuildMetadata(t *testing.T) {
 	type fields struct {
 		Logger              *zap.Logger
-		TableConfig         *tableConfig.TableConfig
+		SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 		ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 	}
 	type args struct {
@@ -956,8 +956,8 @@ func TestTypeHandler_BuildMetadata(t *testing.T) {
 		{
 			name: "Success",
 			fields: fields{
-				Logger:      zap.NewExample(),
-				TableConfig: fakedata.GetTableConfig(),
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 			},
 			args: args{
 				rowMap: map[string]map[string]interface{}{
@@ -971,7 +971,7 @@ func TestTypeHandler_BuildMetadata(t *testing.T) {
 					KeyspaceName:        "test_keyspace",
 					IsStar:              false,
 					DefaultColumnFamily: "cf1",
-					SelectedColumns: []tableConfig.SelectedColumns{
+					SelectedColumns: []schemaMapping.SelectedColumns{
 						{
 							Name: "name",
 						},
@@ -995,7 +995,7 @@ func TestTypeHandler_BuildMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			th := &rh.TypeHandler{
 				Logger:              tt.fields.Logger,
-				TableConfig:         tt.fields.TableConfig,
+				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
 			}
 			gotCmd, gotMapKeyArr, err := th.BuildMetadata(tt.args.rowMap, tt.args.query)
@@ -1016,7 +1016,7 @@ func TestTypeHandler_BuildMetadata(t *testing.T) {
 func TestTypeHandler_BuildResponseRow(t *testing.T) {
 	type fields struct {
 		Logger              *zap.Logger
-		TableConfig         *tableConfig.TableConfig
+		SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 		ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 	}
 	type args struct {
@@ -1035,8 +1035,8 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 		{
 			name: "Success for string data type",
 			fields: fields{
-				Logger:      zap.NewExample(),
-				TableConfig: fakedata.GetTableConfig(),
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 			},
 			args: args{
 				rowMap: map[string]interface{}{
@@ -1048,7 +1048,7 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 					KeyspaceName:        "test_keyspace",
 					IsStar:              false,
 					DefaultColumnFamily: "cf1",
-					SelectedColumns: []tableConfig.SelectedColumns{
+					SelectedColumns: []schemaMapping.SelectedColumns{
 						{
 							Name: "name",
 						},
@@ -1073,8 +1073,8 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 		{
 			name: "Success for map collection",
 			fields: fields{
-				Logger:      zap.NewExample(),
-				TableConfig: fakedata.GetTableConfig(),
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
 			},
 			args: args{
 				rowMap: map[string]interface{}{
@@ -1088,7 +1088,7 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 					KeyspaceName:        "test_keyspace",
 					IsStar:              false,
 					DefaultColumnFamily: "cf1",
-					SelectedColumns: []tableConfig.SelectedColumns{
+					SelectedColumns: []schemaMapping.SelectedColumns{
 						{
 							Name: "column8",
 						},
@@ -1115,7 +1115,7 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			th := &rh.TypeHandler{
 				Logger:              tt.fields.Logger,
-				TableConfig:         tt.fields.TableConfig,
+				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
 			}
 			got, err := th.BuildResponseRow(tt.args.rowMap, tt.args.query, tt.args.cmd, tt.args.mapKeyArray)
@@ -1132,7 +1132,7 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 
 func TestGetQueryColumn(t *testing.T) {
 	query := rh.QueryMetadata{
-		SelectedColumns: []tableConfig.SelectedColumns{
+		SelectedColumns: []schemaMapping.SelectedColumns{
 			{Name: "column1", Alias: "alias1", Is_WriteTime_Column: false},
 			{Name: "column2", Alias: "alias2", Is_WriteTime_Column: true},
 			{Name: "column3", Alias: "alias3", Is_WriteTime_Column: false},
@@ -1144,7 +1144,7 @@ func TestGetQueryColumn(t *testing.T) {
 		query      rh.QueryMetadata
 		index      int
 		key        string
-		expected   tableConfig.SelectedColumns
+		expected   schemaMapping.SelectedColumns
 		expectFail bool
 	}{
 		{
@@ -1173,7 +1173,7 @@ func TestGetQueryColumn(t *testing.T) {
 			query:    query,
 			index:    2,
 			key:      "random-name",
-			expected: tableConfig.SelectedColumns{},
+			expected: schemaMapping.SelectedColumns{},
 		},
 	}
 	for _, test := range tests {
@@ -1192,7 +1192,7 @@ func TestGetQueryColumn(t *testing.T) {
 func TestTypeHandler_HandleListType(t *testing.T) {
 	type fields struct {
 		Logger              *zap.Logger
-		TableConfig         *tableConfig.TableConfig
+		SchemaMappingConfig *schemaMapping.SchemaMappingConfig
 		ColumnMetadataCache map[string]map[string]message.ColumnMetadata
 	}
 	type args struct {
@@ -1408,7 +1408,7 @@ func TestTypeHandler_HandleListType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			th := &rh.TypeHandler{
 				Logger:              tt.fields.Logger,
-				TableConfig:         tt.fields.TableConfig,
+				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
 			}
 			if err := th.HandleListType(tt.args.listData, tt.args.mr, tt.args.elementType, tt.args.protocalV); (err != nil) != tt.wantErr {

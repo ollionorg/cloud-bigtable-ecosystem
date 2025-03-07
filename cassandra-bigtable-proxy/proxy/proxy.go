@@ -45,7 +45,7 @@ import (
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/parser"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/proxycore"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/utilities"
 	"go.opentelemetry.io/otel/attribute"
@@ -167,9 +167,9 @@ type Proxy struct {
 	closed                   chan struct{}
 	localNode                *node
 	nodes                    []*node
-	bClient                  bigtableModule.BigtableClientIface
+	bClient                  *bigtableModule.BigtableClient
 	translator               *translator.Translator
-	tableConfig              *tableConfig.TableConfig
+	schemaMapping            *schemaMapping.SchemaMappingConfig
 	otelInst                 *otelgo.OpenTelemetry
 	otelShutdown             func(context.Context) error
 	systemQueryMetadataCache *SystemQueryMetadataCache
@@ -250,7 +250,7 @@ func NewProxy(ctx context.Context, config Config) (*Proxy, error) {
 	if err != nil {
 		return nil, err
 	}
-	var tableConfigurations *tableConfig.TableConfig
+	var schemaMappingConfig *schemaMapping.SchemaMappingConfig
 
 	logger := proxycore.GetOrCreateNopLogger(config.Logger)
 
@@ -260,8 +260,8 @@ func NewProxy(ctx context.Context, config Config) (*Proxy, error) {
 	}
 	InstanceIDs := strings.Split(config.BigtableConfig.InstanceID, ",")
 
-	tableMetadata := make(map[string]map[string]map[string]*tableConfig.Column)
-	pkMetadata := make(map[string]map[string][]tableConfig.Column)
+	tableMetadata := make(map[string]map[string]map[string]*schemaMapping.Column)
+	pkMetadata := make(map[string]map[string][]schemaMapping.Column)
 	//systemQueryMetadataCacheData := make(map[string]*bigtableModule.SystemQueryMetadataCache)
 	for _, v := range InstanceIDs {
 		InstanceID := strings.TrimSpace(v)
@@ -269,33 +269,34 @@ func NewProxy(ctx context.Context, config Config) (*Proxy, error) {
 			Clients: bigtableClients,
 			Logger:  logger,
 		}
-		tbdata, pkdata, err := bigtableconf.GetTableConfigs(ctx, InstanceID, config.BigtableConfig.SchemaMappingTable)
+		tbdata, pkdata, err := bigtableconf.GetSchemaMappingConfigs(ctx, InstanceID, config.BigtableConfig.SchemaMappingTable)
 		if err != nil {
 			return nil, err
 		}
 		tableMetadata[InstanceID] = tbdata
 		pkMetadata[InstanceID] = pkdata
 	}
-	tableConfigurations = &tableConfig.TableConfig{
+	schemaMappingConfig = &schemaMapping.SchemaMappingConfig{
 		Logger:             config.Logger,
 		TablesMetaData:     tableMetadata,
 		PkMetadataCache:    pkMetadata,
 		SystemColumnFamily: config.BigtableConfig.DefaultColumnFamily,
 	}
 	responseHandler := &responsehandler.TypeHandler{
-		Logger:      config.Logger,
-		TableConfig: tableConfigurations,
+		Logger:              config.Logger,
+		SchemaMappingConfig: schemaMappingConfig,
 	}
-	bigtableCl := bigtableModule.NewBigtableClient(bigtableClients, logger, sqlClient, config.BigtableConfig, responseHandler, grpcConn, tableConfigurations)
+	bigtableCl := bigtableModule.NewBigtableClient(bigtableClients, logger, sqlClient, config.BigtableConfig, responseHandler, grpcConn, schemaMappingConfig)
 
 	proxyTranslator := &translator.Translator{
-		Logger:      config.Logger,
-		TableConfig: tableConfigurations,
+		Logger:              config.Logger,
+		SchemaMappingConfig: schemaMappingConfig,
 	}
 
 	// Enable OpenTelemetry traces by setting environment variable GOOGLE_API_GO_EXPERIMENTAL_TELEMETRY_PLATFORM_TRACING to the case-insensitive value "opentelemetry" before loading the client library.
 	otelInit := &otelgo.OTelConfig{}
 	otelInst := &otelgo.OpenTelemetry{Config: &otelgo.OTelConfig{OTELEnabled: false}}
+
 	var shutdownOTel func(context.Context) error
 	var otelErr error
 	// Initialize OpenTelemetry
@@ -334,7 +335,7 @@ func NewProxy(ctx context.Context, config Config) (*Proxy, error) {
 		closed:                   make(chan struct{}),
 		bClient:                  bigtableCl,
 		translator:               proxyTranslator,
-		tableConfig:              tableConfigurations,
+		schemaMapping:            schemaMappingConfig,
 		systemQueryMetadataCache: systemQueryMetadataCache,
 	}
 
@@ -863,7 +864,7 @@ func (c *client) prepareDeleteType(raw *frame.RawFrame, msg *message.Prepare, id
 
 	if len(variableColumns) > 0 {
 		//Get column metadata for variable fields
-		deleteQueryMetadata.VariableMetadata, err = c.proxy.tableConfig.GetMetadataForColumns(deleteQueryMetadata.Table, variableColumns, deleteQueryMetadata.Keyspace)
+		deleteQueryMetadata.VariableMetadata, err = c.proxy.schemaMapping.GetMetadataForColumns(deleteQueryMetadata.Table, variableColumns, deleteQueryMetadata.Keyspace)
 		if deleteQueryMetadata.TimestampInfo.HasUsingTimestamp {
 			metadata := message.ColumnMetadata{
 				Keyspace: deleteQueryMetadata.Keyspace,
@@ -888,7 +889,7 @@ func (c *client) prepareDeleteType(raw *frame.RawFrame, msg *message.Prepare, id
 		}
 	}
 
-	deleteQueryMetadata.ReturnMetadata, err = c.proxy.tableConfig.GetMetadataForColumns(deleteQueryMetadata.Table, returnColumns, deleteQueryMetadata.Keyspace)
+	deleteQueryMetadata.ReturnMetadata, err = c.proxy.schemaMapping.GetMetadataForColumns(deleteQueryMetadata.Table, returnColumns, deleteQueryMetadata.Keyspace)
 	if err != nil {
 		c.sender.Send(raw.Header, &message.ConfigError{ErrorMessage: err.Error()})
 		return nil, nil, err
@@ -961,7 +962,7 @@ func (c *client) prepareInsertType(raw *frame.RawFrame, msg *message.Prepare, id
 		c.sender.Send(raw.Header, &message.Invalid{ErrorMessage: err.Error()})
 		return nil, nil, err
 	}
-	insertQueryMetadata.VariableMetadata, err = c.proxy.tableConfig.GetMetadataForColumns(insertQueryMetadata.Table, insertQueryMetadata.ParamKeys, insertQueryMetadata.Keyspace)
+	insertQueryMetadata.VariableMetadata, err = c.proxy.schemaMapping.GetMetadataForColumns(insertQueryMetadata.Table, insertQueryMetadata.ParamKeys, insertQueryMetadata.Keyspace)
 	insertQueryMetadata.VariableMetadata = getTimestampMetadata(*insertQueryMetadata, insertQueryMetadata.VariableMetadata)
 	if err != nil {
 		c.proxy.logger.Error(metadataFetchError, zap.String(Query, msg.Query), zap.Error(err))
@@ -969,7 +970,7 @@ func (c *client) prepareInsertType(raw *frame.RawFrame, msg *message.Prepare, id
 		return nil, nil, err
 	}
 
-	insertQueryMetadata.ReturnMetadata, err = c.proxy.tableConfig.GetMetadataForColumns(insertQueryMetadata.Table, returnColumns, insertQueryMetadata.Keyspace)
+	insertQueryMetadata.ReturnMetadata, err = c.proxy.schemaMapping.GetMetadataForColumns(insertQueryMetadata.Table, returnColumns, insertQueryMetadata.Keyspace)
 	if err != nil {
 		c.proxy.logger.Error("error getting column metadata", zap.Error(err))
 		c.sender.Send(raw.Header, &message.ConfigError{ErrorMessage: err.Error()})
@@ -992,7 +993,7 @@ func (c *client) prepareSelectType(raw *frame.RawFrame, msg *message.Prepare, id
 	}
 
 	// Get Column metadata for the table or selected field
-	queryMetadata.ReturnMetadata, err = c.proxy.tableConfig.GetMetadataForSelectedColumns(queryMetadata.Table, queryMetadata.ColumnMeta.Column, queryMetadata.Keyspace)
+	queryMetadata.ReturnMetadata, err = c.proxy.schemaMapping.GetMetadataForSelectedColumns(queryMetadata.Table, queryMetadata.ColumnMeta.Column, queryMetadata.Keyspace)
 	if err != nil {
 		c.proxy.logger.Error(metadataFetchError, zap.String(Query, msg.Query), zap.Error(err))
 		c.sender.Send(raw.Header, &message.ConfigError{ErrorMessage: err.Error()})
@@ -1015,7 +1016,7 @@ func (c *client) prepareSelectType(raw *frame.RawFrame, msg *message.Prepare, id
 
 	if len(variableColumns) > 0 {
 		// Get column metadata for variable fields
-		queryMetadata.VariableMetadata, err = c.proxy.tableConfig.GetMetadataForColumns(queryMetadata.Table, variableColumns, queryMetadata.Keyspace)
+		queryMetadata.VariableMetadata, err = c.proxy.schemaMapping.GetMetadataForColumns(queryMetadata.Table, variableColumns, queryMetadata.Keyspace)
 		if err != nil {
 			c.sender.Send(raw.Header, &message.ConfigError{ErrorMessage: err.Error()})
 			c.proxy.logger.Error(metadataFetchError, zap.String(Query, msg.Query), zap.Error(err))
@@ -1069,7 +1070,7 @@ func (c *client) prepareUpdateType(raw *frame.RawFrame, msg *message.Prepare, id
 
 	if len(variableColumns) > 0 {
 		//Get column metadata for variable fields
-		updateQueryMetadata.VariableMetadata, err = c.proxy.tableConfig.GetMetadataForColumns(updateQueryMetadata.Table, variableColumns, updateQueryMetadata.Keyspace)
+		updateQueryMetadata.VariableMetadata, err = c.proxy.schemaMapping.GetMetadataForColumns(updateQueryMetadata.Table, variableColumns, updateQueryMetadata.Keyspace)
 		updateQueryMetadata.VariableMetadata = getTimestampMetadataForUpdate(*updateQueryMetadata, updateQueryMetadata.VariableMetadata)
 		if err != nil {
 			c.proxy.logger.Error(metadataFetchError, zap.String(Query, msg.Query), zap.Error(err))
@@ -1092,7 +1093,7 @@ func (c *client) prepareUpdateType(raw *frame.RawFrame, msg *message.Prepare, id
 
 	}
 
-	updateQueryMetadata.ReturnMetadata, err = c.proxy.tableConfig.GetMetadataForColumns(updateQueryMetadata.Table, returnColumns, updateQueryMetadata.Keyspace)
+	updateQueryMetadata.ReturnMetadata, err = c.proxy.schemaMapping.GetMetadataForColumns(updateQueryMetadata.Table, returnColumns, updateQueryMetadata.Keyspace)
 	if err != nil {
 		c.proxy.logger.Error(metadataFetchError, zap.String(Query, msg.Query), zap.Error(err))
 		c.sender.Send(raw.Header, &message.ConfigError{ErrorMessage: err.Error()})
@@ -1262,7 +1263,7 @@ func (c *client) handleExecuteForSelect(raw *frame.RawFrame, msg *partialExecute
 		SelectedColumns:     st.ColumnMeta.Column,
 		AliasMap:            st.AliasMap,
 		PrimaryKeys:         st.PrimaryKeys,
-		DefaultColumnFamily: c.proxy.translator.TableConfig.SystemColumnFamily,
+		DefaultColumnFamily: c.proxy.translator.SchemaMappingConfig.SystemColumnFamily,
 		IsStar:              st.ColumnMeta.Star,
 		Limit:               st.Limit,
 	}
@@ -1461,7 +1462,7 @@ func (c *client) prepareDeleteQueryMetadata(raw *frame.RawFrame, paramValue []*p
 	}
 
 	if len(variableColumns) != 0 {
-		variableColumnMetadata, err = c.proxy.tableConfig.GetMetadataForColumns(st.Table, variableColumns, st.Keyspace)
+		variableColumnMetadata, err = c.proxy.schemaMapping.GetMetadataForColumns(st.Table, variableColumns, st.Keyspace)
 		if err != nil {
 			c.proxy.logger.Error(metadataFetchError, zap.String(Query, st.Query), zap.Error(err))
 			return nil, fmt.Errorf("%s -> %s", metadataFetchError, err.Error())
@@ -1569,7 +1570,7 @@ func (c *client) handleQuery(raw *frame.RawFrame, msg *partialQuery) {
 				SelectedColumns:     queryMetadata.ColumnMeta.Column,
 				PrimaryKeys:         queryMetadata.PrimaryKeys,
 				AliasMap:            queryMetadata.AliasMap,
-				DefaultColumnFamily: c.proxy.translator.TableConfig.SystemColumnFamily,
+				DefaultColumnFamily: c.proxy.translator.SchemaMappingConfig.SystemColumnFamily,
 				IsStar:              queryMetadata.ColumnMeta.Star,
 			}
 

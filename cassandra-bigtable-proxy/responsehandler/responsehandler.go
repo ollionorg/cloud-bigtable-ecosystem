@@ -27,7 +27,7 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/proxycore"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/utilities"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -170,7 +170,7 @@ func (th *TypeHandler) processArray(value *btpb.Value, rowMap *map[string]interf
 			}
 		}
 		if key != "" {
-			if cf_name != th.TableConfig.SystemColumnFamily {
+			if cf_name != th.SchemaMappingConfig.SystemColumnFamily {
 				keyValMap := make(map[string]interface{})
 				keyValMap[key] = value
 
@@ -197,7 +197,7 @@ func (th *TypeHandler) processArray(value *btpb.Value, rowMap *map[string]interf
 			}
 			return cf_name
 		}()
-		if cf != th.TableConfig.SystemColumnFamily {
+		if cf != th.SchemaMappingConfig.SystemColumnFamily {
 			keyValMap := make(map[string]interface{})
 			if isWritetime {
 				timestamp := value.GetTimestampValue().AsTime().UnixMicro()
@@ -419,7 +419,7 @@ func (th *TypeHandler) BuildResponseRow(rowMap map[string]interface{}, query Que
 //
 // Returns: Column metadata as a string and an error if any.
 func (th *TypeHandler) GetColumnMeta(columnName string, tableName string, keySpace string) (string, bool, error) {
-	metaStr, err := th.TableConfig.GetColumnType(tableName, columnName, keySpace)
+	metaStr, err := th.SchemaMappingConfig.GetColumnType(tableName, columnName, keySpace)
 	if err != nil {
 		return "", false, err
 	}
@@ -818,9 +818,9 @@ func ExtractUniqueKeys(rowMap map[string]map[string]interface{}) map[string]stru
 // - key (string): The key to match against the column's Alias or Name.
 //
 // Returns:
-// - tableConfig.SelectedColumns: The column object that matches the key, or an empty object if no match is found.
+// - schemaMapping.SelectedColumns: The column object that matches the key, or an empty object if no match is found.
 
-func GetQueryColumn(query QueryMetadata, index int, key string) tableConfig.SelectedColumns {
+func GetQueryColumn(query QueryMetadata, index int, key string) schemaMapping.SelectedColumns {
 
 	if len(query.SelectedColumns) > 0 {
 		selectedColumn := query.SelectedColumns[index]
@@ -835,7 +835,7 @@ func GetQueryColumn(query QueryMetadata, index int, key string) tableConfig.Sele
 		}
 	}
 
-	return tableConfig.SelectedColumns{}
+	return schemaMapping.SelectedColumns{}
 }
 
 // function to encode rows - [][]interface{} to cassandra supported response formate [][][]bytes

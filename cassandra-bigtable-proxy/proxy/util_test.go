@@ -21,7 +21,7 @@ import (
 
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/tableConfig"
+	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -273,7 +273,7 @@ func TestConstructSystemMetadataRows(t *testing.T) {
 	protocolVersion := primitive.ProtocolVersion4
 
 	// Sample input metadata
-	sampleTableMetadata := map[string]map[string]map[string]*tableConfig.Column{
+	sampleTableMetadata := map[string]map[string]map[string]*schemaMapping.Column{
 		"keyspace1": {
 			"users": {
 				"id":    {ColumnName: "id", ColumnType: "uuid", IsPrimaryKey: true},
@@ -284,7 +284,7 @@ func TestConstructSystemMetadataRows(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		tableMeta   map[string]map[string]map[string]*tableConfig.Column
+		tableMeta   map[string]map[string]map[string]*schemaMapping.Column
 		expectEmpty bool
 	}{
 		{
@@ -294,7 +294,7 @@ func TestConstructSystemMetadataRows(t *testing.T) {
 		},
 		{
 			name:        "Empty Metadata - Should Return Empty Cache",
-			tableMeta:   map[string]map[string]map[string]*tableConfig.Column{},
+			tableMeta:   map[string]map[string]map[string]*schemaMapping.Column{},
 			expectEmpty: true,
 		},
 	}
