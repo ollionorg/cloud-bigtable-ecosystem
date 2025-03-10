@@ -27,8 +27,6 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
 	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type TimeTrackInfo struct {
@@ -70,23 +68,6 @@ func computeProxyProcessingTime(track TimeTrackInfo) time.Time {
 	return track.bigtableEnd.Add(-proxyProcessingTime)
 }
 
-// function to replace ? with '?'
-func formatePrepareQuery(query string) string {
-	finalQuery := strings.Clone(query)
-
-	// Find all substrings in the query that match the compiled regex pattern.
-	for _, match := range re.FindAllString(query, -1) {
-		// Remove any single quotes from the matched substring.
-		replace := strings.ReplaceAll(match, "'", "")
-		// Replace question marks with "'?'" to properly format placeholders.
-		replace = strings.ReplaceAll(replace, "?", "'?'")
-		// Replace the original substring in the query with its formatted version.
-		// Note: Replacement is done only once per match to ensure accuracy.
-		finalQuery = strings.Replace(finalQuery, match, replace, 1)
-	}
-	return finalQuery
-}
-
 // addSecondsToCurrentTimestamp takes a number of seconds as input
 // and returns the current Unix timestamp plus the input time in seconds.
 func addSecondsToCurrentTimestamp(seconds int64) string {
@@ -120,48 +101,6 @@ func extractAfterWhere(sqlQuery string) (string, error) {
 	// Return the portion of the query after the WHERE clause.
 	// matches[1] contains the captured group which is everything after the WHERE clause and its preceding space(s).
 	return matches[1], nil
-}
-
-// Function to setup custom logger.
-func setupLogger(loglevel string) (*zap.Logger, error) {
-	level := zap.NewAtomicLevel()
-	switch loglevel {
-	case "info":
-		level.SetLevel(zap.InfoLevel)
-	case "debug":
-		level.SetLevel(zap.DebugLevel)
-	case "error":
-		level.SetLevel(zap.ErrorLevel)
-	case "warn":
-		level.SetLevel(zap.WarnLevel)
-	default:
-		level.SetLevel(zap.InfoLevel)
-	}
-	config := zap.Config{
-		Encoding:         "json", // or "console"
-		Level:            level,  // default log level
-		OutputPaths:      []string{"stdout"},
-		ErrorOutputPaths: []string{"stderr"},
-		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "time",
-			CallerKey:      "caller",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			MessageKey:     "msg",
-			StacktraceKey:  "stacktrace",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.LowercaseLevelEncoder, // or zapcore.LowercaseColorLevelEncoder for console
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		},
-	}
-
-	logger, err := config.Build()
-	if err != nil {
-		return nil, err
-	}
-	return logger, nil
 }
 
 func ReplaceLimitValue(query responsehandler.QueryMetadata) (responsehandler.QueryMetadata, error) {
@@ -228,13 +167,12 @@ func getSystemQueryMetadataCache(keyspaceMetadataRows, tableMetadataRows, column
 // The resulting metadata is used for system queries in the Bigtable proxy.
 //
 // Parameters:
-// - tableMetaData: A nested map where the first level represents keyspaces, the second level represents tables,
-//   and the third level represents columns within each table.
+//   - tableMetaData: A nested map where the first level represents keyspaces, the second level represents tables,
+//     and the third level represents columns within each table.
 //
 // Returns:
 // - A pointer to a SystemQueryMetadataCache, which contains structured metadata for keyspaces, tables, and columns.
 // - An error if any issue occurs while building the metadata cache.
-
 func ConstructSystemMetadataRows(tableMetaData map[string]map[string]map[string]*schemaMapping.Column) (*SystemQueryMetadataCache, error) {
 
 	keyspaceMetadataRows := [][]interface{}{}
@@ -283,6 +221,5 @@ func ConstructSystemMetadataRows(tableMetaData map[string]map[string]map[string]
 	}
 
 	columnsMetadataRows = append(columnsMetadataRows, []interface{}{"system_schema", "columns", "kind", "none", PARTITION_KEY, 0, "text"})
-
 	return getSystemQueryMetadataCache(keyspaceMetadataRows, tableMetadataRows, columnsMetadataRows)
 }

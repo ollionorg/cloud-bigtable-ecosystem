@@ -58,7 +58,7 @@ type UserConfig struct {
 	LoggerConfig               *utilities.LoggerConfig    `yaml:"loggerConfig"`
 }
 
-// // CassandraToBigTableConfigs contains configurations for Cassandra to bigtabl
+// CassandraToBigTableConfigs contains configurations for Cassandra to bigtabl
 type CassandraToBigTableConfigs struct {
 	ProjectID          string `yaml:"projectId"`
 	SchemaMappingTable string `yaml:"SchemaMappingTable"`
@@ -410,8 +410,6 @@ func (c *runConfig) listenAndServe(p *Proxy, mux *http.ServeMux, ctx context.Con
 
 	logger.Info("proxy is listening", zap.Stringer("address", proxyListener.Addr()))
 
-	//var httpListener net.Listener
-
 	if c.HealthCheck {
 		numServers++ // Add the HTTP server
 	}
@@ -449,6 +447,7 @@ func (c *runConfig) listenAndServe(p *Proxy, mux *http.ServeMux, ctx context.Con
 	return err
 }
 
+// resolveAndListen creates and returns a TCP listener, using TLS if both certificate and key are provided, otherwise a plain TCP listener.
 func resolveAndListen(address, cert, key string) (net.Listener, error) {
 	if len(cert) > 0 || len(key) > 0 {
 		if len(cert) == 0 || len(key) == 0 {

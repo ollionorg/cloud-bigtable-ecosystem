@@ -42,47 +42,6 @@ func Test_IsResponsePartialExecute(t *testing.T) {
 	query.IsResponse()
 }
 
-// func Test_Decode(t *testing.T) {
-// 	var tes partialBatchCodec
-// 	//pa := partialQueryCodec{}
-// 	// var a uint8 = 0
-// 	inputData := []byte{0, 0, 0, 0}
-
-// 	reader := bytes.NewReader(inputData)
-// 	_, err := tes.Decode(reader, primitive.ProtocolVersion3)
-// 	assert.NoErrorf(t, err, "function should return no error")
-
-// 	inputData = []byte{1, 0, 0, 1}
-
-// 	reader = bytes.NewReader(inputData)
-// 	_, err = tes.Decode(reader, primitive.ProtocolVersion3)
-// 	assert.NoErrorf(t, err, "function should return no error")
-
-// 	// inputData = []byte{1, 1, 0, 1}
-
-// 	// reader = bytes.NewReader(inputData)
-// 	// _, err = tes.Decode(reader, primitive.ProtocolVersion3)
-// 	// assert.NoErrorf(t, err, "function should return no error")
-
-// 	// inputData = []byte{1, 0, 1, 1}
-
-// 	// reader = bytes.NewReader(inputData)
-// 	// _, err = tes.Decode(reader, primitive.ProtocolVersion3)
-// 	// assert.NoErrorf(t, err, "function should return no error")
-
-// 	// inputData = []byte(`BEGIN BATCH
-// 	// INSERT INTO users (user_id, username, email) VALUES (uuid(), 'user1', 'user1@example.com');
-// 	// INSERT INTO users (user_id, username, email) VALUES (uuid(), 'user2', 'user2@example.com');
-// 	// INSERT INTO users (user_id, username, email) VALUES (uuid(), 'user3', 'user3@example.com');
-
-// 	// APPLY BATCH;`)
-
-// 	// reader = bytes.NewReader(inputData)
-// 	// _, err = tes.Decode(reader, primitive.ProtocolVersion5)
-// 	// assert.NoErrorf(t, err, "function should return no error")
-
-// }
-
 func Test_EncodepartialQueryCodec(t *testing.T) {
 	var v partialQueryCodec
 

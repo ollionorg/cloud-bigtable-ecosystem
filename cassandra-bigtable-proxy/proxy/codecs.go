@@ -25,7 +25,6 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 )
 
-// var codec = frame.NewRawCodec(&partialQueryCodec{}, &partialExecuteCodec{})
 var codec = frame.NewRawCodec(&partialQueryCodec{}, &partialExecuteCodec{}, &partialBatchCodec{})
 
 type partialQueryCodec struct{}

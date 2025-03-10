@@ -120,11 +120,10 @@ type PeerConfig struct {
 }
 
 type Config struct {
-	Version    primitive.ProtocolVersion
-	MaxVersion primitive.ProtocolVersion
-	Auth       proxycore.Authenticator
-	Resolver   proxycore.EndpointResolver
-	//ReconnectPolicy   proxycore.ReconnectPolicy
+	Version           primitive.ProtocolVersion
+	MaxVersion        primitive.ProtocolVersion
+	Auth              proxycore.Authenticator
+	Resolver          proxycore.EndpointResolver
 	RetryPolicy       RetryPolicy
 	IdempotentGraph   bool
 	NumConns          int
@@ -149,20 +148,19 @@ type Config struct {
 }
 
 type Proxy struct {
-	ctx                 context.Context
-	config              Config
-	logger              *zap.Logger
-	cluster             *proxycore.Cluster
-	sessions            [primitive.ProtocolVersionDse2 + 1]sync.Map // Cache sessions per protocol version
-	mu                  sync.Mutex
-	isConnected         bool
-	isClosing           bool
-	clients             map[*client]struct{}
-	listeners           map[*net.Listener]struct{}
-	eventClients        sync.Map
-	preparedCache       proxycore.PreparedCache
-	preparedIdempotence sync.Map
-	// lb                  proxycore.LoadBalancer
+	ctx                      context.Context
+	config                   Config
+	logger                   *zap.Logger
+	cluster                  *proxycore.Cluster
+	sessions                 [primitive.ProtocolVersionDse2 + 1]sync.Map // Cache sessions per protocol version
+	mu                       sync.Mutex
+	isConnected              bool
+	isClosing                bool
+	clients                  map[*client]struct{}
+	listeners                map[*net.Listener]struct{}
+	eventClients             sync.Map
+	preparedCache            proxycore.PreparedCache
+	preparedIdempotence      sync.Map
 	systemLocalValues        map[string]message.Column
 	closed                   chan struct{}
 	localNode                *node
@@ -262,7 +260,6 @@ func NewProxy(ctx context.Context, config Config) (*Proxy, error) {
 
 	tableMetadata := make(map[string]map[string]map[string]*schemaMapping.Column)
 	pkMetadata := make(map[string]map[string][]schemaMapping.Column)
-	//systemQueryMetadataCacheData := make(map[string]*bigtableModule.SystemQueryMetadataCache)
 	for _, v := range InstanceIDs {
 		InstanceID := strings.TrimSpace(v)
 		bigtableconf := bigtableModule.BigtableClient{
@@ -360,10 +357,9 @@ func (p *Proxy) Connect() error {
 
 	//  connecting to cassandra cluster
 	p.cluster, err = proxycore.ConnectCluster(p.ctx, proxycore.ClusterConfig{
-		Version:  p.config.Version,
-		Auth:     p.config.Auth,
-		Resolver: p.config.Resolver,
-		//	ReconnectPolicy:   p.config.ReconnectPolicy,
+		Version:           p.config.Version,
+		Auth:              p.config.Auth,
+		Resolver:          p.config.Resolver,
 		HeartBeatInterval: p.config.HeartBeatInterval,
 		ConnectTimeout:    p.config.ConnectTimeout,
 		IdleTimeout:       p.config.IdleTimeout,
@@ -383,8 +379,6 @@ func (p *Proxy) Connect() error {
 
 	// Create cassandra session
 	sess, err := proxycore.ConnectSession(p.ctx, p.cluster, proxycore.SessionConfig{
-		//	ReconnectPolicy:   p.config.ReconnectPolicy,
-		//	NumConns:          p.config.NumConns,
 		Version:           p.cluster.NegotiatedVersion,
 		Auth:              p.config.Auth,
 		HeartBeatInterval: p.config.HeartBeatInterval,
@@ -475,10 +469,6 @@ func (p *Proxy) Close() error {
 func (p *Proxy) Ready() bool {
 	return true
 }
-
-// func (p *Proxy) OutageDuration() time.Duration {
-// 	return p.cluster.OutageDuration()
-// }
 
 func (p *Proxy) handle(conn net.Conn) {
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
@@ -784,14 +774,9 @@ func (c *client) getMetadataFromCache(id [16]byte) ([]*message.ColumnMetadata, [
 //
 // Returns: nil
 func (c *client) handleServerPreparedQuery(raw *frame.RawFrame, msg *message.Prepare, queryType string) {
-
 	var PkIndices []uint16
 	var err error
 	var columns, variableColumnMetadata []*message.ColumnMetadata
-
-	// Replace ? with '?'
-	msg.Query = formatePrepareQuery(msg.Query)
-	c.proxy.logger.Debug("Formatted Query", zap.String(Query, msg.Query))
 
 	// Generating unique prepared query_id
 	id := md5.Sum([]byte(msg.Query + c.keyspace))
@@ -839,7 +824,6 @@ func (c *client) handleServerPreparedQuery(raw *frame.RawFrame, msg *message.Pre
 // function to handle and delete query of prepared type
 func (c *client) prepareDeleteType(raw *frame.RawFrame, msg *message.Prepare, id [16]byte) ([]*message.ColumnMetadata, []*message.ColumnMetadata, error) {
 	var returnColumns, variableColumns, columnsWithInOp []string
-	//var columns, variableColumnMetadata []*message.ColumnMetadata
 	var err error
 
 	deleteQueryMetadata, err := c.proxy.translator.TranslateDeleteQuerytoBigtable(msg.Query)
@@ -953,7 +937,6 @@ func getTimestampMetadataForUpdate(updateQueryMetadata translator.UpdateQueryMap
 // function to handle and insert query of prepared type
 func (c *client) prepareInsertType(raw *frame.RawFrame, msg *message.Prepare, id [16]byte) ([]*message.ColumnMetadata, []*message.ColumnMetadata, error) {
 	var returnColumns []string
-	//var columns, variableColumnMetadata []*message.ColumnMetadata
 	var err error
 	insertQueryMetadata, err := c.proxy.translator.TranslateInsertQuerytoBigtable(msg.Query, raw.Header.Version)
 
@@ -1039,7 +1022,6 @@ func (c *client) prepareSelectType(raw *frame.RawFrame, msg *message.Prepare, id
 // function to handle update query of prepared type
 func (c *client) prepareUpdateType(raw *frame.RawFrame, msg *message.Prepare, id [16]byte) ([]*message.ColumnMetadata, []*message.ColumnMetadata, error) {
 	var returnColumns, variableColumns, columnsWithInOp []string
-	// var columns, variableColumnMetadata []*message.ColumnMetadata
 	var err error
 
 	updateQueryMetadata, err := c.proxy.translator.TranslateUpdateQuerytoBigtable(msg.Query)
@@ -1384,7 +1366,6 @@ func (c *client) handleExecuteForInsert(raw *frame.RawFrame, msg *partialExecute
 	if err != nil {
 		c.proxy.logger.Error("Error preparing insert query metadata", zap.String(Query, st.Query), zap.Error(err))
 		c.sender.Send(raw.Header, &message.ConfigError{ErrorMessage: err.Error()})
-		// c.proxy.otelInst.RecordError(span, err)
 		return
 	}
 	invalidColumn := validatePrimaryKey(queryMetadata)
@@ -1397,7 +1378,6 @@ func (c *client) handleExecuteForInsert(raw *frame.RawFrame, msg *partialExecute
 		attribute.String(rowKey, queryMetadata.RowKey),
 	})
 	defer c.proxy.otelInst.EndSpan(span)
-	//defer c.proxy.otelInst.RecordMetrics(otelCtx, handleExecuteForInsert, startTime, insertType, otelErr)
 
 	if err != nil {
 		c.proxy.logger.Error("Error preparing insert query metadata", zap.String(Query, st.Query), zap.Error(err))
@@ -1497,8 +1477,6 @@ func (c *client) prepareDeleteQueryMetadata(raw *frame.RawFrame, paramValue []*p
 // Prepare insert query metadata
 func (c *client) prepareInsertQueryMetadata(raw *frame.RawFrame, paramValue []*primitive.Value, st *translator.InsertQueryMap) (*translator.InsertQueryMap, []bigtableModule.ColumnData, error) {
 	var columnsResponse []translator.Column = st.Columns
-	//tracker.query = st.Query
-	//tracker.start = time.Now()
 	insertData, iErr := c.proxy.translator.BuildInsertPrepareQuery(columnsResponse, paramValue, st, raw.Header.Version)
 	if iErr != nil {
 		return nil, nil, fmt.Errorf("error building insert prepare query:%s", iErr)
@@ -1997,24 +1975,6 @@ func (oc *closeOnceListener) Close() error {
 }
 
 func (oc *closeOnceListener) close() { oc.closeErr = oc.Listener.Close() }
-
-// // Function to records otel metrics on otel
-// // Metrics: 1. request count; 2. latency
-// func recordMetrics(ctx context.Context, o *otelgo.OpenTelemetry, method string, start time.Time, queryType string, err error) {
-// 	status := "OK"
-// 	if err != nil {
-// 		status = "failure"
-// 	}
-// 	o.RecordRequestCountMetric(ctx, otelgo.Attributes{
-// 		Method:    method,
-// 		Status:    status,
-// 		QueryType: queryType,
-// 	})
-// 	o.RecordLatencyMetric(ctx, start, otelgo.Attributes{
-// 		Method:    method,
-// 		QueryType: queryType,
-// 	})
-// }
 
 // validatePrimaryKey checks if any primary key column in an InsertQueryMap has a nil value.
 //

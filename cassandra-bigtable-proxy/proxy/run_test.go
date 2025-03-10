@@ -1,55 +1,28 @@
-// // Copyright (c) DataStax, Inc.
-// //
-// // Licensed under the Apache License, Version 2.0 (the "License");
-// // you may not use this file except in compliance with the License.
-// // You may obtain a copy of the License at
-// //
-// //      http://www.apache.org/licenses/LICENSE-2.0
-// //
-// // Unless required by applicable law or agreed to in writing, software
-// // distributed under the License is distributed on an "AS IS" BASIS,
-// // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// // See the License for the specific language governing permissions and
-// // limitations under the License.
+// Copyright (c) DataStax, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package proxy
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
 )
-
-// import (
-// 	"context"
-// 	"crypto/tls"
-// 	"crypto/x509"
-// 	"encoding/json"
-// 	"fmt"
-// 	"io/ioutil"
-// 	"net"
-// 	"net/http"
-// 	"os"
-// 	"path"
-// 	"runtime"
-// 	"strconv"
-// 	"sync"
-// 	"testing"
-// 	"time"
-
-// 	"github.com/ollionorg/cassandra-to-bigtable-proxy/proxycore"
-// 	"github.com/datastax/go-cassandra-native-protocol/message"
-// 	"github.com/datastax/go-cassandra-native-protocol/primitive"
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/stretchr/testify/require"
-// 	"gopkg.in/yaml.v2"
-// )
 
 func Test_parseProtocolVersion(t *testing.T) {
 
@@ -72,26 +45,6 @@ func Test_maybeAddPort(t *testing.T) {
 }
 
 func Test_listenAndServe(t *testing.T) {}
-
-func writeTempYaml(o interface{}) (name string, err error) {
-	bytes, err := yaml.Marshal(o)
-	if err != nil {
-		return "", err
-	}
-
-	f, err := ioutil.TempFile("", "cql-proxy-yaml")
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	_, err = f.Write(bytes)
-	if err != nil {
-		return "", err
-	}
-
-	return f.Name(), nil
-}
 
 var testKeyPEM = []byte(`
 -----BEGIN RSA PRIVATE KEY-----
