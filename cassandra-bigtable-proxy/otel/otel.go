@@ -76,10 +76,7 @@ const (
 // OpenTelemetry provides methods to setup tracing and metrics.
 type OpenTelemetry struct {
 	Config         *OTelConfig
-	tracerProvider *sdktrace.TracerProvider
-	meterProvider  *sdkmetric.MeterProvider
 	tracer         trace.Tracer
-	meter          metric.Meter
 	requestCount   metric.Int64Counter
 	requestLatency metric.Int64Histogram
 	logger         *zap.Logger
@@ -120,32 +117,31 @@ func NewOpenTelemetry(ctx context.Context, config *OTelConfig, logger *zap.Logge
 	otelResource := buildOtelResource(ctx, config)
 
 	// Initialize tracerProvider
-	otelInst.tracerProvider, err = InitTracerProvider(ctx, config, otelResource)
+	tracerProvider, err := InitTracerProvider(ctx, config, otelResource)
 	if err != nil {
 		logger.Error("error while initializing the tracer provider", zap.Error(err))
 		return nil, nil, err
 	}
-	otel.SetTracerProvider(otelInst.tracerProvider)
-	otelInst.tracer = otelInst.tracerProvider.Tracer(config.ServiceName)
-	shutdownFuncs = append(shutdownFuncs, otelInst.tracerProvider.Shutdown)
+	otel.SetTracerProvider(tracerProvider)
+	otelInst.tracer = tracerProvider.Tracer(config.ServiceName)
+	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
 
 	// Initialize MeterProvider
-	//otelInst.meterProvider, err = otelInst.InitMeterProvider(ctx, otelResource)
-	otelInst.meterProvider, err = InitMeterProvider(ctx, config, otelResource)
+	meterProvider, err := InitMeterProvider(ctx, config, otelResource)
 	if err != nil {
 		logger.Error("error while initializing the meter provider", zap.Error(err))
 		return nil, nil, err
 	}
-	otel.SetMeterProvider(otelInst.meterProvider)
-	otelInst.meter = otelInst.meterProvider.Meter(config.ServiceName)
-	shutdownFuncs = append(shutdownFuncs, otelInst.meterProvider.Shutdown)
+	otel.SetMeterProvider(meterProvider)
+	meter := meterProvider.Meter(config.ServiceName)
+	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
 	shutdown := shutdownOpenTelemetryComponents(shutdownFuncs)
-	otelInst.requestCount, err = otelInst.meter.Int64Counter(requestCountMetric, metric.WithDescription("Records metric for number of query requests coming in"), metric.WithUnit("1"))
+	otelInst.requestCount, err = meter.Int64Counter(requestCountMetric, metric.WithDescription("Records metric for number of query requests coming in"), metric.WithUnit("1"))
 	if err != nil {
 		logger.Error("error during registering instrument for metric bigtable/cassandra_adapter/request_count", zap.Error(err))
 		return nil, nil, err
 	}
-	otelInst.requestLatency, err = otelInst.meter.Int64Histogram(latencyMetric,
+	otelInst.requestLatency, err = meter.Int64Histogram(latencyMetric,
 		metric.WithDescription("Records latency for all query operations"),
 		metric.WithExplicitBucketBoundaries(0.0, 0.0010, 0.0013, 0.0016, 0.0020, 0.0024, 0.0031, 0.0038, 0.0048, 0.0060,
 			0.0075, 0.0093, 0.0116, 0.0146, 0.0182, 0.0227, 0.0284, 0.0355, 0.0444, 0.0555, 0.0694, 0.0867,

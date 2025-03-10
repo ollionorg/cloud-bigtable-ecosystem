@@ -853,9 +853,6 @@ func TestOpenTelemetry_RecordMetrics(t *testing.T) {
 				OpenTelemetry: &OpenTelemetry{
 					Config: tt.otelConfig,
 					tracer: noop.NewTracerProvider().Tracer("test"),
-					meter: sdkmetric.NewMeterProvider(
-						sdkmetric.WithReader(sdkmetric.NewManualReader()),
-					).Meter("test"),
 					logger: zap.NewNop(),
 				},
 			}
