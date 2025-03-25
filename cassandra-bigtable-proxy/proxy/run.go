@@ -16,8 +16,6 @@ package proxy
 
 import (
 	"context"
-	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -27,12 +25,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	bigtableModule "github.com/ollionorg/cassandra-to-bigtable-proxy/bigtable"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/proxycore"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/utilities"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
@@ -52,14 +48,14 @@ const defaultConfigFile = "config.yaml"
 
 // Config holds all the configuration data
 type UserConfig struct {
-	CassandraToBigTableConfigs CassandraToBigTableConfigs `yaml:"cassandra_to_bigtable_configs"`
+	CassandraToBigtableConfigs CassandraToBigtableConfigs `yaml:"cassandra_to_bigtable_configs"`
 	Listeners                  []Listener                 `yaml:"listeners"`
 	Otel                       *OtelConfig                `yaml:"otel"`
 	LoggerConfig               *utilities.LoggerConfig    `yaml:"loggerConfig"`
 }
 
-// CassandraToBigTableConfigs contains configurations for Cassandra to bigtabl
-type CassandraToBigTableConfigs struct {
+// CassandraToBigtableConfigs contains configurations for Cassandra to bigtable proxy
+type CassandraToBigtableConfigs struct {
 	ProjectID          string `yaml:"projectId"`
 	SchemaMappingTable string `yaml:"SchemaMappingTable"`
 }
@@ -84,12 +80,12 @@ type OtelConfig struct {
 type Listener struct {
 	Name     string   `yaml:"name"`
 	Port     int      `yaml:"port"`
-	BigTable BigTable `yaml:"bigtable"`
+	Bigtable Bigtable `yaml:"bigtable"`
 	Otel     Otel     `yaml:"otel"`
 }
 
-// BigTable holds the BigTable database configuration
-type BigTable struct {
+// Bigtable holds the Bigtable database configuration
+type Bigtable struct {
 	ProjectID           string  `yaml:"projectId"`
 	InstanceIDs         string  `yaml:"instanceIds"`
 	SchemaMappingTable  string  `yaml:"schemaMappingTable"`
@@ -98,7 +94,7 @@ type BigTable struct {
 	AppProfileID        string  `yaml:"appProfileID"`
 }
 
-// Session describes the settings for BigTable sessions
+// Session describes the settings for Bigtable sessions
 type Session struct {
 	GrpcChannels int `yaml:"grpcChannels"`
 }
@@ -109,32 +105,19 @@ type Otel struct {
 }
 
 type runConfig struct {
-	Version            bool          `yaml:"version" help:"Show current proxy version" short:"v" default:"false" env:"PROXY_VERSION"`
-	Username           string        `yaml:"username" help:"Username to use for authentication" short:"u" env:"USERNAME"`
-	Password           string        `yaml:"password" help:"Password to use for authentication" short:"p" env:"PASSWORD"`
-	ProtocolVersion    string        `yaml:"protocol-version" help:"Initial protocol version to use when connecting to the backend cluster (default: v4, options: v3, v4, v5, DSEv1, DSEv2)" default:"v4" short:"n" env:"PROTOCOL_VERSION"`
-	MaxProtocolVersion string        `yaml:"max-protocol-version" help:"Max protocol version supported by the backend cluster (default: v4, options: v3, v4, v5, DSEv1, DSEv2)" default:"v4" short:"m" env:"MAX_PROTOCOL_VERSION"`
-	Bind               string        `yaml:"bind" help:"Address to use to bind server" short:"a" default:":9042" env:"BIND"`
-	Config             *os.File      `yaml:"-" help:"YAML configuration file" short:"f" env:"CONFIG_FILE"` // Not available in the configuration file
-	Debug              bool          `yaml:"debug" help:"Show debug logging" default:"false" env:"DEBUG"`
-	HealthCheck        bool          `yaml:"health-check" help:"Enable liveness and readiness checks" default:"false" env:"HEALTH_CHECK"`
-	HttpBind           string        `yaml:"http-bind" help:"Address to use to bind HTTP server used for health checks" default:":8000" env:"HTTP_BIND"`
-	HeartbeatInterval  time.Duration `yaml:"heartbeat-interval" help:"Interval between performing heartbeats to the cluster" default:"30s" env:"HEARTBEAT_INTERVAL"`
-	ConnectTimeout     time.Duration `yaml:"connect-timeout" help:"Duration before an attempt to connect to a cluster is considered timed out" default:"10s" env:"CONNECT_TIMEOUT"`
-	IdleTimeout        time.Duration `yaml:"idle-timeout" help:"Duration between successful heartbeats before a connection to the cluster is considered unresponsive and closed" default:"60s" env:"IDLE_TIMEOUT"`
-	ReadinessTimeout   time.Duration `yaml:"readiness-timeout" help:"Duration the proxy is unable to connect to the backend cluster before it is considered not ready" default:"30s" env:"READINESS_TIMEOUT"`
-	IdempotentGraph    bool          `yaml:"idempotent-graph" help:"If true it will treat all graph queries as idempotent by default and retry them automatically. It may be dangerous to retry some graph queries -- use with caution." default:"false" env:"IDEMPOTENT_GRAPH"`
-	NumConns           int           `yaml:"num-conns" help:"Number of connection to create to each node of the backend cluster" default:"20" env:"NUM_CONNS"`
-	ProxyCertFile      string        `yaml:"proxy-cert-file" help:"Path to a PEM encoded certificate file with its intermediate certificate chain. This is used to encrypt traffic for proxy clients" env:"PROXY_CERT_FILE"`
-	ProxyKeyFile       string        `yaml:"proxy-key-file" help:"Path to a PEM encoded private key file. This is used to encrypt traffic for proxy clients" env:"PROXY_KEY_FILE"`
-	RpcAddress         string        `yaml:"rpc-address" help:"Address to advertise in the 'system.local' table for 'rpc_address'. It must be set if configuring peer proxies" env:"RPC_ADDRESS"`
-	DataCenter         string        `yaml:"data-center" help:"Data center to use in system tables" default:"datacenter1"  env:"DATA_CENTER"`
-	ReleaseVersion     string        `yaml:"release-version" help:"Cluster Release version" default:"4.0.0.6816"  env:"RELEASE_VERSION"`
-	Partitioner        string        `yaml:"partitioner" help:"Partitioner partitioner" default:"org.apache.cassandra.dht.Murmur3Partitioner"  env:"PARTITIONER"`
-	Tokens             []string      `yaml:"tokens" help:"Tokens to use in the system tables. It's not recommended" env:"TOKENS"`
-	CQLVersion         string        `yaml:"cql-version" help:"CQL version" default:"3.4.5"  env:"CQLVERSION"`
-	Peers              []PeerConfig  `yaml:"peers" kong:"-"` // Not available as a CLI flag
-	LogLevel           string        `yaml:"log-level" help:"Log level configuration." default:"info" env:"LOG_LEVEL"`
+	Version            bool     `yaml:"version" help:"Show current proxy version" short:"v" default:"false" env:"PROXY_VERSION"`
+	RpcAddress         string   `yaml:"rpc-address" help:"Address to advertise in the 'system.local' table for 'rpc_address'. It must be set if configuring peer proxies" env:"RPC_ADDRESS"`
+	ProtocolVersion    string   `yaml:"protocol-version" help:"Initial protocol version to use when connecting to the backend cluster (default: v4, options: v3, v4, v5, DSEv1, DSEv2)" default:"v4" short:"n" env:"PROTOCOL_VERSION"`
+	MaxProtocolVersion string   `yaml:"max-protocol-version" help:"Max protocol version supported by the backend cluster (default: v4, options: v3, v4, v5, DSEv1, DSEv2)" default:"v4" short:"m" env:"MAX_PROTOCOL_VERSION"`
+	DataCenter         string   `yaml:"data-center" help:"Data center to use in system tables" default:"datacenter1"  env:"DATA_CENTER"`
+	Bind               string   `yaml:"bind" help:"Address to use to bind server" short:"a" default:":9042" env:"BIND"`
+	Config             *os.File `yaml:"-" help:"YAML configuration file" short:"f" env:"CONFIG_FILE"` // Not available in the configuration file
+	NumConns           int      `yaml:"num-conns" help:"Number of connection to create to each node of the backend cluster" default:"20" env:"NUM_CONNS"`
+	ReleaseVersion     string   `yaml:"release-version" help:"Cluster Release version" default:"4.0.0.6816"  env:"RELEASE_VERSION"`
+	Partitioner        string   `yaml:"partitioner" help:"Partitioner partitioner" default:"org.apache.cassandra.dht.Murmur3Partitioner"  env:"PARTITIONER"`
+	Tokens             []string `yaml:"tokens" help:"Tokens to use in the system tables. It's not recommended" env:"TOKENS"`
+	CQLVersion         string   `yaml:"cql-version" help:"CQL version" default:"3.4.5"  env:"CQLVERSION"`
+	LogLevel           string   `yaml:"log-level" help:"Log level configuration." default:"info" env:"LOG_LEVEL"`
 }
 
 // Run starts the proxy command. 'args' shouldn't include the executable (i.e. os.Args[1:]). It returns the exit code
@@ -174,13 +157,6 @@ func Run(ctx context.Context, args []string) int {
 		if err != nil {
 			cliCtx.Errorf("invalid YAML in configuration file '%s': %v", cfg.Config.Name(), err)
 		}
-	}
-
-	var resolver proxycore.EndpointResolver
-	if cfg.HeartbeatInterval >= cfg.IdleTimeout {
-		cliCtx.Errorf("idle-timeout must be greater than heartbeat-interval (heartbeat interval: %s, idle timeout: %s)",
-			cfg.HeartbeatInterval, cfg.IdleTimeout)
-		return 1
 	}
 
 	if cfg.NumConns < 1 {
@@ -227,20 +203,16 @@ func Run(ctx context.Context, args []string) int {
 		cqlVersion = defaultCqlVersion
 	}
 
-	if cfg.Debug {
-		cfg.LogLevel = "debug"
-	} else {
-		flag := false
-		supportedLogLevels := []string{"info", "debug", "error", "warn"}
-		for _, level := range supportedLogLevels {
-			if cfg.LogLevel == level {
-				flag = true
-			}
+	flag := false
+	supportedLogLevels := []string{"info", "debug", "error", "warn"}
+	for _, level := range supportedLogLevels {
+		if cfg.LogLevel == level {
+			flag = true
 		}
-		if !flag {
-			cliCtx.Errorf("Invalid log-level should be [info/debug/error/warn]")
-			return 1
-		}
+	}
+	if !flag {
+		cliCtx.Errorf("Invalid log-level should be [info/debug/error/warn]")
+		return 1
 	}
 
 	logger, err := utilities.SetupLogger(cfg.LogLevel, UserConfig.LoggerConfig)
@@ -252,12 +224,6 @@ func Run(ctx context.Context, args []string) int {
 	if cfg.Version {
 		cliCtx.Printf("Version - " + proxyReleaseVersion)
 		return 0
-	}
-
-	var auth proxycore.Authenticator
-
-	if len(cfg.Username) > 0 || len(cfg.Password) > 0 {
-		auth = proxycore.NewPasswordAuth(cfg.Username, cfg.Password)
 	}
 
 	if UserConfig.Otel == nil {
@@ -284,37 +250,28 @@ func Run(ctx context.Context, args []string) int {
 
 	for _, listener := range UserConfig.Listeners {
 		bigtableConfig := bigtableModule.BigtableConfig{
-			NumOfChannels:       listener.BigTable.Session.GrpcChannels,
-			SchemaMappingTable:  listener.BigTable.SchemaMappingTable,
-			InstanceID:          listener.BigTable.InstanceIDs,
-			GCPProjectID:        listener.BigTable.ProjectID,
-			DefaultColumnFamily: listener.BigTable.DefaultColumnFamily,
-			AppProfileID:        listener.BigTable.AppProfileID,
+			NumOfChannels:       listener.Bigtable.Session.GrpcChannels,
+			SchemaMappingTable:  listener.Bigtable.SchemaMappingTable,
+			InstanceID:          listener.Bigtable.InstanceIDs,
+			GCPProjectID:        listener.Bigtable.ProjectID,
+			DefaultColumnFamily: listener.Bigtable.DefaultColumnFamily,
+			AppProfileID:        listener.Bigtable.AppProfileID,
 		}
 
 		p, err1 := NewProxy(ctx, Config{
-			Version:    version,
-			MaxVersion: maxVersion,
-			Resolver:   resolver,
-			//ReconnectPolicy:   proxycore.NewReconnectPolicy(),
-			NumConns:          cfg.NumConns,
-			Auth:              auth,
-			Logger:            logger,
-			HeartBeatInterval: cfg.HeartbeatInterval,
-			ConnectTimeout:    cfg.ConnectTimeout,
-			IdleTimeout:       cfg.IdleTimeout,
-			RPCAddr:           cfg.RpcAddress,
-			DC:                cfg.DataCenter,
-			Tokens:            cfg.Tokens,
-			Peers:             cfg.Peers,
-			IdempotentGraph:   cfg.IdempotentGraph,
-			BigtableConfig:    bigtableConfig,
-			Partitioner:       partitioner,
-			ReleaseVersion:    releaseVersion,
-			CQLVersion:        cqlVersion,
-			OtelConfig:        UserConfig.Otel,
-			Debug:             cfg.Debug,
-			UserAgent:         "cassandra-adapter/" + proxyReleaseVersion,
+			Version:        version,
+			MaxVersion:     maxVersion,
+			NumConns:       cfg.NumConns,
+			Logger:         logger,
+			RPCAddr:        cfg.RpcAddress,
+			DC:             cfg.DataCenter,
+			Tokens:         cfg.Tokens,
+			BigtableConfig: bigtableConfig,
+			Partitioner:    partitioner,
+			ReleaseVersion: releaseVersion,
+			CQLVersion:     cqlVersion,
+			OtelConfig:     UserConfig.Otel,
+			UserAgent:      "cassandra-adapter/" + proxyReleaseVersion,
 		})
 
 		if err1 != nil {
@@ -389,10 +346,7 @@ func maybeAddPort(addr string, defaultPort string) string {
 // listenAndServe correctly handles serving both the proxy and an HTTP server simultaneously.
 func (c *runConfig) listenAndServe(p *Proxy, mux *http.ServeMux, ctx context.Context, logger *zap.Logger) (err error) {
 	var wg sync.WaitGroup
-
 	ch := make(chan error)
-	server := http.Server{Addr: c.HttpBind, Handler: mux}
-
 	numServers := 1 // Without the HTTP server
 
 	// Connect and listen is called first to set up the listening server connection and establish initial client
@@ -403,16 +357,12 @@ func (c *runConfig) listenAndServe(p *Proxy, mux *http.ServeMux, ctx context.Con
 		return err
 	}
 
-	proxyListener, err := resolveAndListen(c.Bind, c.ProxyCertFile, c.ProxyKeyFile)
+	proxyListener, err := resolveAndListen(c.Bind)
 	if err != nil {
 		return err
 	}
 
 	logger.Info("proxy is listening", zap.Stringer("address", proxyListener.Addr()))
-
-	if c.HealthCheck {
-		numServers++ // Add the HTTP server
-	}
 
 	wg.Add(numServers)
 
@@ -425,7 +375,6 @@ func (c *runConfig) listenAndServe(p *Proxy, mux *http.ServeMux, ctx context.Con
 		select {
 		case <-ctx.Done():
 			logger.Debug("proxy interrupted/killed")
-			_ = server.Close()
 			_ = p.Close()
 		}
 	}()
@@ -447,18 +396,7 @@ func (c *runConfig) listenAndServe(p *Proxy, mux *http.ServeMux, ctx context.Con
 	return err
 }
 
-// resolveAndListen creates and returns a TCP listener, using TLS if both certificate and key are provided, otherwise a plain TCP listener.
-func resolveAndListen(address, cert, key string) (net.Listener, error) {
-	if len(cert) > 0 || len(key) > 0 {
-		if len(cert) == 0 || len(key) == 0 {
-			return nil, errors.New("both certificate and private key are required for TLS")
-		}
-		cert, err := tls.LoadX509KeyPair(cert, key)
-		if err != nil {
-			return nil, fmt.Errorf("unable to load TLS certificate pair: %v", err)
-		}
-		return tls.Listen("tcp", address, &tls.Config{Certificates: []tls.Certificate{cert}})
-	} else {
-		return net.Listen("tcp", address)
-	}
+// resolveAndListen creates and returns a TCP listener
+func resolveAndListen(address string) (net.Listener, error) {
+	return net.Listen("tcp", address)
 }

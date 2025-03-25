@@ -13,10 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package responsehandler
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
@@ -34,24 +36,24 @@ import (
 //   - mapData: A map with timestamps as keys and byte slices as values, representing the data to encode.
 //   - mr: A pointer to a message.Row where the encoded data will be appended.
 //   - elementType: A string indicating the data type of the map's values.
-//   - protocalV: The Cassandra protocol version used for encoding.
+//   - protocolV: The Cassandra protocol version used for encoding.
 //
 // Returns: An error if the encoding fails or if the map type retrieval does not succeed.
-func (th *TypeHandler) HandleTimestampMap(mapData map[string]interface{}, mr *message.Row, elementType string, protocalV primitive.ProtocolVersion) error {
+func (th *TypeHandler) HandleTimestampMap(mapData map[string]interface{}, mr *message.Row, elementType string, protocolV primitive.ProtocolVersion) error {
 	var bytes []byte
 	var err error
 
-	detailsField, err := th.decodeMapData(mapData, elementType, protocalV)
+	detailsField, err := th.decodeMapData(mapData, elementType, protocolV)
 	if err != nil {
 		return err
 	}
 
-	mapType, err := th.GetMapType(elementType)
+	mapType, err := th.getTypeForMapOfTime(elementType)
 	if err != nil {
 		return err
 	}
 
-	bytes, err = proxycore.EncodeType(mapType, protocalV, detailsField)
+	bytes, err = proxycore.EncodeType(mapType, protocolV, detailsField)
 	if err != nil {
 		return fmt.Errorf("error encoding map data: %v", err)
 	}
@@ -66,12 +68,12 @@ func (th *TypeHandler) HandleTimestampMap(mapData map[string]interface{}, mr *me
 // Parameters:
 //   - mapData: A map with string keys and byte slice values, representing data to decode.
 //   - elementType: A string specifying the type of the values in the map.
-//   - protocalV: The Cassandra protocol version used for decoding.
+//   - protocolV: The Cassandra protocol version used for decoding.
 //
 // Returns: An interface{} containing the decoded map data, or an error if decoding fails or
 //
 //	if any key can't be parsed to an int64.
-func (th *TypeHandler) decodeMapData(mapData map[string]interface{}, elementType string, protocalV primitive.ProtocolVersion) (interface{}, error) {
+func (th *TypeHandler) decodeMapData(mapData map[string]interface{}, elementType string, protocolV primitive.ProtocolVersion) (interface{}, error) {
 	result := make(map[int64]interface{})
 
 	for key, value := range mapData {
@@ -80,7 +82,7 @@ func (th *TypeHandler) decodeMapData(mapData map[string]interface{}, elementType
 			return nil, fmt.Errorf("type assertion to []byte failed")
 		}
 
-		decodedValue, err := th.DecodeValue(byteArray, elementType, protocalV)
+		decodedValue, err := th.DecodeValue(byteArray, elementType, protocolV)
 		if err != nil {
 			return nil, err
 		}
@@ -101,30 +103,30 @@ func (th *TypeHandler) decodeMapData(mapData map[string]interface{}, elementType
 // Parameters:
 //   - byteArray: A byte slice representing the encoded data.
 //   - elementType: A string indicating the desired type to decode the byte slice into.
-//   - protocalV: The Cassandra protocol version used for decoding.
+//   - protocolV: The Cassandra protocol version used for decoding.
 //
 // Returns: An interface{} containing the decoded value and an error if the decoding fails
 //
 //	or if the element type is unsupported.
-func (th *TypeHandler) DecodeValue(byteArray []byte, elementType string, protocalV primitive.ProtocolVersion) (interface{}, error) {
+func (th *TypeHandler) DecodeValue(byteArray []byte, elementType string, protocolV primitive.ProtocolVersion) (interface{}, error) {
 	var decodedValue interface{}
 	var err error
 
 	switch elementType {
 	case "boolean":
-		decodedValue, err = proxycore.DecodeType(datatype.Boolean, protocalV, byteArray)
+		decodedValue, err = HandlePrimitiveEncoding(elementType, byteArray, protocolV, false)
 	case "int":
-		decodedValue, err = proxycore.DecodeType(datatype.Int, protocalV, byteArray)
+		decodedValue, err = HandlePrimitiveEncoding(elementType, byteArray, protocolV, false)
 	case "bigint":
-		decodedValue, err = proxycore.DecodeType(datatype.Bigint, protocalV, byteArray)
+		decodedValue, err = proxycore.DecodeType(datatype.Bigint, protocolV, byteArray)
 	case "float":
-		decodedValue, err = proxycore.DecodeType(datatype.Float, protocalV, byteArray)
+		decodedValue, err = proxycore.DecodeType(datatype.Float, protocolV, byteArray)
 	case "double":
-		decodedValue, err = proxycore.DecodeType(datatype.Double, protocalV, byteArray)
+		decodedValue, err = proxycore.DecodeType(datatype.Double, protocolV, byteArray)
 	case "string", "text":
 		decodedValue = string(byteArray)
 	case "timestamp":
-		decodedValue, err = proxycore.DecodeType(datatype.Bigint, protocalV, byteArray)
+		decodedValue, err = proxycore.DecodeType(datatype.Bigint, protocolV, byteArray)
 	default:
 		return nil, fmt.Errorf("unsupported element type: %v", elementType)
 	}
@@ -136,13 +138,13 @@ func (th *TypeHandler) DecodeValue(byteArray []byte, elementType string, protoca
 	return decodedValue, nil
 }
 
-// GetMapType retrieves the specified Cassandra map data type based on the given element type string.
+// getTypeForMapOfTime retrieves the specified Cassandra map data type based on the given element type string.
 //
 // Parameters:
 //   - elementType: A string indicating the type of values in the map.
 //
 // Returns: A datatype.DataType representing the map type and an error if the element type is unsupported.
-func (th *TypeHandler) GetMapType(elementType string) (datatype.DataType, error) {
+func (th *TypeHandler) getTypeForMapOfTime(elementType string) (datatype.DataType, error) {
 	switch elementType {
 	case "boolean":
 		return utilities.MapOfTimeToBool, nil
@@ -163,31 +165,258 @@ func (th *TypeHandler) GetMapType(elementType string) (datatype.DataType, error)
 	}
 }
 
-// IsFirstCharDollar checks if the first character of a given string is a dollar sign.
+// HasDollarSymbolPrefix checks if the first character of a given string is a dollar sign.
 //
 // Parameters:
 //   - s: The string to check.
 //
 // Returns: A boolean indicating whether the first character is a dollar sign.
-func IsFirstCharDollar(s string) bool {
+func HasDollarSymbolPrefix(s string) bool {
 	if len(s) == 0 {
 		return false
 	}
 	return s[0] == '$'
 }
 
-// GetMapField retrieves the map key associated with a specific column from the query metadata.
+// GetMapKeyForColumn retrieves the map key associated with a specific column from the query metadata.
 //
 // Parameters:
 //   - queryMetadata: The QueryMetadata containing information about selected columns.
 //   - column: A string representing the column name for which to find the associated map key.
 //
 // Returns: A string containing the map key associated with the given column name, or an empty string if not found.
-func GetMapField(queryMetadata QueryMetadata, column string) string {
+func GetMapKeyForColumn(queryMetadata QueryMetadata, column string) string {
 	for _, value := range queryMetadata.SelectedColumns {
 		if value.Name == column {
 			return value.MapKey
 		}
 	}
 	return ""
+}
+
+// DecodeAndReturnBool decodes a byte array to a boolean value.
+//
+// Parameters:
+//   - btBytes: The byte array to be decoded.
+//   - pv: The Cassandra protocol version.
+//
+// Returns: The decoded boolean value and an error if any.
+func decodeAndReturnBool(value interface{}, pv primitive.ProtocolVersion) (bool, error) {
+	switch v := value.(type) {
+	case []byte:
+		bv, err := proxycore.DecodeType(datatype.Bigint, pv, v)
+		if err != nil {
+			return false, fmt.Errorf("failed to retrieve int in the DecodeAndReturnBool function: %v", err)
+		}
+		bigint := bv.(int64)
+		if bigint > 0 {
+			return true, nil
+		}
+		return false, nil
+	case string:
+		val, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return false, fmt.Errorf("error converting string to int64: %w", err)
+		}
+		if val > 0 {
+			return true, nil
+		}
+		return false, nil
+	default:
+		return false, fmt.Errorf("unsupported type: %T", v)
+	}
+}
+
+/**
+* DecodeAndReturnInt is a function that decodes a value to an int32.
+*
+* Parameters:
+*   - value: The value to be decoded.
+*   - pv: The Cassandra protocol version.
+*
+* Returns: The decoded int32 value and an error if any.
+ */
+func decodeAndReturnInt(value interface{}, pv primitive.ProtocolVersion) (int32, error) {
+	switch v := value.(type) {
+	case []byte:
+		val, err := proxycore.DecodeType(datatype.Bigint, pv, v)
+		if err != nil {
+			return 0, fmt.Errorf("failed to retrieve int in the DecodeAndReturnBool function: %v", err)
+		}
+		return int32(val.(int64)), nil
+	case string:
+		val, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("error converting string to int64: %w", err)
+		}
+		return int32(val), nil
+	default:
+		return 0, fmt.Errorf("unsupported type: %T", v)
+	}
+}
+
+/**
+* DecodeAndReturnBigInt is a function that decodes a value to an int64.
+*
+* Parameters:
+*   - value: The value to be decoded.
+*   - pv: The Cassandra protocol version.
+*
+* Returns: The decoded int64 value and an error if any.
+ */
+func decodeAndReturnBigInt(value interface{}, pv primitive.ProtocolVersion) (int64, error) {
+	switch v := value.(type) {
+	case []byte:
+		value, err := proxycore.DecodeType(datatype.Bigint, pv, v)
+		if err != nil {
+			return 0, fmt.Errorf("failed to retrieve int in the DecodeAndReturnBigInt function: %v", err)
+		}
+
+		return value.(int64), nil
+	case string:
+		val, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("error converting string to int64: %w", err)
+		}
+		return val, nil
+	default:
+		return 0, fmt.Errorf("unsupported type: %T", v)
+	}
+}
+
+/**
+* DecodeAndReturnFloat is a function that decodes a value to an int64.
+*
+* Parameters:
+*   - value: The value to be decoded.
+*   - pv: The Cassandra protocol version.
+*
+* Returns: The decoded float32 value and an error if any.
+ */
+func decodeAndReturnFloat(value interface{}, pv primitive.ProtocolVersion) (float32, error) {
+	switch v := value.(type) {
+	case []byte:
+		value, err := proxycore.DecodeType(datatype.Float, pv, v)
+		if err != nil {
+			return 0, fmt.Errorf("failed to retrieve int in the DecodeAndReturnFloat function: %v", err)
+		}
+		return value.(float32), nil
+	case string:
+		val, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return 0, fmt.Errorf("error converting string to int64: %w", err)
+		}
+		return float32(val), nil
+	default:
+		return 0, fmt.Errorf("unsupported type: %T", v)
+	}
+}
+
+/**
+* DecodeAndReturnDouble is a function that decodes a value to an float64.
+*
+* Parameters:
+*   - value: The value to be decoded.
+*   - pv: The Cassandra protocol version.
+*
+* Returns: The decoded float64 value and an error if any.
+ */
+func decodeAndReturnDouble(value interface{}, pv primitive.ProtocolVersion) (float64, error) {
+	switch v := value.(type) {
+	case []byte:
+		value, err := proxycore.DecodeType(datatype.Double, pv, v)
+		if err != nil {
+			return 0, fmt.Errorf("failed to retrieve int in the DecodeAndReturnDouble function: %v", err)
+		}
+		return value.(float64), nil
+	case string:
+		val, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, fmt.Errorf("error converting string to int64: %w", err)
+		}
+		return val, nil
+	default:
+		return 0, fmt.Errorf("unsupported type: %T", v)
+	}
+}
+
+/**
+* HandlePrimitiveEncoding is a function that encodes a value based on the cqlType.
+*
+* Parameters:
+*   - cqlType: A string representing the type of the value.
+*   - value: The value to be encoded.
+*   - protocalVersion: The Cassandra protocol version.
+*
+* Returns: The encoded value and an error if any.
+ */
+func HandlePrimitiveEncoding(cqlType string, value interface{}, protocalVersion primitive.ProtocolVersion, encode bool) (interface{}, error) {
+	val := reflect.ValueOf(value)
+	if !val.IsValid() {
+		return value, nil
+	}
+	if val.Kind() == reflect.Slice {
+		if val.Len() == 0 {
+			return value, nil
+		}
+	}
+	var decodedValue interface{}
+	var err error
+	primitiveType, err := getPrimitiveType(cqlType)
+	if err != nil {
+		return nil, err
+	}
+	if cqlType == "boolean" {
+		decodedValue, err = decodeAndReturnBool(value, protocalVersion)
+	} else if cqlType == "int" {
+		decodedValue, err = decodeAndReturnInt(value, protocalVersion)
+	} else if cqlType == "bigint" || cqlType == "timestamp" {
+		decodedValue, err = decodeAndReturnBigInt(value, protocalVersion)
+	} else if cqlType == "float" {
+		decodedValue, err = decodeAndReturnFloat(value, protocalVersion)
+	} else if cqlType == "double" {
+		decodedValue, err = decodeAndReturnDouble(value, protocalVersion)
+	} else if cqlType == "string" || cqlType == "text" {
+		byteArray, okByte := value.([]byte)
+		stringValue, okString := value.(string)
+		if !okByte && !okString {
+			return nil, fmt.Errorf("value is not a byte array or string")
+		}
+		if okByte {
+			decodedValue = string(byteArray)
+		} else {
+			decodedValue = stringValue
+		}
+	} else {
+		return nil, fmt.Errorf("unsupported primitive type: %v", cqlType)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if encode {
+		encoded, _ := proxycore.EncodeType(primitiveType, protocalVersion, decodedValue)
+		return encoded, nil
+	}
+	return decodedValue, nil
+}
+
+func getPrimitiveType(cqlType string) (datatype.DataType, error) {
+	switch cqlType {
+	case "string", "text":
+		return datatype.Varchar, nil
+	case "boolean":
+		return datatype.Boolean, nil
+	case "int":
+		return datatype.Int, nil
+	case "bigint":
+		return datatype.Bigint, nil
+	case "float":
+		return datatype.Float, nil
+	case "double":
+		return datatype.Double, nil
+	case "timestamp":
+		return datatype.Bigint, nil
+	default:
+		return nil, fmt.Errorf("unsupported primitive type: %v", cqlType)
+	}
 }

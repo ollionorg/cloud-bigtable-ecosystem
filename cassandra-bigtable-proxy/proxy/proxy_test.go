@@ -50,23 +50,6 @@ func TestConnect(t *testing.T) {
 	assert.NoError(t, err, "function should return no error")
 }
 
-func Test_GetCqlQueryType(t *testing.T) {
-	str := getCqlQueryType("select * from xyx")
-	assert.NotEmptyf(t, str, "should not be empty")
-
-	str = getCqlQueryType("update * from xyx")
-	assert.NotEmptyf(t, str, "should not be empty")
-
-	str = getCqlQueryType("insert * into xyx")
-	assert.NotEmptyf(t, str, "should not be empty")
-
-	str = getCqlQueryType("delete * from xyx")
-	assert.NotEmptyf(t, str, "should not be empty")
-
-	str = getCqlQueryType("negative scenario")
-	assert.Emptyf(t, str, "should be empty")
-}
-
 func TestNameBasedUUID(t *testing.T) {
 	uuid := nameBasedUUID("test")
 	assert.NotNilf(t, uuid, "should not be nil")
@@ -146,7 +129,7 @@ func Test_Serve(t *testing.T) {
 	assert.NoErrorf(t, err, "no error expected")
 
 	var httpListener net.Listener
-	httpListener, err = resolveAndListen(":7777", "", "")
+	httpListener, err = resolveAndListen(":7777")
 	assert.NoErrorf(t, err, "no error expected")
 
 	prox.isConnected = true
@@ -186,7 +169,7 @@ func Test_ServeScenario2(t *testing.T) {
 	assert.NoErrorf(t, err, "no error expected")
 
 	var httpListener net.Listener
-	httpListener, err = resolveAndListen(":7777", "", "")
+	httpListener, err = resolveAndListen(":7777")
 	assert.NoErrorf(t, err, "no error expected")
 
 	prox.isConnected = true
@@ -689,7 +672,7 @@ var mockPkMetadata = map[string]map[string][]schemaMapping.Column{
 	},
 }
 
-func Test_validatePrimaryKey(t *testing.T) {
+func Test_detectEmptyPrimaryKey(t *testing.T) {
 	type args struct {
 		query *translator.InsertQueryMap
 	}
@@ -753,8 +736,8 @@ func Test_validatePrimaryKey(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := validatePrimaryKey(tt.args.query); got != tt.want {
-				t.Errorf("validatePrimaryKey() = %v, want %v", got, tt.want)
+			if got := detectEmptyPrimaryKey(tt.args.query); got != tt.want {
+				t.Errorf("detectEmptyPrimaryKey() = %v, want %v", got, tt.want)
 			}
 		})
 	}

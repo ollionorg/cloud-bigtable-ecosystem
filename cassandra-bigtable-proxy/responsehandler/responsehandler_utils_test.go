@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package responsehandler_test
+package responsehandler
 
 import (
 	"math/big"
@@ -23,8 +23,6 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
-	fakedata "github.com/ollionorg/cassandra-to-bigtable-proxy/fakedata"
-	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
 	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"go.uber.org/zap"
 )
@@ -50,16 +48,16 @@ func TestIsFirstCharDollar(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		result := rh.IsFirstCharDollar(tc.input)
+		result := HasDollarSymbolPrefix(tc.input)
 		if result != tc.output {
-			t.Errorf("IsFirstCharDollar(%q) = %v, want %v", tc.input, result, tc.output)
+			t.Errorf("HasDollarSymbolPrefix(%q) = %v, want %v", tc.input, result, tc.output)
 		}
 	}
 }
 
 func TestGetMapField(t *testing.T) {
 	type args struct {
-		queryMetadata rh.QueryMetadata
+		queryMetadata QueryMetadata
 		column        string
 	}
 	tests := []struct {
@@ -70,7 +68,7 @@ func TestGetMapField(t *testing.T) {
 		{
 			name: "Success with map key",
 			args: args{
-				queryMetadata: rh.QueryMetadata{
+				queryMetadata: QueryMetadata{
 					TableName:           "user_info",
 					Query:               "SELECT name FROM user_info;",
 					KeyspaceName:        "xobni_derived",
@@ -90,7 +88,7 @@ func TestGetMapField(t *testing.T) {
 		{
 			name: "Empty with map key",
 			args: args{
-				queryMetadata: rh.QueryMetadata{
+				queryMetadata: QueryMetadata{
 					TableName:           "user_info",
 					Query:               "SELECT name FROM user_info;",
 					KeyspaceName:        "xobni_derived",
@@ -110,8 +108,8 @@ func TestGetMapField(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := rh.GetMapField(tt.args.queryMetadata, tt.args.column); got != tt.want {
-				t.Errorf("GetMapField() = %v, want %v", got, tt.want)
+			if got := GetMapKeyForColumn(tt.args.queryMetadata, tt.args.column); got != tt.want {
+				t.Errorf("GetMapKeyForColumn() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -139,14 +137,14 @@ func TestTypeHandler_HandleTimestampMap(t *testing.T) {
 			name: "Success For Int",
 			fields: fields{
 				Logger:              zap.NewExample(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 			},
 			args: args{
 				mapData: map[string]interface{}{
-					"1234567890": big.NewInt(1234567890).Bytes(),
+					"1234567890": []byte{0, 0, 0, 0, 0, 0, 4, 210},
 				},
 				mr: &message.Row{
-					big.NewInt(1234567890).Bytes(),
+					[]byte{0, 0, 0, 0, 0, 0, 4, 210},
 				},
 				elementType: "int",
 				protocalV:   primitive.ProtocolVersion4,
@@ -157,7 +155,7 @@ func TestTypeHandler_HandleTimestampMap(t *testing.T) {
 			name: "Failed For float",
 			fields: fields{
 				Logger:              zap.NewExample(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 			},
 			args: args{
 				mapData: map[string]interface{}{
@@ -174,7 +172,7 @@ func TestTypeHandler_HandleTimestampMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			th := &rh.TypeHandler{
+			th := &TypeHandler{
 				Logger:              tt.fields.Logger,
 				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
@@ -191,7 +189,7 @@ func TestTypeHandler_HandleTimestampMap(t *testing.T) {
 }
 
 func TestGetMapType(t *testing.T) {
-	typeHandler := &rh.TypeHandler{}
+	typeHandler := &TypeHandler{}
 
 	// Test cases
 	tests := []struct {
@@ -261,7 +259,7 @@ func TestGetMapType(t *testing.T) {
 	// Execute test cases
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := typeHandler.GetMapType(test.elementType)
+			result, err := typeHandler.getTypeForMapOfTime(test.elementType)
 
 			if test.expectError {
 				if err == nil {
@@ -303,9 +301,9 @@ func TestTypeHandler_decodeValue(t *testing.T) {
 			name:   "Decode boolean value",
 			fields: fields{},
 			args: args{
-				byteArray:   []byte{1}, // Represents true in boolean
+				byteArray:   []byte{0, 0, 0, 0, 0, 0, 0, 1}, // Represents true in bigint
 				elementType: "boolean",
-				protocalV:   primitive.ProtocolVersion3, // Example protocol version
+				protocalV:   primitive.ProtocolVersion4, // Example protocol version
 			},
 			want:    true,
 			wantErr: false,
@@ -314,9 +312,9 @@ func TestTypeHandler_decodeValue(t *testing.T) {
 			name:   "Decode int value",
 			fields: fields{},
 			args: args{
-				byteArray:   []byte{0, 0, 0, 42}, // Represents int 42
+				byteArray:   []byte{0, 0, 0, 0, 0, 0, 0, 42}, // Represents int 42
 				elementType: "int",
-				protocalV:   primitive.ProtocolVersion3,
+				protocalV:   primitive.ProtocolVersion4,
 			},
 			want:    int32(42),
 			wantErr: false,
@@ -362,14 +360,14 @@ func TestTypeHandler_decodeValue(t *testing.T) {
 				elementType: "int",
 				protocalV:   primitive.ProtocolVersion3,
 			},
-			want:    nil,
+			want:    interface{}([]byte(nil)),
 			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			th := &rh.TypeHandler{
+			th := &TypeHandler{
 				Logger:              tt.fields.Logger,
 				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
@@ -385,3 +383,413 @@ func TestTypeHandler_decodeValue(t *testing.T) {
 		})
 	}
 }
+
+func TestHandlePrimitiveEncoding(t *testing.T) {
+	type args struct {
+		cqlType         string
+		value           interface{}
+		protocalVersion primitive.ProtocolVersion
+		encode          bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name: "Boolean true value as string input",
+			args: args{
+				cqlType:         "boolean",
+				value:           "1",
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte{1},
+			wantErr: false,
+		},
+		{
+			name: "Boolean invalid value as string input",
+			args: args{
+				cqlType:         "boolean",
+				value:           "true",
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Boolean invalid value other than string and int",
+			args: args{
+				cqlType:         "boolean",
+				value:           true,
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Boolean false value as string input",
+			args: args{
+				cqlType:         "boolean",
+				value:           "0",
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte{0},
+			wantErr: false,
+		},
+		{
+			name: "Boolean true value",
+			args: args{
+				cqlType:         "boolean",
+				value:           []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte{1},
+			wantErr: false,
+		},
+		{
+			name: "Boolean false value",
+			args: args{
+				cqlType:         "boolean",
+				value:           []byte{0, 0, 0, 0, 0, 0, 0, 0},
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte{0},
+			wantErr: false,
+		},
+		{
+			name: "Nil value",
+			args: args{
+				cqlType:         "boolean",
+				value:           nil,
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "Non-boolean type",
+			args: args{
+				cqlType:         "text",
+				value:           []byte("some text"),
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte("some text"),
+			wantErr: false,
+		},
+		{
+			name: "Invalid byte data for boolean",
+			args: args{
+				cqlType:         "boolean",
+				value:           []byte{2},
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Int value",
+			args: args{
+				cqlType:         "int",
+				value:           []byte{0, 0, 0, 0, 0, 0, 0, 12},
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte{0, 0, 0, 12},
+			wantErr: false,
+		},
+		{
+			name: "Int value as string input",
+			args: args{
+				cqlType:         "int",
+				value:           "12",
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte{0, 0, 0, 12},
+			wantErr: false,
+		},
+		{
+			name: "Bigint value as string input",
+			args: args{
+				cqlType:         "bigint",
+				value:           "12",
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 12},
+			wantErr: false,
+		},
+		{
+			name: "Float value as string input",
+			args: args{
+				cqlType:         "float",
+				value:           "12",
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte{65, 64, 0, 0},
+			wantErr: false,
+		},
+		{
+			name: "Invalid Float value as string input",
+			args: args{
+				cqlType:         "float",
+				value:           true,
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Invalid value for Bigint value",
+			args: args{
+				cqlType:         "bigint",
+				value:           true,
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Invalid value for string value",
+			args: args{
+				cqlType:         "text",
+				value:           true,
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Valid value for string value",
+			args: args{
+				cqlType:         "text",
+				value:           "some text",
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    []byte("some text"),
+			wantErr: false,
+		},
+		{
+			name: "Invalid int value as non-string and non-byte value",
+			args: args{
+				cqlType:         "int",
+				value:           true,
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Int Type with nil value",
+			args: args{
+				cqlType:         "int",
+				value:           nil,
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "Invalid type or unsupported type",
+			args: args{
+				cqlType:         "decimal",
+				value:           "1.1",
+				protocalVersion: primitive.ProtocolVersion(4),
+				encode:          true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := HandlePrimitiveEncoding(tt.args.cqlType, tt.args.value, tt.args.protocalVersion, tt.args.encode)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HandlePrimitiveEncoding() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("HandlePrimitiveEncoding() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// func TestDecodeAndReturnBool(t *testing.T) {
+
+// 	type args struct {
+// 		value interface{}
+// 		pv    primitive.ProtocolVersion
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		args    args
+// 		want    bool
+// 		wantErr bool
+// 	}{
+// 		{
+// 			name:    "Nil input returns error",
+// 			args:    args{value: nil, pv: primitive.ProtocolVersion4},
+// 			want:    false,
+// 			wantErr: true,
+// 		},
+// 		{
+// 			name:    "DecodeType returns error",
+// 			args:    args{value: []byte("error"), pv: primitive.ProtocolVersion4},
+// 			want:    false,
+// 			wantErr: true,
+// 		},
+// 		{
+// 			name:    "Positive number from byte slice",
+// 			args:    args{value: []byte{0, 0, 0, 0, 0, 0, 0, 1}, pv: primitive.ProtocolVersion4},
+// 			want:    true,
+// 			wantErr: false,
+// 		},
+// 		{
+// 			name:    "Zero from byte slice",
+// 			args:    args{value: []byte{0, 0, 0, 0, 0, 0, 0, 0}, pv: primitive.ProtocolVersion4},
+// 			want:    false,
+// 			wantErr: false,
+// 		},
+// 		{
+// 			name:    "Negative number from byte slice",
+// 			args:    args{value: []byte{0, 0, 0, 0, 0, 0, 0, 0}, pv: primitive.ProtocolVersion4},
+// 			want:    false,
+// 			wantErr: false,
+// 		},
+// 		{
+// 			name:    "String to positive integer",
+// 			args:    args{value: "123", pv: primitive.ProtocolVersion4},
+// 			want:    true,
+// 			wantErr: false,
+// 		},
+// 		{
+// 			name:    "String to negative integer",
+// 			args:    args{value: "-123", pv: primitive.ProtocolVersion4},
+// 			want:    false,
+// 			wantErr: false,
+// 		},
+// 		{
+// 			name:    "Invalid string to int conversion",
+// 			args:    args{value: "notanumber", pv: primitive.ProtocolVersion4},
+// 			want:    false,
+// 			wantErr: true,
+// 		},
+// 		{
+// 			name:    "Unsupported type",
+// 			args:    args{value: 123, pv: primitive.ProtocolVersion4},
+// 			want:    false,
+// 			wantErr: true,
+// 		},
+// 	}
+
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			got, err := decodeAndReturnBool(tt.args.value, tt.args.pv)
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("DecodeAndReturnBool() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			if got != tt.want {
+// 				t.Errorf("DecodeAndReturnBool() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }
+
+// func Test_decodeAndReturnInt(t *testing.T) {
+// 	type args struct {
+// 		value interface{}
+// 		pv    primitive.ProtocolVersion
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		args    args
+// 		want    int32
+// 		wantErr bool
+// 	}{
+// 		{
+// 			name: "nil value",
+// 			args: args{
+// 				value: nil,
+// 				pv:    0,
+// 			},
+// 			want:    0,
+// 			wantErr: true,
+// 		},
+// 		{
+// 			name: "valid []byte value",
+// 			args: args{
+// 				value: []byte{0, 0, 0, 0, 0, 0, 0, 1}, // Assuming it represents int64(1)
+// 				pv:    primitive.ProtocolVersion4,
+// 			},
+// 			want:    1,
+// 			wantErr: false,
+// 		},
+// 		{
+// 			name: "invalid []byte value",
+// 			args: args{
+// 				value: []byte{0xff}, // Invalid representation
+// 				pv:    primitive.ProtocolVersion4,
+// 			},
+// 			want:    0,
+// 			wantErr: true,
+// 		},
+// 		{
+// 			name: "valid string value",
+// 			args: args{
+// 				value: "123",
+// 				pv:    0,
+// 			},
+// 			want:    123,
+// 			wantErr: false,
+// 		},
+// 		{
+// 			name: "invalid string value",
+// 			args: args{
+// 				value: "notanumber",
+// 				pv:    0,
+// 			},
+// 			want:    0,
+// 			wantErr: true,
+// 		},
+// 		{
+// 			name: "unsupported type",
+// 			args: args{
+// 				value: 123,
+// 				pv:    0,
+// 			},
+// 			want:    0,
+// 			wantErr: true,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			got, err := decodeAndReturnInt(tt.args.value, tt.args.pv)
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("decodeAndReturnInt() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			if got != tt.want {
+// 				t.Errorf("decodeAndReturnInt() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }

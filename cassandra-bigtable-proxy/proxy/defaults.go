@@ -18,9 +18,9 @@ package proxy
 import "fmt"
 
 var (
-	BigTableGrpcChannels = 1
-	BigTableMinSession   = 100
-	BigTableMaxSession   = 400
+	BigtableGrpcChannels = 1
+	BigtableMinSession   = 100
+	BigtableMaxSession   = 400
 	SchemaMappingTable   = "schema_mapping"
 	ErrorAuditTable      = "error_audit"
 	DefaultColumnFamily  = "cf1"
@@ -34,30 +34,30 @@ func ValidateAndApplyDefaults(cfg *UserConfig) error {
 		return fmt.Errorf("listener configuration is missing in `config.yaml`")
 	}
 	for i := range cfg.Listeners {
-		if cfg.Listeners[i].BigTable.Session.GrpcChannels == 0 {
-			cfg.Listeners[i].BigTable.Session.GrpcChannels = BigTableGrpcChannels
+		if cfg.Listeners[i].Bigtable.Session.GrpcChannels == 0 {
+			cfg.Listeners[i].Bigtable.Session.GrpcChannels = BigtableGrpcChannels
 		}
-		if cfg.Listeners[i].BigTable.DefaultColumnFamily == "" {
-			cfg.Listeners[i].BigTable.DefaultColumnFamily = DefaultColumnFamily
+		if cfg.Listeners[i].Bigtable.DefaultColumnFamily == "" {
+			cfg.Listeners[i].Bigtable.DefaultColumnFamily = DefaultColumnFamily
 		}
-		if cfg.Listeners[i].BigTable.AppProfileID == "" {
-			cfg.Listeners[i].BigTable.AppProfileID = DefaultProfileId
+		if cfg.Listeners[i].Bigtable.AppProfileID == "" {
+			cfg.Listeners[i].Bigtable.AppProfileID = DefaultProfileId
 		}
-		if cfg.Listeners[i].BigTable.SchemaMappingTable == "" {
-			if cfg.CassandraToBigTableConfigs.SchemaMappingTable == "" {
-				cfg.Listeners[i].BigTable.SchemaMappingTable = SchemaMappingTable
+		if cfg.Listeners[i].Bigtable.SchemaMappingTable == "" {
+			if cfg.CassandraToBigtableConfigs.SchemaMappingTable == "" {
+				cfg.Listeners[i].Bigtable.SchemaMappingTable = SchemaMappingTable
 			} else {
-				cfg.Listeners[i].BigTable.SchemaMappingTable = cfg.CassandraToBigTableConfigs.SchemaMappingTable
+				cfg.Listeners[i].Bigtable.SchemaMappingTable = cfg.CassandraToBigtableConfigs.SchemaMappingTable
 			}
 		}
 
-		if cfg.Listeners[i].BigTable.ProjectID == "" {
-			if cfg.CassandraToBigTableConfigs.ProjectID == "" {
+		if cfg.Listeners[i].Bigtable.ProjectID == "" {
+			if cfg.CassandraToBigtableConfigs.ProjectID == "" {
 				return fmt.Errorf("project id is not defined for listener %s %d", cfg.Listeners[i].Name, cfg.Listeners[i].Port)
 			}
-			cfg.Listeners[i].BigTable.ProjectID = cfg.CassandraToBigTableConfigs.ProjectID
+			cfg.Listeners[i].Bigtable.ProjectID = cfg.CassandraToBigtableConfigs.ProjectID
 		}
-		if cfg.Listeners[i].BigTable.InstanceIDs == "" {
+		if cfg.Listeners[i].Bigtable.InstanceIDs == "" {
 			return fmt.Errorf("instance id is not defined for listener %s %d", cfg.Listeners[i].Name, cfg.Listeners[i].Port)
 		}
 	}

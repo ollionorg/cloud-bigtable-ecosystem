@@ -49,60 +49,6 @@ func TestAddSecondsToCurrentTimestamp(t *testing.T) {
 	}
 }
 
-// TestExtractAfterWhere tests the extractAfterWhere function with various SQL queries.
-func TestExtractAfterWhere(t *testing.T) {
-	tests := []struct {
-		name     string
-		sqlQuery string
-		want     string
-		wantErr  bool
-	}{
-		{
-			name:     "Valid query with uppercase WHERE",
-			sqlQuery: "SELECT * FROM table WHERE column = 'value';",
-			want:     "column = 'value';",
-			wantErr:  false,
-		},
-		{
-			name:     "Valid query with lowercase where",
-			sqlQuery: "SELECT * FROM table where column = 'value';",
-			want:     "column = 'value';",
-			wantErr:  false,
-		},
-		{
-			name:     "No WHERE clause",
-			sqlQuery: "SELECT * FROM table;",
-			want:     "",
-			wantErr:  true,
-		},
-		{
-			name:     "Mixed case WHERE",
-			sqlQuery: "SELECT * FROM table WhErE XOZO = 'value';",
-			want:     "XOZO = 'value';",
-			wantErr:  false,
-		},
-		{
-			name:     "Complex query with subquery",
-			sqlQuery: "UPDATE table SET column = 'value' WHERE ID IN (SELECT id FROM table2 WHERE column2 = 'value2');",
-			want:     "ID IN (SELECT id FROM table2 WHERE column2 = 'value2');",
-			wantErr:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractAfterWhere(tt.sqlQuery)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("extractAfterWhere() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("extractAfterWhere() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 // Mock ResponseHandler for testing
 type MockResponseHandler struct {
 	mock.Mock

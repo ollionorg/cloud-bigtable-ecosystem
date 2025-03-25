@@ -213,7 +213,7 @@ func TestLoadConfig(t *testing.T) {
 					{
 						Name: "clusterA",
 						Port: 9092,
-						BigTable: BigTable{
+						Bigtable: Bigtable{
 							ProjectID:           "cassandra-prod-789",
 							InstanceIDs:         "prod-instance-001",
 							SchemaMappingTable:  "prod_table_config",

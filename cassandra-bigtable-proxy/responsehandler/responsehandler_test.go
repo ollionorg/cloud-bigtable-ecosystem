@@ -13,21 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package responsehandler_test
+package responsehandler
 
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/fakedata"
-	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
 	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestTypeHandler_GetRows(t *testing.T) {
@@ -39,7 +40,7 @@ func TestTypeHandler_GetRows(t *testing.T) {
 	type args struct {
 		result *btpb.ExecuteQueryResponse_Results
 		cf     []*btpb.ColumnMetadata
-		query  rh.QueryMetadata
+		query  QueryMetadata
 	}
 	tests := []struct {
 		name    string
@@ -52,13 +53,13 @@ func TestTypeHandler_GetRows(t *testing.T) {
 			name: "Test case 1: Successful row retrieval",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
 			},
 			args: args{
-				result: fakedata.ResponseHandler_Input_Result_Success,
-				cf:     fakedata.ResponseHandler_Input_CF_Success,
-				query: rh.QueryMetadata{
+				result: ResponseHandler_Input_Result_Success,
+				cf:     ResponseHandler_Input_CF_Success,
+				query: QueryMetadata{
 					TableName:           "user_info",
 					Query:               "SELECT * FROM test_keyspace.user_info;",
 					KeyspaceName:        "test_keyspace",
@@ -66,14 +67,14 @@ func TestTypeHandler_GetRows(t *testing.T) {
 					DefaultColumnFamily: "cf1",
 				},
 			},
-			want:    fakedata.ResponseHandler_Success,
+			want:    ResponseHandler_Success,
 			wantErr: false,
 		},
 		{
 			name: "Test case 2: Empty result without error",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
 			},
 			args: args{
@@ -86,8 +87,8 @@ func TestTypeHandler_GetRows(t *testing.T) {
 						},
 					},
 				},
-				cf: fakedata.ResponseHandler_Input_CF_Success,
-				query: rh.QueryMetadata{
+				cf: ResponseHandler_Input_CF_Success,
+				query: QueryMetadata{
 					TableName:           "user_info",
 					Query:               "SELECT * FROM test_keyspace.user_info;",
 					KeyspaceName:        "test_keyspace",
@@ -102,13 +103,13 @@ func TestTypeHandler_GetRows(t *testing.T) {
 			name: "Test case 3: selected select operation",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
 			},
 			args: args{
-				result: fakedata.ResponseHandler_Input_Result_Selected_Select,
-				cf:     fakedata.ResponseHandler_Input_CF_Selected_Select,
-				query: rh.QueryMetadata{
+				result: ResponseHandler_Input_Result_Selected_Select,
+				cf:     ResponseHandler_Input_CF_Selected_Select,
+				query: QueryMetadata{
 					TableName:           "user_info",
 					Query:               "SELECT name FROM test_keyspace.user_info;",
 					KeyspaceName:        "test_keyspace",
@@ -121,20 +122,20 @@ func TestTypeHandler_GetRows(t *testing.T) {
 					},
 				},
 			},
-			want:    fakedata.ResponseHandler_Selected_Select_Success,
+			want:    ResponseHandler_Selected_Select_Success,
 			wantErr: false,
 		},
 		{
 			name: "Test case 4: selected select operation for map operation",
 			fields: fields{
 				Logger:              zap.NewNop(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
 			},
 			args: args{
-				result: fakedata.ResponseHandler_Input_Result_Selected_Select_Map,
-				cf:     fakedata.ResponseHandler_Input_CF_Selected_Select_Map,
-				query: rh.QueryMetadata{
+				result: ResponseHandler_Input_Result_Selected_Select_Map,
+				cf:     ResponseHandler_Input_CF_Selected_Select_Map,
+				query: QueryMetadata{
 					TableName:           "user_info",
 					Query:               "SELECT name FROM test_keyspace.user_info;",
 					KeyspaceName:        "test_keyspace",
@@ -147,14 +148,14 @@ func TestTypeHandler_GetRows(t *testing.T) {
 					},
 				},
 			},
-			want:    fakedata.ResponseHandler_Selected_Select_Success_Map,
+			want:    ResponseHandler_Selected_Select_Success_Map,
 			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			th := &rh.TypeHandler{
+			th := &TypeHandler{
 				Logger:              tt.fields.Logger,
 				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
@@ -177,17 +178,18 @@ func TestExtractUniqueKeys(t *testing.T) {
 	tests := []struct {
 		name     string
 		rowMap   map[string]map[string]interface{}
-		expected map[string]struct{}
+		query    QueryMetadata
+		expected []string
 	}{
 		{
 			name: "Single nested map with unique keys",
 			rowMap: map[string]map[string]interface{}{
 				"row1": {"key1": 1, "key2": 2},
 			},
-			expected: map[string]struct{}{
-				"key1": {},
-				"key2": {},
+			query: QueryMetadata{
+				IsStar: true,
 			},
+			expected: []string{"key1", "key2"},
 		},
 		{
 			name: "Multiple nested maps with overlapping keys",
@@ -195,23 +197,28 @@ func TestExtractUniqueKeys(t *testing.T) {
 				"row1": {"key1": 1, "key2": 2},
 				"row2": {"key2": 3, "key3": 4},
 			},
-			expected: map[string]struct{}{
-				"key1": {},
-				"key2": {},
-				"key3": {},
+			query: QueryMetadata{
+				IsStar: true,
 			},
+			expected: []string{"key1", "key2", "key3"},
 		},
 		{
 			name: "Empty input map",
 			rowMap: map[string]map[string]interface{}{
 				"row1": {},
 			},
-			expected: map[string]struct{}{},
+			query: QueryMetadata{
+				IsStar: true,
+			},
+			expected: []string{},
 		},
 		{
-			name:     "Nil input map",
-			rowMap:   nil,
-			expected: map[string]struct{}{},
+			name:   "Nil input map",
+			rowMap: nil,
+			query: QueryMetadata{
+				IsStar: true,
+			},
+			expected: []string{},
 		},
 		{
 			name: "Nested maps with empty keys",
@@ -219,17 +226,45 @@ func TestExtractUniqueKeys(t *testing.T) {
 				"row1": {"": 1},
 				"row2": {"key1": 2, "key2": 3},
 			},
-			expected: map[string]struct{}{
-				"":     {},
-				"key1": {},
-				"key2": {},
+			query: QueryMetadata{
+				IsStar: true,
 			},
+			expected: []string{"", "key1", "key2"},
+		},
+		{
+			name: "Test case 5: selected columns",
+			rowMap: map[string]map[string]interface{}{
+				"row1": {"key1": 1, "key2": 2},
+			},
+			query: QueryMetadata{
+				SelectedColumns: []schemaMapping.SelectedColumns{
+					{
+						Name: "key1",
+					},
+				},
+			},
+			expected: []string{"key1"},
+		},
+		{
+			name: "Test case 6: selected columns with alias",
+			rowMap: map[string]map[string]interface{}{
+				"row1": {"key1": 1, "key2": 2},
+			},
+			query: QueryMetadata{
+				SelectedColumns: []schemaMapping.SelectedColumns{
+					{
+						Name:  "key1",
+						Alias: "key1_alias",
+					},
+				},
+			},
+			expected: []string{"key1_alias"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := rh.ExtractUniqueKeys(tt.rowMap)
+			result := ExtractUniqueKeys(tt.rowMap, tt.query)
 			if !reflect.DeepEqual(result, tt.expected) {
 				t.Errorf("ExtractUniqueKeys() = %v, expected %v", result, tt.expected)
 			}
@@ -456,8 +491,8 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			},
 			args: args{
 				mapData: map[string]interface{}{
-					"key1": []byte{0x01},
-					"key2": []byte{0x00},
+					"key1": []byte{0, 0, 0, 0, 0, 0, 0, 1},
+					"key2": []byte{0, 0, 0, 0, 0, 0, 0, 0},
 				},
 				mr:          &message.Row{},
 				elementType: "boolean",
@@ -509,8 +544,8 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 			},
 			args: args{
 				mapData: map[string]interface{}{
-					"key1": []byte("1234"),
-					"key2": []byte("4567"),
+					"key1": []byte{0, 0, 0, 0, 0, 0, 0, 10},
+					"key2": []byte{0, 0, 0, 0, 0, 0, 0, 12},
 				},
 				mr:          &message.Row{},
 				elementType: "int",
@@ -607,7 +642,7 @@ func TestTypeHandler_HandleMapType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			th := rh.TypeHandler{
+			th := TypeHandler{
 				Logger:              tt.fields.Logger,
 				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
@@ -644,7 +679,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"a", "b", "c"},
+				arr:         []interface{}{[]byte("a"), []byte("b"), []byte("c")},
 				mr:          &message.Row{},
 				elementType: "string",
 				protocalV:   primitive.ProtocolVersion4,
@@ -658,7 +693,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"11", "21", "51"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 10}, []byte{0, 0, 0, 0, 0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "int",
 				protocalV:   primitive.ProtocolVersion4,
@@ -728,7 +763,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"11", "21", "51"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 10}, []byte{0, 0, 0, 0, 0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "int",
 				protocalV:   primitive.ProtocolVersion4,
@@ -742,7 +777,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"1234567890", "2345678909", "3456789099"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 10}, []byte{0, 0, 0, 0, 0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "bigint",
 				protocalV:   primitive.ProtocolVersion4,
@@ -770,7 +805,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"1234567890", "2345678909", "3456789099"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 10}, []byte{0, 0, 0, 0, 0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "bigint",
 				protocalV:   primitive.ProtocolVersion4,
@@ -784,7 +819,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"12.123", "234.456343", "34.789"},
+				arr:         []interface{}{[]byte{0, 0, 0, 10}, []byte{0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "float",
 				protocalV:   primitive.ProtocolVersion4,
@@ -798,7 +833,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"12.123", "234.456343", "34.789"},
+				arr:         []interface{}{[]byte{0, 0, 0, 10}, []byte{0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "float",
 				protocalV:   primitive.ProtocolVersion4,
@@ -812,7 +847,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"12.1234567890", "234.4563433786723", "34.7897213512"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 10}, []byte{0, 0, 0, 0, 0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "double",
 				protocalV:   primitive.ProtocolVersion4,
@@ -826,7 +861,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"12.1234567890", "234.4563433786723", "34.7897213512"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 10}, []byte{0, 0, 0, 0, 0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "double",
 				protocalV:   primitive.ProtocolVersion4,
@@ -840,7 +875,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"1730715681", "1699093281", "1667557281"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 10}, []byte{0, 0, 0, 0, 0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "timestamp",
 				protocalV:   primitive.ProtocolVersion4,
@@ -854,7 +889,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"1730715681", "1699093281", "1667557281"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 10}, []byte{0, 0, 0, 0, 0, 0, 0, 12}},
 				mr:          &message.Row{},
 				elementType: "timestamp",
 				protocalV:   primitive.ProtocolVersion4,
@@ -868,7 +903,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"a", "b", "c"},
+				arr:         []interface{}{[]byte("a"), []byte("b"), []byte("c")},
 				mr:          &message.Row{},
 				elementType: "string",
 				protocalV:   primitive.ProtocolVersion4,
@@ -882,7 +917,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"true", "false", "true"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 1}, []byte{0, 0, 0, 0, 0, 0, 0, 0}, []byte{0, 0, 0, 0, 0, 0, 0, 1}},
 				mr:          &message.Row{},
 				elementType: "boolean",
 				protocalV:   primitive.ProtocolVersion4,
@@ -896,7 +931,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				arr:         []interface{}{"true", "false", "true"},
+				arr:         []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 1}, []byte{0, 0, 0, 0, 0, 0, 0, 0}, []byte{0, 0, 0, 0, 0, 0, 0, 1}},
 				mr:          &message.Row{},
 				elementType: "boolean",
 				protocalV:   primitive.ProtocolVersion4,
@@ -922,7 +957,7 @@ func TestTypeHandler_HandleSetType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			th := &rh.TypeHandler{
+			th := &TypeHandler{
 				Logger:              tt.fields.Logger,
 				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
@@ -943,7 +978,7 @@ func TestTypeHandler_BuildMetadata(t *testing.T) {
 	}
 	type args struct {
 		rowMap map[string]map[string]interface{}
-		query  rh.QueryMetadata
+		query  QueryMetadata
 	}
 	tests := []struct {
 		name          string
@@ -957,7 +992,7 @@ func TestTypeHandler_BuildMetadata(t *testing.T) {
 			name: "Success",
 			fields: fields{
 				Logger:              zap.NewExample(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 			},
 			args: args{
 				rowMap: map[string]map[string]interface{}{
@@ -965,7 +1000,7 @@ func TestTypeHandler_BuildMetadata(t *testing.T) {
 						"name": "Bob",
 					},
 				},
-				query: rh.QueryMetadata{
+				query: QueryMetadata{
 					TableName:           "user_info",
 					Query:               "SELECT name FROM test_keyspace.user_info;",
 					KeyspaceName:        "test_keyspace",
@@ -993,7 +1028,7 @@ func TestTypeHandler_BuildMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			th := &rh.TypeHandler{
+			th := &TypeHandler{
 				Logger:              tt.fields.Logger,
 				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
@@ -1021,7 +1056,7 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 	}
 	type args struct {
 		rowMap      map[string]interface{}
-		query       rh.QueryMetadata
+		query       QueryMetadata
 		cmd         []*message.ColumnMetadata
 		mapKeyArray []string
 	}
@@ -1036,13 +1071,13 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 			name: "Success for string data type",
 			fields: fields{
 				Logger:              zap.NewExample(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 			},
 			args: args{
 				rowMap: map[string]interface{}{
 					"name": []byte{0x01},
 				},
-				query: rh.QueryMetadata{
+				query: QueryMetadata{
 					TableName:           "user_info",
 					Query:               "SELECT name FROM test_keyspace.test_keyspace.user_info;",
 					KeyspaceName:        "test_keyspace",
@@ -1074,15 +1109,15 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 			name: "Success for map collection",
 			fields: fields{
 				Logger:              zap.NewExample(),
-				SchemaMappingConfig: fakedata.GetSchemaMappingConfig(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
 			},
 			args: args{
 				rowMap: map[string]interface{}{
-					"column8": []rh.Maptype{
+					"column8": []Maptype{
 						{Key: "text", Value: true},
 					},
 				},
-				query: rh.QueryMetadata{
+				query: QueryMetadata{
 					TableName:           "test_table",
 					Query:               "SELECT column8 FROM test_table;",
 					KeyspaceName:        "test_keyspace",
@@ -1113,7 +1148,7 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			th := &rh.TypeHandler{
+			th := &TypeHandler{
 				Logger:              tt.fields.Logger,
 				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
@@ -1131,17 +1166,17 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 }
 
 func TestGetQueryColumn(t *testing.T) {
-	query := rh.QueryMetadata{
+	query := QueryMetadata{
 		SelectedColumns: []schemaMapping.SelectedColumns{
-			{Name: "column1", Alias: "alias1", Is_WriteTime_Column: false},
-			{Name: "column2", Alias: "alias2", Is_WriteTime_Column: true},
-			{Name: "column3", Alias: "alias3", Is_WriteTime_Column: false},
+			{Name: "column1", Alias: "alias1", IsWriteTimeColumn: false},
+			{Name: "column2", Alias: "alias2", IsWriteTimeColumn: true},
+			{Name: "column3", Alias: "alias3", IsWriteTimeColumn: false},
 		},
 	}
 
 	tests := []struct {
 		name       string
-		query      rh.QueryMetadata
+		query      QueryMetadata
 		index      int
 		key        string
 		expected   schemaMapping.SelectedColumns
@@ -1178,7 +1213,7 @@ func TestGetQueryColumn(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := rh.GetQueryColumn(test.query, test.index, test.key)
+			result := GetQueryColumn(test.query, test.index, test.key)
 			if !reflect.DeepEqual(result, test.expected) {
 				if !test.expectFail {
 					t.Errorf("Expected %+v, but got %+v", test.expected, result)
@@ -1213,7 +1248,7 @@ func TestTypeHandler_HandleListType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				listData:    []interface{}{[]byte{0x01}, []byte{0x00}, []byte{0x01}},
+				listData:    []interface{}{[]byte{0, 0, 0, 0, 0, 0, 0, 1}, []byte{0, 0, 0, 0, 0, 0, 0, 0}, []byte{0, 0, 0, 0, 0, 0, 0, 1}},
 				mr:          &message.Row{},
 				elementType: "boolean",
 				protocalV:   primitive.ProtocolVersion4,
@@ -1226,7 +1261,7 @@ func TestTypeHandler_HandleListType(t *testing.T) {
 				Logger: zap.NewExample(),
 			},
 			args: args{
-				listData:    []interface{}{[]byte{0x00, 0x00, 0x00, 0x0b}, []byte{0x00, 0x00, 0x00, 0x15}, []byte{0x00, 0x00, 0x00, 0x33}},
+				listData:    []interface{}{[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0b}, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x15}, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x33}},
 				mr:          &message.Row{},
 				elementType: "int",
 				protocalV:   primitive.ProtocolVersion4,
@@ -1406,7 +1441,7 @@ func TestTypeHandler_HandleListType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			th := &rh.TypeHandler{
+			th := &TypeHandler{
 				Logger:              tt.fields.Logger,
 				SchemaMappingConfig: tt.fields.SchemaMappingConfig,
 				ColumnMetadataCache: tt.fields.ColumnMetadataCache,
@@ -1464,7 +1499,7 @@ func TestBuildResponseForSystemQueries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := rh.BuildResponseForSystemQueries(tt.rows, protocolVersion)
+			got, err := BuildResponseForSystemQueries(tt.rows, protocolVersion)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BuildResponseForSystemQueries() error = %v, wantErr %v", err, tt.wantErr)
@@ -1497,3 +1532,392 @@ var customComparer = cmp.FilterValues(func(x, y interface{}) bool {
 	}
 	return true
 }))
+
+func TestProcessArray(t *testing.T) {
+	th := &TypeHandler{
+		SchemaMappingConfig: &schemaMapping.SchemaMappingConfig{
+			SystemColumnFamily: "system",
+		},
+	}
+
+	tests := []struct {
+		name           string
+		value          *btpb.Value
+		rowMap         map[string]interface{}
+		cfName         string
+		query          QueryMetadata
+		cn             string
+		isWritetime    bool
+		expectedResult map[string]interface{}
+	}{
+		{
+			name: "Process non-array value in system column family",
+			value: &btpb.Value{
+				Kind: &btpb.Value_BytesValue{
+					BytesValue: []byte("test_value"),
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "system",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "test_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"test_column": []byte("test_value"),
+			},
+		},
+		{
+			name: "Process non-array value in non-system column family",
+			value: &btpb.Value{
+				Kind: &btpb.Value_BytesValue{
+					BytesValue: []byte("test_value"),
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "test_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"test_cf": map[string]interface{}{
+					"test_column": []byte("test_value"),
+				},
+			},
+		},
+		{
+			name: "Process writetime value",
+			value: &btpb.Value{
+				Kind: &btpb.Value_TimestampValue{
+					TimestampValue: timestamppb.New(time.Now()),
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "system",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "writetime_column",
+			isWritetime: true,
+			expectedResult: map[string]interface{}{
+				"writetime_column": []byte{}, // The actual value will be encoded timestamp
+			},
+		},
+		{
+			name: "Process array value with key-value pair",
+			value: &btpb.Value{
+				Kind: &btpb.Value_ArrayValue{
+					ArrayValue: &btpb.ArrayValue{
+						Values: []*btpb.Value{
+							{
+								Kind: &btpb.Value_BytesValue{
+									BytesValue: []byte("key1"),
+								},
+							},
+							{
+								Kind: &btpb.Value_BytesValue{
+									BytesValue: []byte("value1"),
+								},
+							},
+						},
+					},
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "map_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"test_cf": []Maptype{
+					{Key: "key1", Value: []byte("value1")},
+				},
+			},
+		},
+		{
+			name: "Process array value in system column family",
+			value: &btpb.Value{
+				Kind: &btpb.Value_ArrayValue{
+					ArrayValue: &btpb.ArrayValue{
+						Values: []*btpb.Value{
+							{
+								Kind: &btpb.Value_BytesValue{
+									BytesValue: []byte("key1"),
+								},
+							},
+							{
+								Kind: &btpb.Value_BytesValue{
+									BytesValue: []byte("value1"),
+								},
+							},
+						},
+					},
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "system",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "map_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"key1": []byte("value1"),
+			},
+		},
+		{
+			name: "Process nested array value",
+			value: &btpb.Value{
+				Kind: &btpb.Value_ArrayValue{
+					ArrayValue: &btpb.ArrayValue{
+						Values: []*btpb.Value{
+							{
+								Kind: &btpb.Value_ArrayValue{
+									ArrayValue: &btpb.ArrayValue{
+										Values: []*btpb.Value{
+											{
+												Kind: &btpb.Value_BytesValue{
+													BytesValue: []byte("nested_key"),
+												},
+											},
+											{
+												Kind: &btpb.Value_BytesValue{
+													BytesValue: []byte("nested_value"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "nested_map_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"test_cf": []Maptype{
+					{Key: "nested_key", Value: []byte("nested_value")},
+				},
+			},
+		},
+		{
+			name: "Process value with dollar symbol prefix",
+			value: &btpb.Value{
+				Kind: &btpb.Value_BytesValue{
+					BytesValue: []byte("test_value"),
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "$test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "test_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"$test_cf": map[string]interface{}{
+					"test_column": []byte("test_value"),
+				},
+			},
+		},
+		{
+			name: "Process writetime value in non-system column family with nested map",
+			value: &btpb.Value{
+				Kind: &btpb.Value_TimestampValue{
+					TimestampValue: timestamppb.New(time.Now()),
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "writetime_column",
+			isWritetime: true,
+			expectedResult: map[string]interface{}{
+				"test_cf": map[string]interface{}{
+					"writetime_column": []byte{}, // The actual value will be encoded timestamp
+				},
+			},
+		},
+		{
+			name: "Process writetime value with existing nested map in non-system column family",
+			value: &btpb.Value{
+				Kind: &btpb.Value_TimestampValue{
+					TimestampValue: timestamppb.New(time.Now()),
+				},
+			},
+			rowMap: map[string]interface{}{
+				"test_cf": map[string]interface{}{
+					"existing_column": []byte("existing_value"),
+				},
+			},
+			cfName: "test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "writetime_column",
+			isWritetime: true,
+			expectedResult: map[string]interface{}{
+				"test_cf": map[string]interface{}{
+					"existing_column":  []byte("existing_value"),
+					"writetime_column": []byte{}, // The actual value will be encoded timestamp
+				},
+			},
+		},
+		{
+			name: "Process writetime value with alias in non-system column family",
+			value: &btpb.Value{
+				Kind: &btpb.Value_TimestampValue{
+					TimestampValue: timestamppb.New(time.Now()),
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+				SelectedColumns: []schemaMapping.SelectedColumns{
+					{
+						Name:              "writetime_column",
+						Alias:             "wt_alias",
+						IsWriteTimeColumn: true,
+					},
+				},
+			},
+			cn:          "wt_alias",
+			isWritetime: true,
+			expectedResult: map[string]interface{}{
+				"test_cf": map[string]interface{}{
+					"wt_alias": []byte{}, // The actual value will be encoded timestamp
+				},
+			},
+		},
+		{
+			name: "Process array value with key-value pair in system column family",
+			value: &btpb.Value{
+				Kind: &btpb.Value_ArrayValue{
+					ArrayValue: &btpb.ArrayValue{
+						Values: []*btpb.Value{
+							{
+								Kind: &btpb.Value_BytesValue{
+									BytesValue: []byte("key1"),
+								},
+							},
+							{
+								Kind: &btpb.Value_BytesValue{
+									BytesValue: []byte("value1"),
+								},
+							},
+						},
+					},
+				},
+			},
+			rowMap: make(map[string]interface{}),
+			cfName: "system",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "map_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"key1": []byte("value1"),
+			},
+		},
+		{
+			name: "Process array value with key-value pair in non-system column family with existing map",
+			value: &btpb.Value{
+				Kind: &btpb.Value_ArrayValue{
+					ArrayValue: &btpb.ArrayValue{
+						Values: []*btpb.Value{
+							{
+								Kind: &btpb.Value_BytesValue{
+									BytesValue: []byte("key1"),
+								},
+							},
+							{
+								Kind: &btpb.Value_BytesValue{
+									BytesValue: []byte("value1"),
+								},
+							},
+						},
+					},
+				},
+			},
+			rowMap: map[string]interface{}{
+				"test_cf": map[string]interface{}{
+					"existing_column": []byte("existing_value"),
+				},
+			},
+			cfName: "test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "map_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"test_cf": map[string]interface{}{
+					"key1": []byte("value1"),
+				},
+			},
+		},
+		{
+			name: "Process non-array value in non-system column family with non-map existing value",
+			value: &btpb.Value{
+				Kind: &btpb.Value_BytesValue{
+					BytesValue: []byte("test_value"),
+				},
+			},
+			rowMap: map[string]interface{}{
+				"test_cf": []byte("invalid_type"), // This will cause the type assertion to fail
+			},
+			cfName: "test_cf",
+			query: QueryMetadata{
+				DefaultColumnFamily: "default_cf",
+			},
+			cn:          "test_column",
+			isWritetime: false,
+			expectedResult: map[string]interface{}{
+				"test_cf": map[string]interface{}{
+					"test_column": []byte("test_value"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			th.processArray(tt.value, &tt.rowMap, tt.cfName, tt.query, tt.cn, tt.isWritetime)
+
+			// For writetime values, we need to check at the correct level in the map
+			if tt.isWritetime {
+				if tt.cfName == "system" {
+					// For system column family, check at root level
+					assert.Contains(t, tt.rowMap, tt.cn)
+					assert.NotEmpty(t, tt.rowMap[tt.cn])
+				} else {
+					// For non-system column family, check inside the nested map
+					assert.Contains(t, tt.rowMap, tt.cfName)
+					cfMap, ok := tt.rowMap[tt.cfName].(map[string]interface{})
+					assert.True(t, ok)
+					assert.Contains(t, cfMap, tt.cn)
+					assert.NotEmpty(t, cfMap[tt.cn])
+				}
+				return
+			}
+
+			// For other cases, compare the entire map
+			assert.Equal(t, tt.expectedResult, tt.rowMap)
+		})
+	}
+}

@@ -23,10 +23,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
 	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
+	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
 )
 
 type TimeTrackInfo struct {
@@ -42,31 +44,14 @@ type SystemQueryMetadataCache struct {
 }
 
 // Compile a regular expression that matches the WHERE clause with at least one space before and after it.
-// The regex uses case insensitive matching and captures everything after the WHERE clause.
+// The regex uses case-insensitive matching and captures everything after the WHERE clause.
 // \s+ matches one or more spaces before and after WHERE.
 // (.+) captures everything after WHERE and its trailing spaces.
 var whereRegex = regexp.MustCompile(`(?i)\s+WHERE\s+(.+)`)
 
-// regex contain logic to identify ? for select/update/delete and insert query
-// regex for select/update/ delete : [<>=]+ *['?]{1,3}
-// looks for pattern like > ?, <?, >=?, <= ?, =?', ='? etc
-// Regex for insert : \({1}[?,'\s]+\
-// Looks for pattern  (?, ?, ?, ?), (?, '?, ?, '?') etc
-// Regex for using block - [ ]+\?[ ]*
-var re = regexp.MustCompile(`[<>=]+ *['?]{1,3}|\({1}[?,'\s]+\)|[ ']+\?[ ']*`)
-
 const PARTITION_KEY = "partition_key"
 const CLUSTERING = "clustering"
 const REGULAR = "regular"
-
-// computeProxyProcessingTime() calculates the actual proxy processing time
-// by excluding the Bigtable execution time from the total function execution time.
-func computeProxyProcessingTime(track TimeTrackInfo) time.Time {
-	bigtableElapsed := track.bigtableEnd.Sub(track.bigtableStart)
-	totalExecutionTime := track.bigtableEnd.Sub(track.start)
-	proxyProcessingTime := totalExecutionTime - bigtableElapsed
-	return track.bigtableEnd.Add(-proxyProcessingTime)
-}
 
 // addSecondsToCurrentTimestamp takes a number of seconds as input
 // and returns the current Unix timestamp plus the input time in seconds.
@@ -90,19 +75,8 @@ func unixToISO(unixTimestamp int64) string {
 	return t.Format(time.RFC3339)
 }
 
-// extractAfterWhere ensures there is at least one space before and after the WHERE clause before splitting.
-func extractAfterWhere(sqlQuery string) (string, error) {
-	// Find the first match and return the captured group.
-	matches := whereRegex.FindStringSubmatch(sqlQuery)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("no WHERE clause found or it doesn't have spaces correctly placed around it")
-	}
-
-	// Return the portion of the query after the WHERE clause.
-	// matches[1] contains the captured group which is everything after the WHERE clause and its preceding space(s).
-	return matches[1], nil
-}
-
+// ReplaceLimitValue replaces the limit placeholder in the query string with an actual value
+// if the limit is specified in the query parameters.
 func ReplaceLimitValue(query responsehandler.QueryMetadata) (responsehandler.QueryMetadata, error) {
 	if query.Limit.IsLimit {
 		if val, exists := query.Params[limitValue]; exists {
@@ -114,11 +88,9 @@ func ReplaceLimitValue(query responsehandler.QueryMetadata) (responsehandler.Que
 				delete(query.Params, limitValue)
 				return query, nil
 			} else {
-				fmt.Println("The limitValue does not match the desired value.")
 				return query, fmt.Errorf("LIMIT must be strictly positive")
 			}
 		} else {
-			fmt.Println("The limitValue key does not exist in the map.")
 			return query, fmt.Errorf("limit values does not exist")
 		}
 	}
@@ -222,4 +194,54 @@ func ConstructSystemMetadataRows(tableMetaData map[string]map[string]map[string]
 
 	columnsMetadataRows = append(columnsMetadataRows, []interface{}{"system_schema", "columns", "kind", "none", PARTITION_KEY, 0, "text"})
 	return getSystemQueryMetadataCache(keyspaceMetadataRows, tableMetadataRows, columnsMetadataRows)
+}
+
+// getTimestampMetadata appends a metadata entry for a timestamp column to a list of column metadata
+// if a timestamp is used in the insert query.
+//
+// Parameters:
+//   - insertQueryMetadata: An InsertQueryMap containing information about the insert query, including
+//     any timestamp information.
+//   - columnMetadataList: A slice of pointers to ColumnMetadata representing the current list of column metadata.
+//
+// Returns: An updated slice of pointers to ColumnMetadata, including an entry for the timestamp column
+//
+//	if the query uses a timestamp.
+func getTimestampMetadata(insertQueryMetadata translator.InsertQueryMap, columnMetadataList []*message.ColumnMetadata) []*message.ColumnMetadata {
+	if insertQueryMetadata.TimestampInfo.HasUsingTimestamp {
+		metadata := message.ColumnMetadata{
+			Keyspace: insertQueryMetadata.Keyspace,
+			Table:    insertQueryMetadata.Table,
+			Name:     TimestampColumnName,
+			Index:    insertQueryMetadata.TimestampInfo.Index,
+			Type:     datatype.Bigint,
+		}
+		columnMetadataList = append(columnMetadataList, &metadata)
+	}
+	return columnMetadataList
+}
+
+// getTimestampMetadataForUpdate prepends a metadata entry for a timestamp column to a list of column metadata
+// if a timestamp is used in the update query.
+//
+// Parameters:
+//   - updateQueryMetadata: An UpdateQueryMap containing information about the update query, including
+//     any timestamp information.
+//   - columnMetadataList: A slice of pointers to ColumnMetadata representing the current list of column metadata.
+//
+// Returns: An updated slice of pointers to ColumnMetadata, with an entry for the timestamp column prepended
+//
+//	if the query uses a timestamp.
+func getTimestampMetadataForUpdate(updateQueryMetadata translator.UpdateQueryMap, columnMetadataList []*message.ColumnMetadata) []*message.ColumnMetadata {
+	if updateQueryMetadata.TimestampInfo.HasUsingTimestamp {
+		metadata := message.ColumnMetadata{
+			Keyspace: updateQueryMetadata.Keyspace,
+			Table:    updateQueryMetadata.Table,
+			Name:     TimestampColumnName,
+			Index:    updateQueryMetadata.TimestampInfo.Index,
+			Type:     datatype.Bigint,
+		}
+		columnMetadataList = append([]*message.ColumnMetadata{&metadata}, columnMetadataList...)
+	}
+	return columnMetadataList
 }

@@ -43,7 +43,7 @@ func TestValidateAndApplyDefaults(t *testing.T) {
 						{
 							Name: "listener1",
 							Port: 8080,
-							BigTable: BigTable{
+							Bigtable: Bigtable{
 								Session:     Session{},
 								InstanceIDs: "instance1",
 								ProjectID:   "project1",
@@ -62,13 +62,13 @@ func TestValidateAndApplyDefaults(t *testing.T) {
 						{
 							Name: "listener1",
 							Port: 8080,
-							BigTable: BigTable{
+							Bigtable: Bigtable{
 								Session:     Session{},
 								InstanceIDs: "instance1",
 							},
 						},
 					},
-					CassandraToBigTableConfigs: CassandraToBigTableConfigs{
+					CassandraToBigtableConfigs: CassandraToBigtableConfigs{
 						ProjectID: "",
 					},
 				},
@@ -83,7 +83,7 @@ func TestValidateAndApplyDefaults(t *testing.T) {
 						{
 							Name: "listener1",
 							Port: 8080,
-							BigTable: BigTable{
+							Bigtable: Bigtable{
 								Session:            Session{},
 								InstanceIDs:        "instance1",
 								ProjectID:          "project1",
@@ -103,13 +103,13 @@ func TestValidateAndApplyDefaults(t *testing.T) {
 				t.Errorf("ValidateAndApplyDefaults() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr {
-				if tt.args.cfg.Listeners[0].BigTable.Session.GrpcChannels != BigTableGrpcChannels {
-					t.Errorf("Expected GrpcChannels to be %d, got %d", BigTableGrpcChannels, tt.args.cfg.Listeners[0].BigTable.Session.GrpcChannels)
+				if tt.args.cfg.Listeners[0].Bigtable.Session.GrpcChannels != BigtableGrpcChannels {
+					t.Errorf("Expected GrpcChannels to be %d, got %d", BigtableGrpcChannels, tt.args.cfg.Listeners[0].Bigtable.Session.GrpcChannels)
 				}
-				if tt.args.cfg.Listeners[0].BigTable.DefaultColumnFamily != DefaultColumnFamily {
-					t.Errorf("Expected ColumnFamily to be %s, got %s", DefaultColumnFamily, tt.args.cfg.Listeners[0].BigTable.DefaultColumnFamily)
+				if tt.args.cfg.Listeners[0].Bigtable.DefaultColumnFamily != DefaultColumnFamily {
+					t.Errorf("Expected ColumnFamily to be %s, got %s", DefaultColumnFamily, tt.args.cfg.Listeners[0].Bigtable.DefaultColumnFamily)
 				}
-				if tt.args.cfg.Listeners[0].BigTable.SchemaMappingTable == "" {
+				if tt.args.cfg.Listeners[0].Bigtable.SchemaMappingTable == "" {
 					t.Errorf("Expected SchemaMappingTable to be set, got empty string")
 				}
 			}

@@ -19,7 +19,7 @@ package responsehandler
 import (
 	"fmt"
 	"slices"
-	"strconv"
+	"sort"
 	"strings"
 
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
@@ -53,7 +53,7 @@ type ResponseHandlerIface interface {
 // Returns: A map where each key is a string representing a unique index for each row,
 //
 //	and the value is another map representing the column data for that row.
-//	Returns an error if there is an issue unmarshaling the batch data or if no data is present.
+//	Returns an error if there is an issue unmarshalling the batch data or if no data is present.
 func (th *TypeHandler) GetRows(result *btpb.ExecuteQueryResponse_Results, cf []*btpb.ColumnMetadata, query QueryMetadata, rowCount *int, rowMapData map[string]map[string]interface{}) (map[string]map[string]interface{}, error) {
 	batch := result.Results.GetProtoRowsBatch()
 	if batch == nil {
@@ -65,8 +65,8 @@ func (th *TypeHandler) GetRows(result *btpb.ExecuteQueryResponse_Results, cf []*
 		return nil, fmt.Errorf("failed to unmarshal protorows: %v", err)
 	}
 	values := protoRows.Values
-	cf_len := len(cf)
-	for i := 0; i < len(values); i += cf_len {
+	cfLen := len(cf)
+	for i := 0; i < len(values); i += cfLen {
 		rowMap := th.createRow(values, i, cf, query)
 		id := fmt.Sprintf("%v", *rowCount)
 		if rowMapData[id] == nil {
@@ -95,21 +95,20 @@ func (th *TypeHandler) GetRows(result *btpb.ExecuteQueryResponse_Results, cf []*
 //
 // Returns: A map where keys are column names and values are the data from the corresponding value in the row.
 //
-//	Special handling is included for key columns and writetime columns.
+//	Special handling is included for key columns and write time columns.
 func (th *TypeHandler) createRow(values []*btpb.Value, start int, cf []*btpb.ColumnMetadata, query QueryMetadata) map[string]interface{} {
-	cf_len := len(cf)
+	cfLen := len(cf)
 	var rowMap = make(map[string]interface{})
-	for i := start; i < start+cf_len; i += 1 {
+	for i := start; i < start+cfLen; i += 1 {
 		isArray := IsArrayType(values[i])
-		if !isArray && cf[start%cf_len].Name == "_key" {
-			rowMap["_key"] = values[i].GetBytesValue()
+		if !isArray && cf[start%cfLen].Name == rowkey {
+			rowMap[rowkey] = values[i].GetBytesValue()
 
 		} else {
-			pos := i % cf_len
-			cf_name := cf[pos].Name
+			pos := i % cfLen
 			cn := ""
 			if !query.IsStar {
-				if query.SelectedColumns[pos].Is_WriteTime_Column {
+				if query.SelectedColumns[pos].IsWriteTimeColumn {
 					if query.SelectedColumns[pos].Alias != "" {
 						cn = query.SelectedColumns[pos].Alias
 					} else {
@@ -119,11 +118,11 @@ func (th *TypeHandler) createRow(values []*btpb.Value, start int, cf []*btpb.Col
 					cn = query.SelectedColumns[pos].Name
 				}
 			}
-			isWritetime := false
+			isWriteTime := false
 			if len(query.SelectedColumns) > pos {
-				isWritetime = query.SelectedColumns[pos].Is_WriteTime_Column
+				isWriteTime = query.SelectedColumns[pos].IsWriteTimeColumn
 			}
-			th.processArray(values[i], &rowMap, cf_name, query, cn, isWritetime)
+			th.processArray(values[i], &rowMap, cf[pos].Name, query, cn, isWriteTime)
 		}
 	}
 	return rowMap
@@ -148,54 +147,53 @@ func IsArrayType(value *btpb.Value) bool {
 // Parameters:
 //   - value: A pointer to a Value, which represents the data entry to be processed, possibly as an array.
 //   - rowMap: A pointer to a map storing row data, with keys as column names and values as the associated data.
-//   - cf_name: The name of the column family associated with the current processing context.
+//   - cfName: The name of the column family associated with the current processing context.
 //   - query: QueryMetadata containing additional details about the query, such as default column family.
 //   - cn: The column name string that may include an alias if specified in the query.
 //   - isWritetime: A boolean flag indicating whether the current processing context is for a 'writetime' column.
 //
 // This function does not return a value; it directly modifies the provided rowMap with processed data.
-func (th *TypeHandler) processArray(value *btpb.Value, rowMap *map[string]interface{}, cf_name string, query QueryMetadata, cn string, isWritetime bool) {
+func (th *TypeHandler) processArray(value *btpb.Value, rowMap *map[string]interface{}, cfName string, query QueryMetadata, cn string, isWritetime bool) {
 	if IsArrayType(value) {
 		arr := value.GetArrayValue().Values
 		length := len(arr)
 		var key string
-		var value []byte
+		var byteValue []byte
 		for i, v := range arr {
 			if IsArrayType(v) {
-				th.processArray(v, rowMap, cf_name, query, cn, isWritetime)
+				th.processArray(v, rowMap, cfName, query, cn, isWritetime)
 			} else if length == 2 && i == 0 {
 				key = string(v.GetBytesValue())
 			} else if length == 2 && i == 1 {
-				value = v.GetBytesValue()
+				byteValue = v.GetBytesValue()
 			}
 		}
 		if key != "" {
-			if cf_name != th.SchemaMappingConfig.SystemColumnFamily {
+			if cfName != th.SchemaMappingConfig.SystemColumnFamily {
 				keyValMap := make(map[string]interface{})
-				keyValMap[key] = value
+				keyValMap[key] = byteValue
 
-				if (*rowMap)[cf_name] == nil {
-					(*rowMap)[cf_name] = make([]Maptype, 0)
+				if (*rowMap)[cfName] == nil {
+					(*rowMap)[cfName] = make([]Maptype, 0)
 				}
-				if existingMap, ok := (*rowMap)[cf_name].([]Maptype); ok {
+				if existingMap, ok := (*rowMap)[cfName].([]Maptype); ok {
 					for k, v := range keyValMap {
 						existingMap = append(existingMap, Maptype{Key: k, Value: v})
-						// existingMap[k] = v
 					}
-					(*rowMap)[cf_name] = existingMap
+					(*rowMap)[cfName] = existingMap
 				} else {
-					(*rowMap)[cf_name] = keyValMap
+					(*rowMap)[cfName] = keyValMap
 				}
 			} else {
-				(*rowMap)[key] = value
+				(*rowMap)[key] = byteValue
 			}
 		}
 	} else {
 		cf := func() string {
-			if IsFirstCharDollar(cf_name) {
+			if HasDollarSymbolPrefix(cfName) {
 				return query.DefaultColumnFamily
 			}
-			return cf_name
+			return cfName
 		}()
 		if cf != th.SchemaMappingConfig.SystemColumnFamily {
 			keyValMap := make(map[string]interface{})
@@ -206,15 +204,15 @@ func (th *TypeHandler) processArray(value *btpb.Value, rowMap *map[string]interf
 			} else {
 				keyValMap[cn] = value.GetBytesValue()
 			}
-			if (*rowMap)[cf_name] == nil {
-				(*rowMap)[cf_name] = make(map[string]interface{})
+			if (*rowMap)[cfName] == nil {
+				(*rowMap)[cfName] = make(map[string]interface{})
 			}
-			if existingMap, ok := (*rowMap)[cf_name].(map[string]interface{}); ok {
+			if existingMap, ok := (*rowMap)[cfName].(map[string]interface{}); ok {
 				for k, v := range keyValMap {
 					existingMap[k] = v
 				}
 			} else {
-				(*rowMap)[cf_name] = keyValMap
+				(*rowMap)[cfName] = keyValMap
 			}
 		} else {
 			if isWritetime {
@@ -243,41 +241,43 @@ func (th *TypeHandler) processArray(value *btpb.Value, rowMap *map[string]interf
 //
 // This function uses helper functions to extract unique keys, handle aliases, and determine column types
 func (th *TypeHandler) BuildMetadata(rowMap map[string]map[string]interface{}, query QueryMetadata) (cmd []*message.ColumnMetadata, mapKeyArr []string, err error) {
-	UniqueColumns := ExtractUniqueKeys(rowMap)
-	var aliasFound bool
+	uniqueColumns := ExtractUniqueKeys(rowMap, query)
 	var aliasKeys []string
 	i := 0
 	if len(query.AliasMap) > 0 {
-		aliasFound = true
 		for k := range query.AliasMap {
 			aliasKeys = append(aliasKeys, k)
 		}
 	}
-	for column := range UniqueColumns {
+	for index := range uniqueColumns {
+		column := uniqueColumns[index]
 		if column == rowkey {
 			continue
 		}
-		var dt datatype.DataType
+
 		var cqlType string
 		var err error
 		//checking if alias exists
 		columnObj := GetQueryColumn(query, i, column)
-		if columnObj.Is_WriteTime_Column {
+		if columnObj.IsWriteTimeColumn {
 			cqlType = "timestamp"
-		} else if aliasFound && slices.Contains(aliasKeys, column) {
-			cqlType, _, err = th.GetColumnMeta(query.AliasMap[column].Name, query.TableName, query.KeyspaceName)
 		} else {
-			cqlType, _, err = th.GetColumnMeta(column, query.TableName, query.KeyspaceName)
+			lookupColumn := column
+			if len(query.AliasMap) > 0 && slices.Contains(aliasKeys, column) {
+				lookupColumn = query.AliasMap[column].Name
+			}
+			cqlType, _, err = th.GetColumnMeta(query.KeyspaceName, query.TableName, lookupColumn)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
+
+		dt, err := utilities.GetCassandraColumnType(cqlType)
 		if err != nil {
 			return nil, nil, err
 		}
-		cqlType = strings.ToLower(cqlType)
-		dt, err = utilities.GetCassandraColumnType(cqlType)
-		if err != nil {
-			return nil, nil, err
-		}
-		mapKey := GetMapField(query, column)
+
+		mapKey := GetMapKeyForColumn(query, column)
 		cmd = append(cmd, &message.ColumnMetadata{
 			Keyspace: query.KeyspaceName,
 			Table:    query.TableName,
@@ -327,7 +327,7 @@ func (th *TypeHandler) BuildResponseRow(rowMap map[string]interface{}, query Que
 		var err error
 		var isCollection bool
 		col := GetQueryColumn(query, index, key)
-		if col.Is_WriteTime_Column {
+		if col.IsWriteTimeColumn {
 			cqlType = "timestamp"
 			if aliasFound && slices.Contains(aliasKeys, key) {
 				val := value.(map[string]interface{})
@@ -335,13 +335,13 @@ func (th *TypeHandler) BuildResponseRow(rowMap map[string]interface{}, query Que
 			}
 		} else if aliasFound && slices.Contains(aliasKeys, key) {
 			//checking if alias exists
-			cqlType, isCollection, err = th.GetColumnMeta(query.AliasMap[key].Name, query.TableName, query.KeyspaceName)
+			cqlType, isCollection, err = th.GetColumnMeta(query.KeyspaceName, query.TableName, query.AliasMap[key].Name)
 			if !isCollection {
 				val := value.(map[string]interface{})
 				value = val[query.AliasMap[key].Name]
 			}
 		} else {
-			cqlType, isCollection, err = th.GetColumnMeta(key, query.TableName, query.KeyspaceName)
+			cqlType, isCollection, err = th.GetColumnMeta(query.KeyspaceName, query.TableName, key)
 		}
 		if err != nil {
 			return nil, err
@@ -406,20 +406,29 @@ func (th *TypeHandler) BuildResponseRow(rowMap map[string]interface{}, query Que
 				}
 			}
 		} else {
+			value, err = HandlePrimitiveEncoding(cqlType, value, query.ProtocalV, true)
+			if err != nil {
+				return nil, err
+			}
 			mr = append(mr, value.([]byte))
 		}
 	}
 	return mr, nil
 }
 
-// GetColumnMeta retrieves the metadata for a column based on the provided query metadata.
-// Parameters:
-//   - columnName: Name of the column to get metadata for.
-//   - tableName: Name of table in string.
+// GetColumnMeta retrieves the metadata for a specified column within a given keyspace and table.
 //
-// Returns: Column metadata as a string and an error if any.
-func (th *TypeHandler) GetColumnMeta(columnName string, tableName string, keySpace string) (string, bool, error) {
-	metaStr, err := th.SchemaMappingConfig.GetColumnType(tableName, columnName, keySpace)
+// Parameters:
+//   - keyspace: The name of the keyspace where the table resides.
+//   - tableName: The name of the table containing the column.
+//   - columnName: The name of the column for which metadata is retrieved.
+//
+// Returns:
+//   - A string representing the CQL type of the column.
+//   - A boolean indicating whether the column is a collection type.
+//   - An error if the metadata retrieval fails.
+func (th *TypeHandler) GetColumnMeta(keyspace, tableName, columnName string) (string, bool, error) {
+	metaStr, err := th.SchemaMappingConfig.GetColumnType(keyspace, tableName, columnName)
 	if err != nil {
 		return "", false, err
 	}
@@ -440,88 +449,19 @@ func (th *TypeHandler) HandleSetType(arr []interface{}, mr *message.Row, element
 	var err error
 	var dt datatype.DataType
 
-	switch elementType {
-	case "string", "text":
-		dt = utilities.SetOfStr
-		bytes, err = proxycore.EncodeType(dt, protocalV, arr)
-	case "boolean":
-		dt = utilities.SetOfBool
-		newArr := []bool{}
-		for _, key := range arr {
-			boolVal, _ := strconv.ParseBool(key.(string))
-
-			newArr = append(newArr, boolVal)
-		}
-		bytes, err = proxycore.EncodeType(dt, protocalV, newArr)
-
-	case "int":
-		dt = utilities.SetOfInt
-		newArr := []int32{}
-		for _, key := range arr {
-			val, err := strconv.ParseInt(key.(string), 10, 32)
-			if err != nil {
-				return fmt.Errorf("error converting string to int32: %w", err)
-			}
-			boolVal := int32(val)
-			newArr = append(newArr, boolVal)
-		}
-		bytes, err = proxycore.EncodeType(dt, protocalV, newArr)
-	case "bigint":
-		dt = utilities.SetOfBigInt
-		newArr := []int64{}
-		for _, key := range arr {
-
-			val, err := strconv.ParseInt(key.(string), 10, 64)
-			if err != nil {
-				return fmt.Errorf("error converting string to int62: %w", err)
-			}
-			boolVal := int64(val)
-			newArr = append(newArr, boolVal)
-		}
-		bytes, err = proxycore.EncodeType(dt, protocalV, newArr)
-
-	case "float":
-		dt = utilities.SetOfFloat
-		newArr := []float32{}
-		for _, key := range arr {
-			val, err := strconv.ParseFloat(key.(string), 32)
-			if err != nil {
-				return fmt.Errorf("error converting string to float32: %w", err)
-			}
-			boolVal := float32(val)
-			newArr = append(newArr, boolVal)
-		}
-		bytes, err = proxycore.EncodeType(dt, protocalV, newArr)
-
-	case "double":
-		dt = utilities.SetOfDouble
-		newArr := []float64{}
-		for _, key := range arr {
-			val, err := strconv.ParseFloat(key.(string), 64)
-			if err != nil {
-				return fmt.Errorf("error converting string to float32: %w", err)
-			}
-			boolVal := float64(val)
-			newArr = append(newArr, boolVal)
-		}
-		bytes, err = proxycore.EncodeType(dt, protocalV, newArr)
-
-	case "timestamp":
-		dt = utilities.SetOfTimeStamp
-		newArr := []int64{}
-		for _, key := range arr {
-			val, err := strconv.ParseInt(key.(string), 10, 64)
-			if err != nil {
-				return fmt.Errorf("error converting string to float32: %w", err)
-			}
-			boolVal := int64(val)
-			newArr = append(newArr, boolVal)
-		}
-		bytes, err = proxycore.EncodeType(dt, protocalV, newArr)
-
-	default:
-		return fmt.Errorf("unsupported array element type: %v", elementType)
+	dt, err = getSetDataType(elementType)
+	if err != nil {
+		return fmt.Errorf("error while getting set data type: %w", err)
 	}
+	newArr := []interface{}{}
+	for _, key := range arr {
+		boolVal, err := HandlePrimitiveEncoding(elementType, key, protocalV, false)
+		if err != nil {
+			return fmt.Errorf("error while decoding primitive type: %w", err)
+		}
+		newArr = append(newArr, boolVal)
+	}
+	bytes, err = proxycore.EncodeType(dt, protocalV, newArr)
 
 	if err != nil {
 		th.Logger.Error("Error while Encoding -> ", zap.Error(err))
@@ -542,132 +482,27 @@ func (th *TypeHandler) HandleSetType(arr []interface{}, mr *message.Row, element
 func (th *TypeHandler) HandleMapType(mapData map[string]interface{}, mr *message.Row, elementType string, protocalV primitive.ProtocolVersion) error {
 	var bytes []byte
 
-	switch elementType {
-	case "boolean":
-		detailsField := make(map[string]bool)
-		for key, value := range mapData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed for key: %s", key)
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Boolean, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding boolean for key %s: %v", key, decodeErr)
-			}
-			detailsField[key] = bv.(bool)
+	maps := make(map[string]interface{})
+	for key, value := range mapData {
+		byteArray, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("type assertion to []byte failed for key: %s", key)
 		}
-		mapType := utilities.MapOfStrToBool
-
-		bytes, _ = proxycore.EncodeType(mapType, protocalV, detailsField)
-
-	case "int":
-		detailsField := make(map[string]int32)
-		for key, value := range mapData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed for key: %s", key)
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Int, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding int for key %s: %v", key, decodeErr)
-			}
-			detailsField[key] = bv.(int32)
-
+		bv, decodeErr := HandlePrimitiveEncoding(elementType, byteArray, protocalV, false)
+		if decodeErr != nil {
+			return fmt.Errorf("error decoding boolean for key %s: %v", key, decodeErr)
 		}
-		mapType := utilities.MapOfStrToInt
-		bytes, _ = proxycore.EncodeType(mapType, protocalV, detailsField)
+		maps[key] = bv
 
-	case "bigint":
-		detailsField := make(map[string]int64)
-		for key, value := range mapData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed for key: %s", key)
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Bigint, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding bigint for key %s: %v", key, decodeErr)
-			}
-			detailsField[key] = bv.(int64)
+	}
 
-		}
-		mapType := utilities.MapOfStrToBigInt
-
-		bytes, _ = proxycore.EncodeType(mapType, protocalV, detailsField)
-
-	case "float":
-		detailsField := make(map[string]float32)
-		for key, value := range mapData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed for key: %s", key)
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Float, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding float for key %s: %v", key, decodeErr)
-			}
-			if bv == nil {
-				return fmt.Errorf("decoded value is null for key %s", key)
-			}
-			detailsField[key] = bv.(float32)
-
-		}
-		mapType := utilities.MapOfStrToFloat
-
-		bytes, _ = proxycore.EncodeType(mapType, protocalV, detailsField)
-
-	case "double":
-		detailsField := make(map[string]float64)
-		for key, value := range mapData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed for key: %s", key)
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Double, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding double for key %s: %v", key, decodeErr)
-			}
-			detailsField[key] = bv.(float64)
-
-		}
-		mapType := utilities.MapOfStrToDouble
-
-		bytes, _ = proxycore.EncodeType(mapType, protocalV, detailsField)
-
-	case "string", "text":
-		detailsField := make(map[string]string)
-
-		for key, value := range mapData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed for key: %s", key)
-			}
-			detailsField[key] = fmt.Sprintf("%v", string(byteArray))
-
-		}
-		mapType := utilities.MapOfStrToStr
-		bytes, _ = proxycore.EncodeType(mapType, protocalV, detailsField)
-
-	case "timestamp":
-		detailsField := make(map[string]int64)
-		for key, value := range mapData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed for key: %s", key)
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Bigint, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding timestamp for key %s: %v", key, decodeErr)
-			}
-			detailsField[key] = bv.(int64)
-
-		}
-		mapType := utilities.MapOfStrToBigInt
-
-		bytes, _ = proxycore.EncodeType(mapType, protocalV, detailsField)
-
-	default:
-		return fmt.Errorf("unsupported MAP element type: %v", elementType)
+	mapType, err := getMapDataType(elementType)
+	if err != nil {
+		return fmt.Errorf("error while getting map data type: %w", err)
+	}
+	bytes, err = proxycore.EncodeType(mapType, protocalV, maps)
+	if err != nil {
+		return fmt.Errorf("error while encoding map type: %w", err)
 	}
 
 	*mr = append(*mr, bytes)
@@ -677,120 +512,27 @@ func (th *TypeHandler) HandleMapType(mapData map[string]interface{}, mr *message
 func (th *TypeHandler) HandleListType(listData []interface{}, mr *message.Row, elementType string, protocalV primitive.ProtocolVersion) error {
 	var bytes []byte
 
-	switch elementType {
-	case "boolean":
-		detailsField := make([]bool, 0)
-		for _, value := range listData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed")
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Boolean, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding boolean: %v", decodeErr)
-			}
-			detailsField = append(detailsField, bv.(bool))
+	list := make([]interface{}, 0)
+	for _, value := range listData {
+		byteArray, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("type assertion to []byte failed")
 		}
-		listType := utilities.ListOfBool
-		bytes, _ = proxycore.EncodeType(listType, protocalV, detailsField)
-
-	case "int":
-		detailsField := make([]int32, 0)
-		for _, value := range listData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed")
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Int, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding int: %v", decodeErr)
-			}
-			detailsField = append(detailsField, bv.(int32))
+		bv, decodeErr := HandlePrimitiveEncoding(elementType, byteArray, protocalV, false)
+		if decodeErr != nil {
+			return fmt.Errorf("error decoding boolean: %v", decodeErr)
 		}
-		listType := utilities.ListOfInt
-		bytes, _ = proxycore.EncodeType(listType, protocalV, detailsField)
+		list = append(list, bv)
 
-	case "bigint":
-		detailsField := make([]int64, 0)
-		for _, value := range listData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed")
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Bigint, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding bigint: %v", decodeErr)
-			}
-			detailsField = append(detailsField, bv.(int64))
-		}
-		listType := utilities.ListOfBigInt
-		bytes, _ = proxycore.EncodeType(listType, protocalV, detailsField)
+	}
 
-	case "float":
-		detailsField := make([]float32, 0)
-		for _, value := range listData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed")
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Float, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding float: %v", decodeErr)
-			}
-			if bv == nil {
-				return fmt.Errorf("decoded value is null")
-			}
-			detailsField = append(detailsField, bv.(float32))
-		}
-		listType := utilities.ListOfFloat
-		bytes, _ = proxycore.EncodeType(listType, protocalV, detailsField)
-
-	case "double":
-		detailsField := make([]float64, 0)
-		for _, value := range listData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed")
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Double, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding double: %v", decodeErr)
-			}
-			detailsField = append(detailsField, bv.(float64))
-		}
-		listType := utilities.ListOfDouble
-		bytes, _ = proxycore.EncodeType(listType, protocalV, detailsField)
-
-	case "string", "text":
-		detailsField := make([]string, 0)
-		for _, value := range listData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed")
-			}
-			detailsField = append(detailsField, string(byteArray))
-		}
-		listType := utilities.ListOfStr
-		bytes, _ = proxycore.EncodeType(listType, protocalV, detailsField)
-
-	case "timestamp":
-		detailsField := make([]int64, 0)
-		for _, value := range listData {
-			byteArray, ok := value.([]byte)
-			if !ok {
-				return fmt.Errorf("type assertion to []byte failed")
-			}
-			bv, decodeErr := proxycore.DecodeType(datatype.Bigint, protocalV, byteArray)
-			if decodeErr != nil {
-				return fmt.Errorf("error decoding timestamp: %v", decodeErr)
-			}
-			detailsField = append(detailsField, bv.(int64))
-		}
-		listType := utilities.ListOfBigInt
-		bytes, _ = proxycore.EncodeType(listType, protocalV, detailsField)
-
-	default:
-		return fmt.Errorf("unsupported LIST element type: %v", elementType)
+	listType, err := getListDataType(elementType)
+	if err != nil {
+		return fmt.Errorf("error while getting list data type: %w", err)
+	}
+	bytes, err = proxycore.EncodeType(listType, protocalV, list)
+	if err != nil {
+		return fmt.Errorf("error while encoding map type: %w", err)
 	}
 
 	*mr = append(*mr, bytes)
@@ -798,16 +540,29 @@ func (th *TypeHandler) HandleListType(listData []interface{}, mr *message.Row, e
 }
 
 // ExtractUniqueKeys extracts all unique keys from a nested map and returns them as a set of UniqueKeys
-func ExtractUniqueKeys(rowMap map[string]map[string]interface{}) map[string]struct{} {
-	uniqueKeys := make(map[string]struct{})
-
-	for _, nestedMap := range rowMap {
-		for key := range nestedMap {
-			uniqueKeys[key] = struct{}{}
+func ExtractUniqueKeys(rowMap map[string]map[string]interface{}, query QueryMetadata) []string {
+	columns := []string{}
+	if query.IsStar {
+		uniqueKeys := make(map[string]bool)
+		for _, nestedMap := range rowMap {
+			for key := range nestedMap {
+				if !uniqueKeys[key] {
+					columns = append(columns, key)
+				}
+				uniqueKeys[key] = true
+			}
+		}
+		sort.Strings(columns)
+		return columns
+	}
+	for _, column := range query.SelectedColumns {
+		if column.Alias != "" {
+			columns = append(columns, column.Alias)
+		} else {
+			columns = append(columns, column.Name)
 		}
 	}
-
-	return uniqueKeys
+	return columns
 }
 
 // GetQueryColumn retrieves a specific column from the QueryMetadata based on a key.
@@ -819,17 +574,16 @@ func ExtractUniqueKeys(rowMap map[string]map[string]interface{}) map[string]stru
 //
 // Returns:
 // - schemaMapping.SelectedColumns: The column object that matches the key, or an empty object if no match is found.
-
 func GetQueryColumn(query QueryMetadata, index int, key string) schemaMapping.SelectedColumns {
 
 	if len(query.SelectedColumns) > 0 {
 		selectedColumn := query.SelectedColumns[index]
-		if (selectedColumn.Is_WriteTime_Column && selectedColumn.Name == key) || (selectedColumn.Is_WriteTime_Column && selectedColumn.Alias == key) || selectedColumn.Name == key {
+		if (selectedColumn.IsWriteTimeColumn && selectedColumn.Name == key) || (selectedColumn.IsWriteTimeColumn && selectedColumn.Alias == key) || selectedColumn.Name == key {
 			return selectedColumn
 		}
 
 		for _, value := range query.SelectedColumns {
-			if (value.Is_WriteTime_Column && value.Name == key) || (value.Is_WriteTime_Column && value.Alias == key) || (!value.Is_WriteTime_Column && value.Name == key) || (!value.Is_WriteTime_Column && value.Alias == key) {
+			if (value.IsWriteTimeColumn && value.Name == key) || (value.IsWriteTimeColumn && value.Alias == key) || (!value.IsWriteTimeColumn && value.Name == key) || (!value.IsWriteTimeColumn && value.Alias == key) {
 				return value
 			}
 		}
@@ -853,4 +607,66 @@ func BuildResponseForSystemQueries(rows [][]interface{}, protocalV primitive.Pro
 		allRows = append(allRows, mr)
 	}
 	return allRows, nil
+}
+
+func getSetDataType(cqlType string) (datatype.SetType, error) {
+	switch cqlType {
+	case "string", "text":
+		return utilities.SetOfStr, nil
+	case "int":
+		return utilities.SetOfInt, nil
+	case "bigint":
+		return utilities.SetOfBigInt, nil
+	case "float":
+		return utilities.SetOfFloat, nil
+	case "double":
+		return utilities.SetOfDouble, nil
+	case "timestamp":
+		return utilities.SetOfTimeStamp, nil
+	case "boolean":
+		return utilities.SetOfBool, nil
+	default:
+		return nil, fmt.Errorf("unsupported array element type: %v", cqlType)
+	}
+}
+
+func getMapDataType(cqlType string) (datatype.MapType, error) {
+	switch cqlType {
+	case "string", "text":
+		return utilities.MapOfStrToStr, nil
+	case "int":
+		return utilities.MapOfStrToInt, nil
+	case "bigint":
+		return utilities.MapOfStrToBigInt, nil
+	case "float":
+		return utilities.MapOfStrToFloat, nil
+	case "double":
+		return utilities.MapOfStrToDouble, nil
+	case "timestamp":
+		return utilities.MapOfStrToBigInt, nil
+	case "boolean":
+		return utilities.MapOfStrToBool, nil
+	default:
+		return nil, fmt.Errorf("unsupported array element type: %v", cqlType)
+	}
+}
+func getListDataType(cqlType string) (datatype.ListType, error) {
+	switch cqlType {
+	case "string", "text":
+		return utilities.ListOfStr, nil
+	case "int":
+		return utilities.ListOfInt, nil
+	case "bigint":
+		return utilities.ListOfBigInt, nil
+	case "float":
+		return utilities.ListOfFloat, nil
+	case "double":
+		return utilities.ListOfDouble, nil
+	case "timestamp":
+		return utilities.ListOfBigInt, nil
+	case "boolean":
+		return utilities.ListOfBool, nil
+	default:
+		return nil, fmt.Errorf("unsupported array element type: %v", cqlType)
+	}
 }
