@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	limitValue = "limitValue"
+	LimitValue = "limitValue"
 )
 
 type Column struct {
@@ -37,6 +37,7 @@ type Column struct {
 	IsCollection bool
 	KeyType      string
 	Metadata     message.ColumnMetadata
+	ColumnFamily string
 }
 
 type SchemaMappingConfig struct {
@@ -46,70 +47,65 @@ type SchemaMappingConfig struct {
 	SystemColumnFamily string
 }
 
-type ColumnType struct {
-	CQLType      string
-	IsPrimaryKey bool
-	ColumnFamily string
-	IsCollection bool
-	KeyType      string
-}
-
 type SelectedColumns struct {
-	FormattedColumn     string
-	Name                string
-	IsFunc              bool
-	IsAs                bool
-	FuncName            string
-	Alias               string
-	MapKey              string
-	ListIndex           string
-	WriteTime_Column    string
-	KeyType             string
-	Is_WriteTime_Column bool
+	FormattedColumn   string
+	Name              string
+	IsFunc            bool
+	IsAs              bool
+	FuncName          string
+	Alias             string
+	MapKey            string
+	ListIndex         string
+	WriteTimeColumn   string
+	KeyType           string
+	IsWriteTimeColumn bool
 }
 
-// GetPkByTableName() searches for and retrieves the primary keys of a specific table
+// GetPkByTableName finds the primary key columns of a specified table in a given keyspace.
+//
+// This method looks up the cached primary key metadata and returns the relevant columns.
 //
 // Parameters:
-//   - tableName: A string representing the name of the table for which the metadata
-//     is requested.
+//   - keySpace: The name of the keyspace where the table resides.
+//   - tableName: The name of the table for which primary key metadata is requested.
 //
 // Returns:
-//   - []Column: Array of Column details which are Primary Keys.
-//   - An error: Returns error if function not able to search any primary keys
+//   - []Column: A slice of Column structs representing the primary keys of the table.
+//   - error: Returns an error if the primary key metadata is not found.
 func (c *SchemaMappingConfig) GetPkByTableName(tableName string, keySpace string) ([]Column, error) {
 	pkMeta, ok := c.PkMetadataCache[keySpace][tableName]
 	if !ok {
-		return nil, fmt.Errorf("could not find table metadata")
+		return nil, fmt.Errorf("could not find metadata for the table: %s", tableName)
 	}
 	return pkMeta, nil
 }
 
-// GetColumnType() retrieves the column types for a specified column in a specified table.
-// This method is a part of the SchemaMappingConfig struct and is used to map column types
-// from Cassandra (CQL) to Google Cloud Bigtable.
+// GetColumnType retrieves the metadata for a specified column in a given table and keyspace.
+//
+// This method is part of the SchemaMappingConfig struct and is responsible for mapping
+// column types from Cassandra (CQL) to Google Cloud Bigtable.
 //
 // Parameters:
-// - tableName: A string representing the name of the table.
-// - columnName: A string representing the name of the column within the specified table.
+//   - keyspace: The name of the keyspace where the table resides.
+//   - tableName: The name of the table containing the column.
+//   - columnName: The name of the column for which metadata is retrieved.
 //
 // Returns:
-//   - A pointer to a ColumnType struct that contains both the CQL type and the corresponding
-//     cassandra type for the specified column.
-//   - An error if the function is unable to determine the corresponding cassandra type.
-func (c *SchemaMappingConfig) GetColumnType(tableName string, columnName string, keySpace string) (*ColumnType, error) {
-
-	td, ok := c.TablesMetaData[keySpace][tableName]
+//   - A pointer to a ColumnType struct containing the column's CQL type, whether it's a collection,
+//     whether it's a primary key, and its key type.
+//   - An error if the table or column metadata is not found.
+func (c *SchemaMappingConfig) GetColumnType(keyspace, tableName, columnName string) (*Column, error) {
+	td, ok := c.TablesMetaData[keyspace][tableName]
 	if !ok {
-		return nil, fmt.Errorf("could not find table metadata")
+		return nil, fmt.Errorf("could not find metadata for the table: %s", tableName)
 	}
 
 	col, ok := td[columnName]
 	if !ok {
-		return nil, fmt.Errorf("could not find column metadata")
+		return nil, fmt.Errorf("could not find column metadata for the table: %s", tableName)
 	}
 
-	return &ColumnType{
+	return &Column{
 		CQLType:      col.ColumnType,
 		IsPrimaryKey: col.IsPrimaryKey,
 		IsCollection: col.IsCollection,
@@ -129,36 +125,41 @@ func (c *SchemaMappingConfig) GetColumnType(tableName string, columnName string,
 // Returns:
 // - A slice of pointers to ColumnMetadata structs containing metadata for each requested column.
 // - An error if the specified table is not found in the TablesMetaData.
-func (c *SchemaMappingConfig) GetMetadataForColumns(tableName string, columnNames []string, keySpace string) ([]*message.ColumnMetadata, error) {
+func (c *SchemaMappingConfig) GetMetadataForColumns(keySpace, tableName string, columnNames []string) ([]*message.ColumnMetadata, error) {
 	columnsMap, ok := c.TablesMetaData[keySpace][tableName]
 	if !ok {
-		c.Logger.Error("Table not found in Column MetaData Cache")
-		return nil, fmt.Errorf("table %s not found", tableName)
+		err := fmt.Errorf("could not find metadata for the table: %s", tableName)
+		c.Logger.Error(err.Error())
+		return nil, err
 	}
 
 	if len(columnNames) == 0 {
 		return c.getAllColumnsMetadata(columnsMap), nil
 	}
-
-	return c.getSpecificColumnsMetadata(columnsMap, columnNames, tableName)
+	ff, errr := c.getSpecificColumnsMetadata(columnsMap, columnNames, tableName)
+	return ff, errr
 }
 
-// GetMetadataForSelectedColumns() simply fetching column metadata for selected columns .
+// GetMetadataForSelectedColumns retrieves metadata for specified columns in a given table.
+// This method fetches metadata for the selected columns from the schema mapping configuration.
+// If no columns are specified, metadata for all columns in the table is returned.
 //
 // Parameters:
 //   - tableName: The name of the table for which column metadata is being requested.
-//   - columnNames(optional): []SelectedColumns - Accepts nil if no columnNames provided or else A slice of strings containing the names of the columns for which
-//     metadata is required. If this slice is empty, metadata for all
-//     columns in the table will be returned.
+//   - keySpace: The keyspace where the table resides.
+//   - columnNames: A slice of SelectedColumns specifying the columns for which metadata is required.
+//     If nil or empty, metadata for all columns in the table is returned.
 //
 // Returns:
-// - A slice of pointers to ColumnMetadata structs containing metadata for each requested column.
-// - An error if the specified table is not found in the TablesMetaData.
+//   - []*message.ColumnMetadata: A slice of pointers to ColumnMetadata structs containing metadata
+//     for each requested column.
+//   - error: Returns an error if the specified table is not found in TablesMetaData.
 func (c *SchemaMappingConfig) GetMetadataForSelectedColumns(tableName string, columnNames []SelectedColumns, keySpace string) ([]*message.ColumnMetadata, error) {
 	columnsMap, ok := c.TablesMetaData[keySpace][tableName]
 	if !ok {
-		c.Logger.Error("Table not found in Column MetaData Cache")
-		return nil, fmt.Errorf("table %s not found", tableName)
+		err := fmt.Errorf("could not find metadata for the table: %s", tableName)
+		c.Logger.Error(err.Error())
+		return nil, err
 	}
 
 	if len(columnNames) == 0 {
@@ -173,9 +174,7 @@ func (c *SchemaMappingConfig) GetMetadataForSelectedColumns(tableName string, co
 //   - aliasName: A string representing the alias of the column, if any.
 //   - columnName: The actual name of the column for which the writetime function is being constructed.
 //
-// Returns: A string which is either the alias name or the expression "writetime(columnName)"
-//
-//	if no alias is provided.
+// Returns: A string which is either the alias name or the expression "writetime(columnName)" if no alias is provided.
 func getTimestampColumnName(aliasName string, columnName string) string {
 	if aliasName == "" {
 		return "writetime(" + columnName + ")"
@@ -202,8 +201,8 @@ func (c *SchemaMappingConfig) getSpecificColumnsMetadataForSelectedColumns(colum
 
 		if column, ok := columnsMap[columnName]; ok {
 			columnMetadataList = append(columnMetadataList, c.cloneColumnMetadata(&column.Metadata, int32(i)))
-		} else if columnMeta.Is_WriteTime_Column {
-			metadata, err := c.handleSpecialColumn(columnsMap, getTimestampColumnName(columnMeta.Alias, columnMeta.WriteTime_Column), int32(i), true)
+		} else if columnMeta.IsWriteTimeColumn {
+			metadata, err := c.handleSpecialColumn(columnsMap, getTimestampColumnName(columnMeta.Alias, columnMeta.WriteTimeColumn), int32(i), true)
 			if err != nil {
 				return nil, err
 			}
@@ -217,7 +216,7 @@ func (c *SchemaMappingConfig) getSpecificColumnsMetadataForSelectedColumns(colum
 		} else if columnMeta.IsFunc {
 			c.Logger.Debug("Identified a function call", zap.String("columnName", columnName))
 		} else {
-			errMsg := fmt.Sprintf("table = `%s` column name = `%s` not found", tableName, columnName)
+			errMsg := fmt.Sprintf("metadata not found for the `%s` column in `%s`table", columnName, tableName)
 			c.Logger.Error(errMsg)
 			return nil, fmt.Errorf("%s", errMsg)
 		}
@@ -237,10 +236,7 @@ func (c *SchemaMappingConfig) getAllColumnsMetadata(columnsMap map[string]*Colum
 	var columnMetadataList []*message.ColumnMetadata
 	var i int32 = 0
 	for _, column := range columnsMap {
-		columnMt := column.Metadata
-		columnMd := columnMt.Clone()
-		columnMd.Index = i
-		columnMetadataList = append(columnMetadataList, columnMd)
+		columnMetadataList = append(columnMetadataList, c.cloneColumnMetadata(&column.Metadata, int32(i)))
 		i++
 	}
 	return columnMetadataList
@@ -268,7 +264,7 @@ func (c *SchemaMappingConfig) getSpecificColumnsMetadata(columnsMap map[string]*
 			}
 			columnMetadataList = append(columnMetadataList, metadata)
 		} else {
-			errMsg := fmt.Sprintf("table = `%s` column name = `%s` not found", tableName, columnName)
+			errMsg := fmt.Sprintf("metadata not found for the `%s` column in `%s`table", columnName, tableName)
 			c.Logger.Error(errMsg)
 			return nil, fmt.Errorf("%s", errMsg)
 		}
@@ -286,21 +282,28 @@ func (c *SchemaMappingConfig) getSpecificColumnsMetadata(columnsMap map[string]*
 // Returns:
 // - Pointers to ColumnMetadata structs containing metadata for each requested column.
 // - An error
-func (c *SchemaMappingConfig) handleSpecialColumn(columnsMap map[string]*Column, columnName string, index int32, iswriteTimeFunction bool) (*message.ColumnMetadata, error) {
-	var expectedType datatype.DataType
-	if columnName == limitValue {
-		expectedType = datatype.Bigint
-	} else if iswriteTimeFunction {
-		expectedType = datatype.Bigint
+func (c *SchemaMappingConfig) handleSpecialColumn(columnsMap map[string]*Column, columnName string, index int32, isWriteTimeFunction bool) (*message.ColumnMetadata, error) {
+	// Validate if the column is a special column
+	if !isSpecialColumn(columnName) && !isWriteTimeFunction {
+		return nil, fmt.Errorf("invalid special column: %s", columnName)
 	}
+
+	// Retrieve the first available column in the map
+	var columnMd *message.ColumnMetadata
 	for _, column := range columnsMap {
-		columnMd := column.Metadata.Clone()
+		columnMd = column.Metadata.Clone()
 		columnMd.Index = index
 		columnMd.Name = columnName
-		columnMd.Type = expectedType
-		return columnMd, nil
+		columnMd.Type = datatype.Bigint
+		break
 	}
-	return nil, fmt.Errorf("special column %s not found", columnName)
+
+	// No matching column found
+	if columnMd == nil {
+		return nil, fmt.Errorf("special column %s not found in provided metadata", columnName)
+	}
+
+	return columnMd, nil
 }
 
 // cloneColumnMetadata() clones the metadata from cache.
@@ -325,14 +328,29 @@ func (c *SchemaMappingConfig) cloneColumnMetadata(metadata *message.ColumnMetada
 // Returns:
 // - boolean
 func isSpecialColumn(columnName string) bool {
-	return columnName == limitValue
+	return columnName == LimitValue
 }
 
-func (c *SchemaMappingConfig) InstanceExist(keyspace string) bool {
+// InstanceExists checks if a given keyspace exists in the schema mapping configuration.
+//
+// Parameters:
+//   - keyspace: The name of the keyspace to check
+//
+// Returns:
+//   - bool: true if the keyspace exists, false otherwise
+func (c *SchemaMappingConfig) InstanceExists(keyspace string) bool {
 	_, ok := c.TablesMetaData[keyspace]
 	return ok
 }
 
+// TableExist checks if a given table exists within a specified keyspace in the schema mapping configuration.
+//
+// Parameters:
+//   - keyspace: The name of the keyspace containing the table
+//   - tableName: The name of the table to check
+//
+// Returns:
+//   - bool: true if the table exists in the specified keyspace, false otherwise
 func (c *SchemaMappingConfig) TableExist(keyspace string, tableName string) bool {
 	_, ok := c.TablesMetaData[keyspace][tableName]
 	return ok
