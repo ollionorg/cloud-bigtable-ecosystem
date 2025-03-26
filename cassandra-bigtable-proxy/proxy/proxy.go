@@ -992,7 +992,6 @@ func (c *client) prepareUpdateType(raw *frame.RawFrame, msg *message.Prepare, id
 			c.sender.Send(raw.Header, &message.ConfigError{ErrorMessage: err.Error()})
 			return nil, nil, err
 		}
-		updateQueryMetadata.VariableMetadata = getTimestampMetadataForUpdate(*updateQueryMetadata, updateQueryMetadata.VariableMetadata)
 	}
 
 	// Modify type to list type as being used with in operator

@@ -44,6 +44,7 @@ var mockTableConfig = map[string]map[string]map[string]*schemaMapping.Column{
 			ColumnName:   "column4",
 			ColumnType:   "list<text>",
 			IsPrimaryKey: false,
+			IsCollection: true,
 		},
 		"column5": &schemaMapping.Column{
 			ColumnName:   "column5",
@@ -77,6 +78,12 @@ var mockTableConfig = map[string]map[string]map[string]*schemaMapping.Column{
 			ColumnType:   "text",
 			IsPrimaryKey: true,
 			PkPrecedence: 2,
+		},
+		"column11": &schemaMapping.Column{
+			ColumnName:   "column11",
+			ColumnType:   "set<text>",
+			IsPrimaryKey: false,
+			IsCollection: true,
 		},
 	},
 		"user_info": {

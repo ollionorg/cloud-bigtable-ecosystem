@@ -26,6 +26,7 @@ import (
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	"github.com/google/go-cmp/cmp"
 	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
+	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -149,6 +150,101 @@ func TestTypeHandler_GetRows(t *testing.T) {
 				},
 			},
 			want:    ResponseHandler_Selected_Select_Success_Map,
+			wantErr: false,
+		},
+		{
+			name: "Test case 5: Successful row retrieval for writetime column",
+			fields: fields{
+				Logger:              zap.NewNop(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
+				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
+			},
+			args: args{
+				result: &btpb.ExecuteQueryResponse_Results{
+					Results: &btpb.PartialResultSet{
+						PartialRows: &btpb.PartialResultSet_ProtoRowsBatch{
+							ProtoRowsBatch: &btpb.ProtoRowsBatch{
+								BatchData: []byte("\x12\x05\x12\x03Abc\x12\x0eb\f\bر\x84\xbf\x06\x10\x80ܩ\xf0\x01"),
+							},
+						},
+					},
+				},
+				cf: []*btpb.ColumnMetadata{
+					{Name: "$col1"},
+					{Name: "$col2"},
+				},
+				query: QueryMetadata{
+					TableName:           "user_info",
+					Query:               "SELECT name, writetime(age) FROM test_keyspace.user_info where name='abc' and age='10';",
+					KeyspaceName:        "test_keyspace",
+					IsStar:              false,
+					DefaultColumnFamily: "cf1",
+					SelectedColumns: []schemaMapping.SelectedColumns{
+						{
+							Name: "name",
+						},
+						{
+							Name:              "WRITETIME(age)",
+							WriteTimeColumn:   "age",
+							IsWriteTimeColumn: true,
+						},
+					},
+				},
+			},
+			want: map[string]map[string]interface{}{
+				"0": {
+					"name":           []byte("Abc"),
+					"WRITETIME(age)": []byte("\x00\x061\x12u]\x96\xc0"),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test case 6: Successful row retrieval for writetime column with alias",
+			fields: fields{
+				Logger:              zap.NewNop(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
+				ColumnMetadataCache: map[string]map[string]message.ColumnMetadata{},
+			},
+			args: args{
+				result: &btpb.ExecuteQueryResponse_Results{
+					Results: &btpb.PartialResultSet{
+						PartialRows: &btpb.PartialResultSet_ProtoRowsBatch{
+							ProtoRowsBatch: &btpb.ProtoRowsBatch{
+								BatchData: []byte("\x12\x05\x12\x03Abc\x12\x0eb\f\bر\x84\xbf\x06\x10\x80ܩ\xf0\x01"),
+							},
+						},
+					},
+				},
+				cf: []*btpb.ColumnMetadata{
+					{Name: "$col1"},
+					{Name: "$col2"},
+				},
+				query: QueryMetadata{
+					TableName:           "user_info",
+					Query:               "SELECT name, writetime(age) as abcd FROM test_keyspace.user_info where name='abc' and age='10';",
+					KeyspaceName:        "test_keyspace",
+					IsStar:              false,
+					DefaultColumnFamily: "cf1",
+					SelectedColumns: []schemaMapping.SelectedColumns{
+						{
+							Name: "name",
+						},
+						{
+							Name:              "WRITETIME(age)",
+							WriteTimeColumn:   "age",
+							IsWriteTimeColumn: true,
+							Alias:             "abcd",
+						},
+					},
+				},
+			},
+			want: map[string]map[string]interface{}{
+				"0": {
+					"name": []byte("Abc"),
+					"abcd": []byte("\x00\x061\x12u]\x96\xc0"),
+				},
+			},
 			wantErr: false,
 		},
 	}
@@ -1144,6 +1240,270 @@ func TestTypeHandler_BuildResponseRow(t *testing.T) {
 				[]byte{0x00, 0x00},
 			},
 			wantErr: false,
+		},
+		{
+			name: "Success in writetime query",
+			fields: fields{
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
+			},
+			args: args{
+				rowMap: map[string]interface{}{
+					"abcd": map[string]interface{}{
+						"abcd": []byte{0, 0, 0, 0, 0, 0, 0, 12},
+					},
+				},
+				query: QueryMetadata{
+					TableName:           "test_table",
+					Query:               "SELECT writetime(column5) as abcd FROM test_table;",
+					KeyspaceName:        "test_keyspace",
+					IsStar:              false,
+					DefaultColumnFamily: "cf1",
+					SelectedColumns: []schemaMapping.SelectedColumns{
+						{
+							Name:              "writetime(column5)",
+							WriteTimeColumn:   "column5",
+							IsWriteTimeColumn: true,
+							Alias:             "abcd",
+						},
+					},
+					AliasMap: map[string]translator.AsKeywordMeta{
+						"abcd": {
+							Name:     "column5",
+							Alias:    "abcd",
+							DataType: "timestamp",
+							IsFunc:   false,
+						},
+					},
+				},
+				cmd: []*message.ColumnMetadata{
+					{
+						Keyspace: "test_keyspace",
+						Table:    "test_table",
+						Name:     "abcd",
+						Index:    0,
+						Type:     datatype.Timestamp,
+					},
+				},
+				mapKeyArray: []string{""},
+			},
+			want: message.Row{
+				[]byte{0, 0, 0, 0, 0, 0, 0, 12},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Success in simple `as` keyword",
+			fields: fields{
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
+			},
+			args: args{
+				rowMap: map[string]interface{}{
+					"abcd": map[string]interface{}{
+						"column5": []byte{0, 0, 0, 0, 0, 0, 0, 12},
+					},
+				},
+				query: QueryMetadata{
+					TableName:           "test_table",
+					Query:               "SELECT column5 as abcd FROM test_table;",
+					KeyspaceName:        "test_keyspace",
+					IsStar:              false,
+					DefaultColumnFamily: "cf1",
+					SelectedColumns: []schemaMapping.SelectedColumns{
+						{
+							Name:  "column5",
+							Alias: "abcd",
+						},
+					},
+					AliasMap: map[string]translator.AsKeywordMeta{
+						"abcd": {
+							Name:     "column5",
+							Alias:    "abcd",
+							DataType: "timestamp",
+							IsFunc:   false,
+						},
+					},
+				},
+				cmd: []*message.ColumnMetadata{
+					{
+						Keyspace: "test_keyspace",
+						Table:    "test_table",
+						Name:     "abcd",
+						Index:    0,
+						Type:     datatype.Timestamp,
+					},
+				},
+				mapKeyArray: []string{""},
+			},
+			want: message.Row{
+				[]byte{0, 0, 0, 0, 0, 0, 0, 12},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Success in set data types",
+			fields: fields{
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
+			},
+			args: args{
+				rowMap: map[string]interface{}{
+					"column11": []Maptype{
+						{Key: "tag1", Value: ""},
+						{Key: "tag2", Value: ""},
+					},
+				},
+				query: QueryMetadata{
+					TableName:           "test_table",
+					Query:               "SELECT column11 FROM test_table;",
+					KeyspaceName:        "test_keyspace",
+					IsStar:              false,
+					DefaultColumnFamily: "cf1",
+					SelectedColumns: []schemaMapping.SelectedColumns{
+						{
+							Name: "column11",
+						},
+					},
+					AliasMap: map[string]translator.AsKeywordMeta{},
+				},
+				cmd: []*message.ColumnMetadata{
+					{
+						Keyspace: "test_keyspace",
+						Table:    "test_table",
+						Name:     "column11",
+						Index:    0,
+						Type:     datatype.NewSetType(datatype.Varchar),
+					},
+				},
+				mapKeyArray: []string{""},
+			},
+			want: message.Row{
+				[]byte{0, 2, 0, 0, 0, 4, 116, 97, 103, 49, 0, 0, 0, 4, 116, 97, 103, 50},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Failure case in set data types",
+			fields: fields{
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
+			},
+			args: args{
+				rowMap: map[string]interface{}{
+					"column7": []Maptype{
+						{Key: "tag1", Value: ""},
+						{Key: "tag2", Value: ""},
+					},
+				},
+				query: QueryMetadata{
+					TableName:           "test_table",
+					Query:               "SELECT column7 FROM test_table;",
+					KeyspaceName:        "test_keyspace",
+					IsStar:              false,
+					DefaultColumnFamily: "cf1",
+					SelectedColumns: []schemaMapping.SelectedColumns{
+						{
+							Name: "column7",
+						},
+					},
+					AliasMap: map[string]translator.AsKeywordMeta{},
+				},
+				cmd: []*message.ColumnMetadata{
+					{
+						Keyspace: "test_keyspace",
+						Table:    "test_table",
+						Name:     "column7",
+						Index:    0,
+						Type:     datatype.NewSetType(datatype.Varchar),
+					},
+				},
+				mapKeyArray: []string{""},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Success case in list data types",
+			fields: fields{
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
+			},
+			args: args{
+				rowMap: map[string]interface{}{
+					"column4": []Maptype{
+						{Key: "key1", Value: []byte("tage1")},
+						{Key: "key2", Value: []byte("tage2")},
+					},
+				},
+				query: QueryMetadata{
+					TableName:           "test_table",
+					Query:               "SELECT column4 FROM test_table;",
+					KeyspaceName:        "test_keyspace",
+					IsStar:              false,
+					DefaultColumnFamily: "cf1",
+					SelectedColumns: []schemaMapping.SelectedColumns{
+						{
+							Name: "column4",
+						},
+					},
+					AliasMap: map[string]translator.AsKeywordMeta{},
+				},
+				cmd: []*message.ColumnMetadata{
+					{
+						Keyspace: "test_keyspace",
+						Table:    "test_table",
+						Name:     "column4",
+						Index:    0,
+						Type:     datatype.NewListType(datatype.Varchar),
+					},
+				},
+				mapKeyArray: []string{""},
+			},
+			want: message.Row{
+				[]byte{0, 2, 0, 0, 0, 5, 116, 97, 103, 101, 49, 0, 0, 0, 5, 116, 97, 103, 101, 50},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Failure case in list data types",
+			fields: fields{
+				Logger:              zap.NewExample(),
+				SchemaMappingConfig: GetSchemaMappingConfig(),
+			},
+			args: args{
+				rowMap: map[string]interface{}{
+					"column4": []Maptype{
+						{Key: "tag1", Value: ""},
+						{Key: "tag2", Value: ""},
+					},
+				},
+				query: QueryMetadata{
+					TableName:           "test_table",
+					Query:               "SELECT column4 FROM test_table;",
+					KeyspaceName:        "test_keyspace",
+					IsStar:              false,
+					DefaultColumnFamily: "cf1",
+					SelectedColumns: []schemaMapping.SelectedColumns{
+						{
+							Name: "column4",
+						},
+					},
+					AliasMap: map[string]translator.AsKeywordMeta{},
+				},
+				cmd: []*message.ColumnMetadata{
+					{
+						Keyspace: "test_keyspace",
+						Table:    "test_table",
+						Name:     "column4",
+						Index:    0,
+						Type:     datatype.NewListType(datatype.Varchar),
+					},
+				},
+				mapKeyArray: []string{""},
+			},
+			want:    nil,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

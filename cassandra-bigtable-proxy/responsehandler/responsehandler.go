@@ -18,7 +18,6 @@ package responsehandler
 
 import (
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 
@@ -76,8 +75,6 @@ func (th *TypeHandler) GetRows(result *btpb.ExecuteQueryResponse_Results, cf []*
 			for k, v := range rowMap {
 				existingMap[k] = v
 			}
-		} else {
-			rowMapData[id] = rowMap
 		}
 
 		(*rowCount)++
@@ -242,13 +239,7 @@ func (th *TypeHandler) processArray(value *btpb.Value, rowMap *map[string]interf
 // This function uses helper functions to extract unique keys, handle aliases, and determine column types
 func (th *TypeHandler) BuildMetadata(rowMap map[string]map[string]interface{}, query QueryMetadata) (cmd []*message.ColumnMetadata, mapKeyArr []string, err error) {
 	uniqueColumns := ExtractUniqueKeys(rowMap, query)
-	var aliasKeys []string
 	i := 0
-	if len(query.AliasMap) > 0 {
-		for k := range query.AliasMap {
-			aliasKeys = append(aliasKeys, k)
-		}
-	}
 	for index := range uniqueColumns {
 		column := uniqueColumns[index]
 		if column == rowkey {
@@ -263,8 +254,10 @@ func (th *TypeHandler) BuildMetadata(rowMap map[string]map[string]interface{}, q
 			cqlType = "timestamp"
 		} else {
 			lookupColumn := column
-			if len(query.AliasMap) > 0 && slices.Contains(aliasKeys, column) {
-				lookupColumn = query.AliasMap[column].Name
+			if len(query.AliasMap) > 0 {
+				if alias, exists := query.AliasMap[column]; exists {
+					lookupColumn = alias.Name
+				}
 			}
 			cqlType, _, err = th.GetColumnMeta(query.KeyspaceName, query.TableName, lookupColumn)
 			if err != nil {
@@ -305,14 +298,6 @@ func (th *TypeHandler) BuildMetadata(rowMap map[string]map[string]interface{}, q
 //   - err: An error if any occurs during the construction of the row, especially in data retrieval or encoding.
 func (th *TypeHandler) BuildResponseRow(rowMap map[string]interface{}, query QueryMetadata, cmd []*message.ColumnMetadata, mapKeyArray []string) (message.Row, error) {
 	var mr message.Row
-	var aliasFound bool
-	var aliasKeys []string
-	if len(query.AliasMap) > 0 {
-		aliasFound = true
-		for k := range query.AliasMap {
-			aliasKeys = append(aliasKeys, k)
-		}
-	}
 	for index, metaData := range cmd {
 		key := metaData.Name
 		mapKey := mapKeyArray[index]
@@ -329,16 +314,15 @@ func (th *TypeHandler) BuildResponseRow(rowMap map[string]interface{}, query Que
 		col := GetQueryColumn(query, index, key)
 		if col.IsWriteTimeColumn {
 			cqlType = "timestamp"
-			if aliasFound && slices.Contains(aliasKeys, key) {
+			if _, exists := query.AliasMap[key]; exists {
 				val := value.(map[string]interface{})
 				value = val[key]
 			}
-		} else if aliasFound && slices.Contains(aliasKeys, key) {
-			//checking if alias exists
-			cqlType, isCollection, err = th.GetColumnMeta(query.KeyspaceName, query.TableName, query.AliasMap[key].Name)
+		} else if aliasKey, exists := query.AliasMap[key]; exists {
+			cqlType, isCollection, err = th.GetColumnMeta(query.KeyspaceName, query.TableName, aliasKey.Name)
 			if !isCollection {
 				val := value.(map[string]interface{})
-				value = val[query.AliasMap[key].Name]
+				value = val[aliasKey.Name]
 			}
 		} else {
 			cqlType, isCollection, err = th.GetColumnMeta(query.KeyspaceName, query.TableName, key)

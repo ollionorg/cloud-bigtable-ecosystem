@@ -131,11 +131,6 @@ func Run(ctx context.Context, args []string) int {
 		configFile = configFileEnv
 	}
 
-	UserConfig, err := LoadConfig(configFile)
-	if err != nil {
-		log.Fatalf("error while loading config.yaml: %v", err)
-	}
-
 	parser, err := kong.New(&cfg)
 	if err != nil {
 		panic(err)
@@ -157,6 +152,12 @@ func Run(ctx context.Context, args []string) int {
 		if err != nil {
 			cliCtx.Errorf("invalid YAML in configuration file '%s': %v", cfg.Config.Name(), err)
 		}
+		configFile = cfg.Config.Name()
+	}
+
+	UserConfig, err := LoadConfig(configFile)
+	if err != nil {
+		log.Fatalf("error while loading config.yaml: %v", err)
 	}
 
 	if cfg.NumConns < 1 {
