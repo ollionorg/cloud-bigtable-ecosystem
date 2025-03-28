@@ -90,7 +90,7 @@
         "expected_result": [
           {
             "row_count": 1,
-            "datatype": "bigint"
+            "datatype": "int"
           }
         ]
       }

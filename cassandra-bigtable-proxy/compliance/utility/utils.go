@@ -19,67 +19,120 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 )
 
-// convertParams converts parameters to the correct Go types based on their expected Cassandra data types
-func ConvertParams(params []map[string]interface{}) []interface{} {
-	convertedParams := make([]interface{}, len(params))
-	for i, param := range params {
-		value := param["value"]
-		datatype := param["datatype"].(string)
+// ConversionError represents an error that occurs during type conversion
+type ConversionError struct {
+	Value     interface{}
+	Type      string
+	Operation string
+	Err       error
+}
 
+func (e *ConversionError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("failed to convert value '%v' to %s: %v", e.Value, e.Type, e.Err)
+	}
+	return fmt.Sprintf("failed to convert value '%v' to %s: unsupported type %T", e.Value, e.Type, e.Value)
+}
+
+// convertParams converts parameters to the correct Go types based on their expected Cassandra data types
+func ConvertParams(t *testing.T, params []map[string]interface{}, fileName, query string) []interface{} {
+	convertedParams := make([]any, len(params))
+	for i, param := range params {
 		// Convert value based on datatype
-		convertedParams[i] = ConvertValue(value, datatype)
+		convertedParams[i] = ConvertValue(t, param, fileName, query)
 	}
 	return convertedParams
 }
 
-func toBigIntTimestamp(value interface{}) int64 {
+// toBigIntTimestamp converts a value to a Unix microsecond timestamp
+func toBigIntTimestamp(value interface{}) (int64, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "current" {
-			unixTimestamp := time.Now().UnixMicro()
-			return unixTimestamp
+			return time.Now().UnixMicro(), nil
 		} else if v == "future" {
-			unixTimestamp := time.Now().Add(time.Hour).UnixMicro()
-			return unixTimestamp
+			return time.Now().Add(time.Hour).UnixMicro(), nil
 		} else if v == "past" {
-			unixTimestamp := time.Now().Add(-time.Hour).UnixMicro()
-			return unixTimestamp
+			return time.Now().Add(-time.Hour).UnixMicro(), nil
 		} else if ms, err := strconv.ParseInt(v, 10, 64); err == nil {
-			return ms
+			return ms, nil
+		} else {
+			return 0, &ConversionError{Value: value, Type: "bigint timestamp", Operation: "parse string", Err: err}
 		}
-
 	case int, int64, float64:
-		return toInt64(v)
+		if result, err := toInt64(v); err == nil {
+			return result, nil
+		} else {
+			return 0, &ConversionError{Value: value, Type: "bigint timestamp", Operation: "convert number", Err: err}
+		}
 	case time.Time:
-		return toInt64(v)
+		return v.UnixMicro(), nil
 	default:
-		return time.Now().UnixMicro()
+		return 0, &ConversionError{Value: value, Type: "bigint timestamp", Operation: "type conversion"}
 	}
-	return time.Now().UnixMicro()
 }
 
-// convertValue converts a value to the corresponding Go type based on the Cassandra datatype.
-func ConvertValue(value interface{}, datatype string) interface{} {
+// ConvertValue converts a value to the corresponding Go type based on the Cassandra datatype
+func ConvertValue(t *testing.T, param map[string]any, fileName, query string) any {
+	value := param["value"]
+	datatype := param["datatype"].(string)
+
 	switch datatype {
-	case "string":
+	case "string", "text":
 		return fmt.Sprintf("%v", value)
 	case "bigint":
-		return toInt64(value)
+		result, err := toInt64(value)
+		if err != nil {
+			LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			return nil
+		}
+		return result
 	case "int":
-		return toInt(value)
+		result, err := toInt(value)
+		if err != nil {
+			LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			return nil
+		}
+		return result
 	case "double":
-		return toFloat64(value)
+		result, err := toFloat64(value)
+		if err != nil {
+			LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			return nil
+		}
+		return result
 	case "float":
-		return toFloat32(value)
+		result, err := toFloat32(value)
+		if err != nil {
+			LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			return nil
+		}
+		return result
 	case "boolean":
-		return toBool(value)
+		result, err := toBool(value)
+		if err != nil {
+			LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			return nil
+		}
+		return result
 	case "bigintTimestamp":
-		return toBigIntTimestamp(value)
+		result, err := toBigIntTimestamp(value)
+		if err != nil {
+			LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			return nil
+		}
+		return result
 	case "timestamp":
-		return toTimestampWrite(value)
+		result, err := toTimestamp(value)
+		if err != nil {
+			LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			return nil
+		}
+		return result
 	case "map<text,text>":
 		return toMapStringString(value)
 	case "map<text,int>":
@@ -149,133 +202,171 @@ func ConvertValue(value interface{}, datatype string) interface{} {
 	case "createlist<double>":
 		return ConvertCSVToFloat64List(value.(string))
 	default:
-		return value // Return as-is if no specific conversion is defined
+		LogTestFatal(t, fmt.Sprintf("There is no valid data type provided in the `%s` file for the query: `%s`", fileName, query))
+		return nil
 	}
 }
 
-// toInt64() converts various types (int, int64, float64, string) to int64.
-// If the input is a string, it attempts to parse it as an integer.
-// Returns 0 if the conversion fails or the type is unsupported.
-func toInt64(value interface{}) int64 {
+// toInt64 converts an interface value to int64 and returns an error if conversion fails
+func toInt64(value interface{}) (int64, error) {
 	switch v := value.(type) {
 	case int:
-		return int64(v)
+		return int64(v), nil
 	case int64:
-		return v
+		return v, nil
 	case float64:
-		return int64(v)
+		return int64(v), nil
 	case string:
-		if ms, err := strconv.ParseInt(v, 10, 64); err == nil {
-			return ms
+		ms, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return 0, &ConversionError{Value: value, Type: "int64", Operation: "parse string", Err: err}
 		}
-		return 0
+		return ms, nil
 	default:
-		return 0
+		return 0, &ConversionError{Value: value, Type: "int64", Operation: "type conversion"}
 	}
 }
 
-// toInt() converts float64 or int to int.
-// Returns 0 if the conversion fails or the type is unsupported.
-func toInt(value interface{}) int {
+// toInt converts an interface value to int and returns an error if conversion fails
+func toInt(value interface{}) (int, error) {
 	switch v := value.(type) {
 	case int:
-		return v
+		return v, nil
 	case float64:
-		return int(v)
+		return int(v), nil
+	case string:
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			return 0, &ConversionError{Value: value, Type: "int", Operation: "parse string", Err: err}
+		}
+		return i, nil
 	default:
-		return 0
+		return 0, &ConversionError{Value: value, Type: "int", Operation: "type conversion"}
 	}
 }
 
-// toFloat64() converts input to float64 if possible, returns 0.0 otherwise.
-func toFloat64(value interface{}) float64 {
-	if v, ok := value.(float64); ok {
-		return v
+// toFloat64 converts input to float64 and returns an error if conversion fails
+func toFloat64(value interface{}) (float64, error) {
+	switch v := value.(type) {
+	case float64:
+		return v, nil
+	case float32:
+		return float64(v), nil
+	case int:
+		return float64(v), nil
+	case int64:
+		return float64(v), nil
+	case string:
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, &ConversionError{Value: value, Type: "float64", Operation: "parse string", Err: err}
+		}
+		return f, nil
+	default:
+		return 0, &ConversionError{Value: value, Type: "float64", Operation: "type conversion"}
 	}
-	return 0.0
 }
 
-// toFloat32() converts float64 to float32 if possible, returns 0.0 otherwise.
-func toFloat32(value interface{}) float32 {
-	if v, ok := value.(float64); ok {
-		return float32(v)
+// toFloat32 converts input to float32 and returns an error if conversion fails
+func toFloat32(value interface{}) (float32, error) {
+	switch v := value.(type) {
+	case float32:
+		return v, nil
+	case float64:
+		return float32(v), nil
+	case int:
+		return float32(v), nil
+	case int64:
+		return float32(v), nil
+	case string:
+		f, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return 0, &ConversionError{Value: value, Type: "float32", Operation: "parse string", Err: err}
+		}
+		return float32(f), nil
+	default:
+		return 0, &ConversionError{Value: value, Type: "float32", Operation: "type conversion"}
 	}
-	return 0.0
 }
 
-// toBool() converts input to boolean if the type is bool, returns false otherwise.
-func toBool(value interface{}) bool {
-	if v, ok := value.(bool); ok {
-		return v
+// toBool converts input to boolean and returns an error if conversion fails
+func toBool(value interface{}) (bool, error) {
+	switch v := value.(type) {
+	case bool:
+		return v, nil
+	case string:
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return false, &ConversionError{Value: value, Type: "bool", Operation: "parse string", Err: err}
+		}
+		return b, nil
+	case int:
+		return v != 0, nil
+	case float64:
+		return v != 0, nil
+	default:
+		return false, &ConversionError{Value: value, Type: "bool", Operation: "type conversion"}
 	}
-	return false
 }
 
-// toTimestampWrite() returns a Unix microsecond timestamp based on input.
-// - "current" returns the current time.
-// - "future" returns the current time + 1 hour.
-// - "past" returns the current time - 1 hour.
-// If input is an epoch string or int, it returns the parsed timestamp.
-// Returns the current timestamp if the input type is unsupported.
-func toTimestampWrite(value interface{}) time.Time {
+// toTimestampWrite returns a Unix microsecond timestamp based on input
+func toTimestampWrite(value interface{}) (time.Time, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "current" {
-			unixTimestamp := time.Now()
-			return unixTimestamp
+			return time.Now(), nil
 		} else if v == "future" {
-			unixTimestamp := time.Now().Add(time.Hour)
-			return unixTimestamp
+			return time.Now().Add(time.Hour), nil
 		} else if v == "past" {
-			unixTimestamp := time.Now().Add(-time.Hour)
-			return unixTimestamp
+			return time.Now().Add(-time.Hour), nil
 		} else if ms, err := strconv.ParseInt(v, 10, 64); err == nil {
 			seconds := ms / 1_000_000
 			microseconds := ms % 1_000_000
-			t := time.Unix(seconds, microseconds*1_000)
-			return t
-		} else if ms, err := time.Parse(v, time.RFC3339); err == nil {
-			return ms
+			return time.Unix(seconds, microseconds*1_000), nil
+		} else if ms, err := time.Parse(time.RFC3339, v); err == nil {
+			return ms, nil
+		} else {
+			return time.Time{}, &ConversionError{Value: value, Type: "timestamp", Operation: "parse string", Err: err}
 		}
-
 	case int, int64, float64:
-		seconds := toInt64(v) / 1_000_000
-		microseconds := toInt64(v) % 1_000_000
-		t := time.Unix(seconds, microseconds*1_000)
-		return t
+		if result, err := toInt64(v); err == nil {
+			seconds := result / 1_000_000
+			microseconds := result % 1_000_000
+			return time.Unix(seconds, microseconds*1_000), nil
+		} else {
+			return time.Time{}, &ConversionError{Value: value, Type: "timestamp", Operation: "convert number", Err: err}
+		}
 	case time.Time:
-		return v
+		return v, nil
 	default:
-		return time.Now()
+		return time.Time{}, &ConversionError{Value: value, Type: "timestamp", Operation: "type conversion"}
 	}
-	return time.Now()
 }
 
-// toTimestamp() converts input (string, int, float64) to time.Time.
-// If the input is invalid or unsupported, returns epoch 0 (Jan 1, 1970).
-func toTimestamp(value interface{}) time.Time {
+// toTimestamp converts input to time.Time
+func toTimestamp(value interface{}) (time.Time, error) {
 	switch v := value.(type) {
 	case string:
 		if ms, err := strconv.ParseInt(v, 10, 64); err == nil {
 			seconds := ms / 1_000_000
 			microseconds := ms % 1_000_000
-			t := time.Unix(seconds, microseconds*1_000)
-			return t
+			return time.Unix(seconds, microseconds*1_000), nil
+		} else {
+			return time.Time{}, &ConversionError{Value: value, Type: "timestamp", Operation: "parse string", Err: err}
 		}
 	case int, int64, float64:
-		// If the input is already in epoch milliseconds
-		ms := toInt64(v)
-		seconds := ms / 1_000_000
-		microseconds := ms % 1_000_000
-		t := time.Unix(seconds, microseconds*1_000)
-		return t
+		if result, err := toInt64(v); err == nil {
+			seconds := result / 1_000_000
+			microseconds := result % 1_000_000
+			return time.Unix(seconds, microseconds*1_000), nil
+		} else {
+			return time.Time{}, &ConversionError{Value: value, Type: "timestamp", Operation: "convert number", Err: err}
+		}
 	case time.Time:
-		// Convert time.Time to epoch milliseconds
-		return time.Unix(v.UnixMicro(), 0)
+		return time.Unix(v.UnixMicro()/1_000_000, (v.UnixMicro()%1_000_000)*1_000), nil
 	default:
-		return time.Unix(toInt64(0), 0) // Return 0 for unsupported types
+		return time.Time{}, &ConversionError{Value: value, Type: "timestamp", Operation: "type conversion"}
 	}
-	return time.Unix(toInt64(0), 0)
 }
 
 // toMapStringString() converts map[string]interface{} to map[string]string.
@@ -290,23 +381,27 @@ func toMapStringString(value interface{}) map[string]string {
 	return result
 }
 
-// toMapStringInt() converts map[string]interface{} to map[string]int.
+// toMapStringInt converts map[string]interface{} to map[string]int
 func toMapStringInt(value interface{}) map[string]int {
 	result := make(map[string]int)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			result[k] = toInt(v)
+			if intVal, err := toInt(v); err == nil {
+				result[k] = intVal
+			}
 		}
 	}
 	return result
 }
 
-// toMapStringInt64() converts map[string]interface{} to map[string]int64.
+// toMapStringInt64 converts map[string]interface{} to map[string]int64
 func toMapStringInt64(value interface{}) map[string]int64 {
 	result := make(map[string]int64)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			result[k] = toInt64(v)
+			if int64Val, err := toInt64(v); err == nil {
+				result[k] = int64Val
+			}
 		}
 	}
 	return result
@@ -319,233 +414,243 @@ func ConvertCSVToList(input string) []string {
 }
 
 // ConvertCSVToInt64List takes a comma-separated string of numbers
-// and returns a slice of int64, without explicit error handling.
+// and returns a slice of int64, handling conversion errors by skipping invalid values
 func ConvertCSVToInt64List(input string) []int64 {
 	// Split the input string by commas
 	stringList := strings.Split(input, ",")
 
-	// Create a slice to hold the int64 values
-	int64List := make([]int64, len(stringList))
+	// Create a slice to hold the int64 values with initial capacity
+	int64List := make([]int64, 0, len(stringList))
 
 	// Iterate over the split string elements
-	for i, str := range stringList {
+	for _, str := range stringList {
 		// Trim any potential whitespace around the string
 		str = strings.TrimSpace(str)
 
-		// Convert the string to an int64; assume the conversion is always valid
-		num, _ := strconv.ParseInt(str, 10, 64)
-
-		// Assign the int64 to the slice
-		int64List[i] = num
+		// Convert the string to an int64, skip invalid values
+		if num, err := strconv.ParseInt(str, 10, 64); err == nil {
+			int64List = append(int64List, num)
+		}
 	}
 
 	return int64List
 }
 
 func ConvertCSVToIntList(input string) []int64 {
-	// Split the input string by commas
 	stringList := strings.Split(input, ",")
+	intList := make([]int64, 0, len(stringList))
 
-	// Create a slice to hold the int64 values
-	intList := make([]int64, len(stringList))
-
-	// Iterate over the split string elements
-	for i, str := range stringList {
-		// Trim any potential whitespace around the string
+	for _, str := range stringList {
 		str = strings.TrimSpace(str)
-
-		// Convert the string to an int64; assume the conversion is always valid
-		num, _ := strconv.ParseInt(str, 10, 32)
-
-		// Assign the int64 to the slice
-		intList[i] = num
+		if val, err := strconv.ParseInt(str, 10, 32); err == nil {
+			intList = append(intList, val)
+		}
 	}
 
 	return intList
 }
 
+// ConvertCSVToFloat64List takes a comma-separated string of numbers
+// and returns a slice of float64, handling conversion errors by skipping invalid values
 func ConvertCSVToFloat64List(input string) []float64 {
 	// Split the input string into substrings
 	stringList := strings.Split(input, ",")
-	// Allocate a slice for float64 values
-	floatList := make([]float64, len(stringList))
+
+	// Allocate a slice for float64 values with initial capacity
+	floatList := make([]float64, 0, len(stringList))
+
 	// Loop over each string element
-	for i, str := range stringList {
+	for _, str := range stringList {
 		// Trim whitespace
 		str = strings.TrimSpace(str)
+
 		// Attempt to convert the string to float64
-		num, err := strconv.ParseFloat(str, 64)
-		if err != nil {
-			fmt.Printf("Error converting '%s' to float64: %v\n", str, err)
+		if num, err := strconv.ParseFloat(str, 64); err == nil {
+			floatList = append(floatList, num)
 		}
-		// Store the float64 in the slice
-		floatList[i] = num
 	}
 	return floatList
 }
 
+// ConvertCSVToFloat32List takes a comma-separated string of numbers
+// and returns a slice of float32, handling conversion errors by skipping invalid values
 func ConvertCSVToFloat32List(input string) []float32 {
-	// Split the input string into substrings by the comma delimiter
+	// Split the input string into substrings
 	stringList := strings.Split(input, ",")
-	// Allocate a slice for float32 values
-	floatList := make([]float32, len(stringList))
+
+	// Allocate a slice for float32 values with initial capacity
+	floatList := make([]float32, 0, len(stringList))
+
 	// Loop over each string element
-	for i, str := range stringList {
-		// Trim any whitespace from the string
+	for _, str := range stringList {
+		// Trim whitespace
 		str = strings.TrimSpace(str)
-		// Convert the string to a float32 directly with ParseFloat; we still need float64 as type but specify 32 bits for float size
-		num, err := strconv.ParseFloat(str, 32)
-		if err != nil {
-			// Handle errors in conversion, e.g., logging or setting a default value
-			fmt.Printf("Error converting '%s' to float32: %v\n", str, err)
-			continue // You may want to handle this differently depending on your needs
+
+		// Attempt to convert the string to float32
+		if num, err := strconv.ParseFloat(str, 32); err == nil {
+			floatList = append(floatList, float32(num))
 		}
-		// Assign the converted number (type-casted to float32) to the slice
-		floatList[i] = float32(num)
 	}
 	return floatList
 }
 
-// toMapStringBool() converts map[string]interface{} to map[string]bool.
+// toMapStringBool converts map[string]interface{} to map[string]bool
 func toMapStringBool(value interface{}) map[string]bool {
 	result := make(map[string]bool)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			result[k] = toBool(v)
+			if boolVal, err := toBool(v); err == nil {
+				result[k] = boolVal
+			}
 		}
 	}
 	return result
 }
 
-// toMapStringFloat32() converts map[string]interface{} to map[string]float32.
+// toMapStringFloat32 converts map[string]interface{} to map[string]float32
 func toMapStringFloat32(value interface{}) map[string]float32 {
 	result := make(map[string]float32)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			result[k] = toFloat32(v)
+			if floatVal, err := toFloat32(v); err == nil {
+				result[k] = floatVal
+			}
 		}
 	}
 	return result
 }
 
-// toMapStringFloat64() converts map[string]interface{} to map[string]float64.
-// If the value is not convertible to float64, it defaults to 0.0.
+// toMapStringFloat64 converts map[string]interface{} to map[string]float64
 func toMapStringFloat64(value interface{}) map[string]float64 {
 	result := make(map[string]float64)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			result[k] = toFloat64(v)
+			if floatVal, err := toFloat64(v); err == nil {
+				result[k] = floatVal
+			}
 		}
 	}
 	return result
 }
 
-// toMapStringTimestamp() converts map[string]interface{} to map[string]time.Time.
-// Values are parsed as timestamps using toTimestamp().
+// toMapStringTimestamp converts map[string]interface{} to map[string]time.Time
 func toMapStringTimestamp(value interface{}) map[string]time.Time {
 	result := make(map[string]time.Time)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			timestamp := toTimestamp(v)
-			result[k] = timestamp
+			if timestamp, err := toTimestamp(v); err == nil {
+				result[k] = timestamp
+			}
 		}
 	}
 	return result
 }
 
-// toMapTimestampString() converts map[string]interface{} to map[time.Time]string.
-// Keys are parsed as Unix timestamps (in seconds) and converted to time.Time.
+// toMapTimestampString converts map[string]interface{} to map[time.Time]string
 func toMapTimestampString(value interface{}) map[time.Time]string {
 	result := make(map[time.Time]string)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			unixTimestamp, _ := strconv.ParseInt(k, 10, 64)
-			parsedTime := time.Unix(unixTimestamp, 0).UTC()
-			result[parsedTime] = fmt.Sprintf("%v", v)
+			if unixTimestamp, err := strconv.ParseInt(k, 10, 64); err == nil {
+				parsedTime := time.Unix(unixTimestamp, 0).UTC()
+				result[parsedTime] = fmt.Sprintf("%v", v)
+			}
 		}
 	}
 	return result
 }
 
-// toMapTimestampBool() converts map[string]interface{} to map[time.Time]bool.
-// Keys are parsed as Unix timestamps, and values are converted to bool.
+// toMapTimestampBool converts map[string]interface{} to map[time.Time]bool
 func toMapTimestampBool(value interface{}) map[time.Time]bool {
 	result := make(map[time.Time]bool)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			unixTimestamp, _ := strconv.ParseInt(k, 10, 64)
-			parsedTime := time.Unix(unixTimestamp, 0).UTC()
-			result[parsedTime] = toBool(v)
+			if unixTimestamp, err := strconv.ParseInt(k, 10, 64); err == nil {
+				parsedTime := time.Unix(unixTimestamp, 0).UTC()
+				if boolVal, err := toBool(v); err == nil {
+					result[parsedTime] = boolVal
+				}
+			}
 		}
 	}
 	return result
 }
 
-// toMapTimestampFloat32() converts map[string]interface{} to map[time.Time]float32.
-// Keys are parsed as Unix timestamps, and values are converted to float32.
+// toMapTimestampFloat32 converts map[string]interface{} to map[time.Time]float32
 func toMapTimestampFloat32(value interface{}) map[time.Time]float32 {
 	result := make(map[time.Time]float32)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			unixTimestamp, _ := strconv.ParseInt(k, 10, 64)
-			parsedTime := time.Unix(unixTimestamp, 0).UTC()
-			result[parsedTime] = toFloat32(v)
+			if unixTimestamp, err := strconv.ParseInt(k, 10, 64); err == nil {
+				parsedTime := time.Unix(unixTimestamp, 0).UTC()
+				if floatVal, err := toFloat32(v); err == nil {
+					result[parsedTime] = floatVal
+				}
+			}
 		}
 	}
 	return result
 }
 
-// toMapTimestampFloat64() converts map[string]interface{} to map[time.Time]float64.
-// Keys are parsed as Unix timestamps, and values are converted to float64.
+// toMapTimestampFloat64 converts map[string]interface{} to map[time.Time]float64
 func toMapTimestampFloat64(value interface{}) map[time.Time]float64 {
 	result := make(map[time.Time]float64)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			unixTimestamp, _ := strconv.ParseInt(k, 10, 64)
-			parsedTime := time.Unix(unixTimestamp, 0).UTC()
-			result[parsedTime] = toFloat64(v)
+			if unixTimestamp, err := strconv.ParseInt(k, 10, 64); err == nil {
+				parsedTime := time.Unix(unixTimestamp, 0).UTC()
+				if floatVal, err := toFloat64(v); err == nil {
+					result[parsedTime] = floatVal
+				}
+			}
 		}
 	}
 	return result
 }
 
-// toMapTimestampInt() converts map[string]interface{} to map[time.Time]int.
-// Keys are parsed as Unix timestamps, and values are converted to int.
-func toMapTimestampInt(value interface{}) map[time.Time]int {
-	result := make(map[time.Time]int)
-	if m, ok := value.(map[string]interface{}); ok {
-		for k, v := range m {
-			unixTimestamp, _ := strconv.ParseInt(k, 10, 64)
-			parsedTime := time.Unix(unixTimestamp, 0).UTC()
-			result[parsedTime] = toInt(v)
-		}
-	}
-	return result
-}
-
-// toMapTimestampInt64() converts map[string]interface{} to map[time.Time]int64.
-// Keys are parsed as Unix timestamps, and values are converted to int64.
+// toMapTimestampInt64 converts map[string]interface{} to map[time.Time]int64
 func toMapTimestampInt64(value interface{}) map[time.Time]int64 {
 	result := make(map[time.Time]int64)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			unixTimestamp, _ := strconv.ParseInt(k, 10, 64)
-			parsedTime := time.Unix(unixTimestamp, 0).UTC()
-			result[parsedTime] = toInt64(v)
+			if unixTimestamp, err := strconv.ParseInt(k, 10, 64); err == nil {
+				parsedTime := time.Unix(unixTimestamp, 0).UTC()
+				if val, err := toInt64(v); err == nil {
+					result[parsedTime] = val
+				}
+			}
 		}
 	}
 	return result
 }
 
-// toMapTimestampTimestamp() converts map[string]interface{} to map[time.Time]time.Time.
-// Both keys and values are parsed as Unix timestamps and converted to time.Time.
+// toMapTimestampInt converts map[string]interface{} to map[time.Time]int
+func toMapTimestampInt(value interface{}) map[time.Time]int {
+	result := make(map[time.Time]int)
+	if m, ok := value.(map[string]interface{}); ok {
+		for k, v := range m {
+			if unixTimestamp, err := strconv.ParseInt(k, 10, 64); err == nil {
+				parsedTime := time.Unix(unixTimestamp, 0).UTC()
+				if val, err := toInt(v); err == nil {
+					result[parsedTime] = val
+				}
+			}
+		}
+	}
+	return result
+}
+
+// toMapTimestampTimestamp() converts map[string]interface{} to map[time.Time]time.Time
 func toMapTimestampTimestamp(value interface{}) map[time.Time]time.Time {
 	result := make(map[time.Time]time.Time)
 	if m, ok := value.(map[string]interface{}); ok {
 		for k, v := range m {
-			unixTimestamp, _ := strconv.ParseInt(k, 10, 64)
-			parsedTime := time.Unix(unixTimestamp, 0).UTC()
-			result[parsedTime] = time.Unix(toInt64(v), 0).UTC()
+			if unixTimestamp, err := strconv.ParseInt(k, 10, 64); err == nil {
+				parsedTime := time.Unix(unixTimestamp, 0).UTC()
+				if val, err := toInt64(v); err == nil {
+					result[parsedTime] = time.Unix(val, 0).UTC()
+				}
+			}
 		}
 	}
 	return result
@@ -564,14 +669,13 @@ func toSetString(value interface{}) []string {
 	return nil
 }
 
-// toSetBool() converts []interface{} to []bool by casting each item to bool.
-// Returns nil if conversion is not possible.
+// toSetBool converts []interface{} to []bool by converting each item using toBool
 func toSetBool(value interface{}) []bool {
 	if v, ok := value.([]interface{}); ok {
 		var result []bool
 		for _, item := range v {
-			if b, ok := item.(bool); ok {
-				result = append(result, b)
+			if boolVal, err := toBool(item); err == nil {
+				result = append(result, boolVal)
 			}
 		}
 		return result
@@ -582,77 +686,80 @@ func toSetBool(value interface{}) []bool {
 // toSetInt() converts []interface{} to []int by converting each item using toInt().
 // Returns nil if conversion is not possible.
 func toSetInt(value interface{}) []int {
-	if v, ok := value.([]interface{}); ok {
-		var result []int
-		for _, item := range v {
-			result = append(result, toInt(item))
+	var result []int
+	if items, ok := value.([]interface{}); ok {
+		for _, item := range items {
+			if val, err := toInt(item); err == nil {
+				result = append(result, val)
+			}
 		}
-		return result
 	}
-	return nil
+	return result
 }
 
 // toSetInt64() converts []interface{} to []int64 by converting each item using toInt64().
 // Returns nil if conversion is not possible.
 func toSetInt64(value interface{}) []int64 {
-	if v, ok := value.([]interface{}); ok {
-		var result []int64
-		for _, item := range v {
-			result = append(result, toInt64(item))
+	var result []int64
+	if items, ok := value.([]interface{}); ok {
+		for _, item := range items {
+			if val, err := toInt64(item); err == nil {
+				result = append(result, val)
+			}
 		}
-		return result
 	}
-	return nil
+	return result
 }
 
-// toSetFloat32() converts []interface{} to []float32 by converting each item using toFloat32().
-// Returns nil if conversion is not possible.
+// toSetFloat32 converts []interface{} to []float32 by converting each item using toFloat32
 func toSetFloat32(value interface{}) []float32 {
 	if v, ok := value.([]interface{}); ok {
 		var result []float32
 		for _, item := range v {
-			result = append(result, toFloat32(item))
+			if floatVal, err := toFloat32(item); err == nil {
+				result = append(result, floatVal)
+			}
 		}
 		return result
 	}
 	return nil
 }
 
-// toSetFloat64() converts []interface{} to []float64 by converting each item using toFloat64().
-// Returns nil if conversion is not possible.
+// toSetFloat64 converts []interface{} to []float64 by converting each item using toFloat64
 func toSetFloat64(value interface{}) []float64 {
 	if v, ok := value.([]interface{}); ok {
 		var result []float64
 		for _, item := range v {
-			result = append(result, toFloat64(item))
+			if floatVal, err := toFloat64(item); err == nil {
+				result = append(result, floatVal)
+			}
 		}
 		return result
 	}
 	return nil
 }
 
-// toSetTimestamp() converts []interface{} to []time.Time by converting each item using toTimestamp().
-// Returns nil if conversion is not possible.
+// toSetTimestamp converts []interface{} to []time.Time by converting each item using toTimestamp
 func toSetTimestamp(value interface{}) []time.Time {
 	if v, ok := value.([]interface{}); ok {
 		var result []time.Time
 		for _, item := range v {
-			timestamp_val := toTimestamp(item)
-			result = append(result, timestamp_val)
+			if timestamp, err := toTimestamp(item); err == nil {
+				result = append(result, timestamp)
+			}
 		}
 		return result
 	}
 	return nil
 }
 
-// ConvertExpectedResult() processes the expected results from test cases by converting
+// ConvertExpectedResult processes the expected results from test cases by converting
 // values into appropriate Go types based on the specified 'datatype'.
 // It handles primitive types (text, int, bigint, float, double, boolean, timestamp),
 // map types (map<text, int>, map<timestamp, text>, etc.), and set types (set<int>, set<text>, etc.).
 // This function ensures that the expected result format matches the structure of
 // the actual database query results for accurate comparison during testing.
 func ConvertExpectedResult(input []map[string]interface{}) []map[string]interface{} {
-
 	if len(input) == 0 || input == nil {
 		return nil
 	}
@@ -673,17 +780,29 @@ func ConvertExpectedResult(input []map[string]interface{}) []map[string]interfac
 				case "text":
 					convertedResult[0][key] = fmt.Sprintf("%v", value) // Convert to string
 				case "bigint":
-					convertedResult[0][key] = toInt64(value)
+					if val, err := toInt64(value); err == nil {
+						convertedResult[0][key] = val
+					}
 				case "int":
-					convertedResult[0][key] = toInt(value)
+					if val, err := toInt(value); err == nil {
+						convertedResult[0][key] = val
+					}
 				case "double":
-					convertedResult[0][key] = toFloat64(value)
+					if val, err := toFloat64(value); err == nil {
+						convertedResult[0][key] = val
+					}
 				case "float":
-					convertedResult[0][key] = toFloat32(value)
+					if val, err := toFloat32(value); err == nil {
+						convertedResult[0][key] = val
+					}
 				case "boolean":
-					convertedResult[0][key] = toBool(value)
+					if val, err := toBool(value); err == nil {
+						convertedResult[0][key] = val
+					}
 				case "timestamp":
-					convertedResult[0][key] = toTimestamp(value)
+					if val, err := toTimestamp(value); err == nil {
+						convertedResult[0][key] = val
+					}
 
 				// Map Types
 				case "map<text,text>":
@@ -749,4 +868,30 @@ func ConvertExpectedResult(input []map[string]interface{}) []map[string]interfac
 		}
 	}
 	return convertedResult
+}
+
+// ConvertToMap converts a map[string]interface{} to map[string]interface{} with converted values
+func ConvertToMap(t *testing.T, param map[string]any, fileName, query string) map[string]interface{} {
+	convertedResult := make([]map[string]interface{}, 1)
+	convertedResult[0] = make(map[string]interface{})
+
+	for key, value := range param {
+		if strings.HasPrefix(key, "bigint") {
+			if val, err := toInt64(value); err == nil {
+				convertedResult[0][key] = val
+			} else {
+				LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			}
+		} else if strings.HasPrefix(key, "int") {
+			if val, err := toInt(value); err == nil {
+				convertedResult[0][key] = val
+			} else {
+				LogTestFatal(t, fmt.Sprintf("Error in file '%s' for query '%s': %v", fileName, query, err))
+			}
+		} else {
+			convertedResult[0][key] = value
+		}
+	}
+
+	return convertedResult[0]
 }

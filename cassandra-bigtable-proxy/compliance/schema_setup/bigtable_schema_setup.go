@@ -17,32 +17,15 @@
 package schema_setup
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
 	"cloud.google.com/go/bigtable"
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/compliance/utility"
 )
-
-type TableSchema struct {
-	Tables []struct {
-		TableName      string   `json:"table_name"`
-		ColumnFamilies []string `json:"column_families"`
-		Columns        []struct {
-			ColumnName   string `json:"ColumnName"`
-			ColumnType   string `json:"ColumnType"`
-			IsCollection string `json:"IsCollection"`
-			IsPrimaryKey string `json:"IsPrimaryKey"`
-			PKPrecedence string `json:"PK_Precedence"`
-			TableName    string `json:"TableName"`
-		} `json:"columns"`
-	} `json:"tables"`
-}
 
 const (
 	nodes = 1
@@ -66,6 +49,24 @@ func SetupBigtableSchema(project, instance, zone, schemaFilePath string) error {
 	}
 
 	ctx := context.Background()
+	// Create admin client for schema operations
+	adminClient, err := bigtable.NewAdminClient(ctx, project, instance)
+	if err != nil {
+		return fmt.Errorf("failed to create admin client: %v", err)
+	}
+	defer adminClient.Close()
+
+	// Create schema_mapping table if it doesn't exist
+	if err := executeBigtableOperation(ctx, adminClient, "createtable", "schema_mapping"); err != nil {
+		return fmt.Errorf("failed to create schema_mapping table: %v", err)
+	}
+
+	// Create column family for schema_mapping table
+	if err := executeBigtableOperation(ctx, adminClient, "createfamily", "schema_mapping", "cf"); err != nil {
+		return fmt.Errorf("failed to create column family for schema_mapping table: %v", err)
+	}
+
+	// Create client for data operations
 	client, err := bigtable.NewClient(ctx, project, instance)
 	if err != nil {
 		return fmt.Errorf("failed to create Bigtable client: %v", err)
@@ -80,13 +81,13 @@ func SetupBigtableSchema(project, instance, zone, schemaFilePath string) error {
 	// Step 3: Iterate over tables in schema and create Bigtable setup commands
 	for _, table := range schema.Tables {
 		// Create table
-		if err := executeCBTCommandIgnoreExists(project, instance, fmt.Sprintf("createtable %s", table.TableName)); err != nil {
+		if err := executeBigtableOperation(ctx, adminClient, "createtable", table.TableName); err != nil {
 			return fmt.Errorf("failed to create table %s: %v", table.TableName, err)
 		}
 
 		// Create column families
 		for _, family := range table.ColumnFamilies {
-			if err := executeCBTCommandIgnoreExists(project, instance, fmt.Sprintf("createfamily %s %s", table.TableName, family)); err != nil {
+			if err := executeBigtableOperation(ctx, adminClient, "createfamily", table.TableName, family); err != nil {
 				return fmt.Errorf("failed to create column family %s in table %s: %v", family, table.TableName, err)
 			}
 		}
@@ -105,6 +106,7 @@ func SetupBigtableSchema(project, instance, zone, schemaFilePath string) error {
 			mut.Set("cf", "IsCollection", bigtable.Now(), []byte(column.IsCollection))
 			mut.Set("cf", "IsPrimaryKey", bigtable.Now(), []byte(column.IsPrimaryKey))
 			mut.Set("cf", "PK_Precedence", bigtable.Now(), []byte(column.PKPrecedence))
+			mut.Set("cf", "KeyType", bigtable.Now(), []byte(column.KeyType))
 			mut.Set("cf", "TableName", bigtable.Now(), []byte(column.TableName))
 
 			mutations = append(mutations, mut)
@@ -130,8 +132,9 @@ func SetupBigtableSchema(project, instance, zone, schemaFilePath string) error {
 	utility.LogInfo("Bigtable schema setup completed successfully!")
 	return nil
 }
+
 func applyMutations(ctx context.Context, tbl *bigtable.Table, rowKeys []string, mutations []*bigtable.Mutation, batchSize int64) error {
-	utility.LogInfo(fmt.Sprintf("Applying bulk mutaion applied to create schema mapping entries with batch size %d", batchSize))
+	utility.LogInfo(fmt.Sprintf("Applying bulk mutation to create schema mapping entries with batch size %d", batchSize))
 	if len(rowKeys) != len(mutations) {
 		return fmt.Errorf("row keys and mutations count mismatch")
 	}
@@ -151,46 +154,80 @@ func applyMutations(ctx context.Context, tbl *bigtable.Table, rowKeys []string, 
 	return nil
 }
 
-// executeCBTCommandIgnoreExists runs a CBT command and ignores "AlreadyExists" errors for table/column family creation.
-func executeCBTCommandIgnoreExists(project, instance, command string) error {
-	cmd := exec.Command("cbt", "-project", project, "-instance", instance)
-	args := strings.Fields(command)
-	cmd.Args = append(cmd.Args, args...)
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		if strings.Contains(string(output), "AlreadyExists") {
-			// Log and ignore the "AlreadyExists" error
-			utility.LogInfo(fmt.Sprintf("Command skipped as resource already exists: %s", command))
-			return nil
+// executeBigtableOperation performs Bigtable operations (create table, column family)
+// and ignores "AlreadyExists" errors for table/column family creation.
+func executeBigtableOperation(ctx context.Context, adminClient *bigtable.AdminClient, operation string, params ...string) error {
+	switch operation {
+	case "createtable":
+		if len(params) < 1 {
+			return fmt.Errorf("missing table name in createtable operation")
 		}
-		// Log and return other errors
-		return fmt.Errorf("command failed: %s, output: %s, error: %v", command, output, err)
+		tableName := params[0]
+		// Create table with default column families
+		err := adminClient.CreateTable(ctx, tableName)
+		if err != nil {
+			if strings.Contains(err.Error(), "AlreadyExists") {
+				utility.LogInfo(fmt.Sprintf("Table already exists: %s", tableName))
+				return nil
+			}
+			return fmt.Errorf("failed to create table %s: %v", tableName, err)
+		}
+
+	case "createfamily":
+		if len(params) < 2 {
+			return fmt.Errorf("missing table or column family name in createfamily operation")
+		}
+		tableName := params[0]
+		columnFamily := params[1]
+		err := adminClient.CreateColumnFamily(ctx, tableName, columnFamily)
+		if err != nil {
+			if strings.Contains(err.Error(), "AlreadyExists") {
+				utility.LogInfo(fmt.Sprintf("Column family already exists: %s in table %s", columnFamily, tableName))
+				return nil
+			}
+			return fmt.Errorf("failed to create column family %s in table %s: %v", columnFamily, tableName, err)
+		}
+
+	default:
+		return fmt.Errorf("unsupported operation: %s", operation)
 	}
 
-	utility.LogInfo(fmt.Sprintf("Command executed successfully: %s", command))
+	utility.LogInfo(fmt.Sprintf("Operation executed successfully: %s", operation))
 	return nil
 }
 
 // checkAndCreateInstance checks if the Bigtable instance exists and creates it if it doesn't
 func checkAndCreateInstance(project, instance, zone string) error {
-	// Check if the instance exists
-	cmd := exec.Command("gcloud", "bigtable", "instances", "describe", instance, "--project", project)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		// Instance does not exist or an error occurred, attempt to create it
-		utility.LogInfo(fmt.Sprintf("Bigtable instance '%s' does not exist or there was an error. Attempting to create it...\n", instance))
+	ctx := context.Background()
+	adminClient, err := bigtable.NewInstanceAdminClient(ctx, project)
+	if err != nil {
+		return fmt.Errorf("failed to create instance admin client: %v", err)
+	}
+	defer adminClient.Close()
 
-		createCmd := exec.Command(
-			"gcloud", "bigtable", "instances", "create", instance,
-			"--cluster-config", fmt.Sprintf("id=%s,zone=%s,nodes=%d", instance, zone, nodes),
-			"--display-name", instance,
-			"--project", project,
-		)
+	// Check if instance exists
+	_, err = adminClient.InstanceInfo(ctx, instance)
+	if err != nil {
+		// Instance does not exist, create it
+		utility.LogInfo(fmt.Sprintf("Bigtable instance '%s' does not exist. Attempting to create it...\n", instance))
 
-		if createErr := createCmd.Run(); createErr != nil {
-			return fmt.Errorf("failed to create Bigtable instance '%s': %v, error: %s", instance, createErr, stderr.String())
+		// Create instance configuration
+		conf := bigtable.InstanceWithClustersConfig{
+			InstanceID:  instance,
+			DisplayName: instance,
+			Clusters: []bigtable.ClusterConfig{
+				{
+					ClusterID: instance,
+					Zone:      zone,
+					NumNodes:  nodes,
+				},
+			},
+		}
+
+		// Create instance
+		err = adminClient.CreateInstanceWithClusters(ctx, &conf)
+		if err != nil {
+			return fmt.Errorf("failed to create Bigtable instance '%s': %v", instance, err)
 		}
 
 		utility.LogInfo(fmt.Sprintf("Bigtable instance '%s' created successfully.\n", instance))
@@ -203,10 +240,16 @@ func checkAndCreateInstance(project, instance, zone string) error {
 
 // teardownBigtableInstance deletes the Bigtable instance to clean up resources.
 func TeardownBigtableInstance(project, instance string) error {
-	cmd := exec.Command("gcloud", "bigtable", "instances", "delete", instance, "--quiet", "--project", project)
-	output, err := cmd.CombinedOutput()
+	ctx := context.Background()
+	adminClient, err := bigtable.NewInstanceAdminClient(ctx, project)
 	if err != nil {
-		utility.LogTestError(fmt.Sprintf("Failed to delete Bigtable instance '%s': %v\nOutput: %s", instance, err, output))
+		return fmt.Errorf("failed to create instance admin client: %v", err)
+	}
+	defer adminClient.Close()
+
+	err = adminClient.DeleteInstance(ctx, instance)
+	if err != nil {
+		utility.LogTestError(fmt.Sprintf("Failed to delete Bigtable instance '%s': %v", instance, err))
 	} else {
 		utility.LogInfo(fmt.Sprintf("Successfully deleted Bigtable instance '%s'.", instance))
 	}

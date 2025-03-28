@@ -27,26 +27,6 @@ import (
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/compliance/utility"
 )
 
-// Column represents the definition of a single column in the table schema
-type Column struct {
-	ColumnName   string `json:"ColumnName"`
-	ColumnType   string `json:"ColumnType"`
-	IsPrimaryKey string `json:"IsPrimaryKey"`
-	PKPrecedence string `json:"PK_Precedence"`
-}
-
-// Table represents the schema definition for a single table
-type Table struct {
-	TableName string   `json:"table_name"`
-	Columns   []Column `json:"columns"`
-}
-
-// CassandraTableSchema represents the schema for multiple Cassandra tables
-type CassandraTableSchema struct {
-	Keyspace string  `json:"keyspace"`
-	Tables   []Table `json:"tables"`
-}
-
 // SetupCassandraSchema sets up the Cassandra keyspace and tables
 func SetupCassandraSchema(session *gocql.Session, schemaFilePath, keyspace string) error {
 	// Step 1: Parse the schema file
@@ -84,14 +64,14 @@ func SetupCassandraSchema(session *gocql.Session, schemaFilePath, keyspace strin
 	return nil
 }
 
-// parseSchema parses the schema JSON file and returns the CassandraTableSchema
-func parseSchema(schemaFilePath string) (*CassandraTableSchema, error) {
+// parseSchema parses the schema JSON file and returns the TableSchema
+func parseSchema(schemaFilePath string) (*TableSchema, error) {
 	data, err := os.ReadFile(schemaFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read schema file: %v", err)
 	}
 
-	var schema CassandraTableSchema
+	var schema TableSchema
 	if err := json.Unmarshal(data, &schema); err != nil {
 		return nil, fmt.Errorf("failed to parse schema JSON: %v", err)
 	}

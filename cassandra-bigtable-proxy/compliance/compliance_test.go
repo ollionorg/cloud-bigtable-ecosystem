@@ -43,15 +43,12 @@ var (
 	secretPath          = os.Getenv("INTEGRATION_TEST_CRED_PATH")
 	credentialsFilePath = "/tmp/keys/service-account.json"
 	credentialsPath     = "/tmp/keys/"
-	containerImage      = "bigtable-adaptor:compliance-test"
+	containerImage      = os.Getenv("CONTAINER_IMAGE")
 )
 
 var (
-	isProxy                  = false
-	testFileName             string
-	logFileName              string
-	enableFileLogging        = false
-	currentTestExecutionFile string
+	isProxy      = false
+	testFileName string
 )
 
 var (
@@ -78,11 +75,15 @@ var (
 // It supports parameter binding and result validation.
 //
 // Fields:
-// - Query: CQL statement to execute.
-// - QueryType: Type of query (INSERT, SELECT, etc.).
-// - QueryDesc: Description of the query's intent.
-// - Params: Parameters to bind to the query.
-// - ExpectedResult: Anticipated output for validation.
+// - Query: The CQL statement to be executed.
+// - QueryType: The type of query (e.g., INSERT, SELECT, UPDATE, DELETE).
+// - QueryDesc: A brief description of the query's intent.
+// - Params: A list of key-value pairs representing the parameters to bind to the query.
+// - ExpectedResult: The anticipated single-row result for validation.
+// - ExpectedMultiRowResult: The expected multi-row result, if applicable (optional).
+// - ExpectCassandraSpecificError: The expected Cassandra-specific error message, if any (optional).
+// - DefaultDiff: Indicates whether default diffing logic should be applied during result validation (optional).
+// - IsInOperation: Specifies whether the query involves an "IN" operation (optional).
 type Operation struct {
 	Query                        string                      `json:"query"`
 	QueryType                    string                      `json:"query_type"`
@@ -180,6 +181,8 @@ func TestMain(m *testing.M) {
 	}()
 
 	var target string
+	var logFileName string
+	var enableFileLogging bool
 	flag.StringVar(&target, "target", "proxy", "Specify the test target: 'proxy' or 'cassandra'")
 	flag.StringVar(&testFileName, "testFileName", "", "Specify the test file name to execute the test scenarios. Leave empty to run all *_test.json files.")
 	flag.BoolVar(&enableFileLogging, "enableFileLogging", false, "Enable logging to a file (true/false). Defaults to false (console logging).")
@@ -445,7 +448,7 @@ func setupAndRunCassandra(m *testing.M) int {
 	defer session.Close()
 
 	// Setup the Cassandra schema
-	if err := schema_setup.SetupCassandraSchema(session, "schema_setup/schema.json", BIGTABLE_INSTANCE); err != nil {
+	if err := schema_setup.SetupCassandraSchema(session, "schema_setup/schema.json", "bigtabledevinstance"); err != nil {
 		utility.LogFatal(fmt.Sprintf("Error setting up Cassandra schema: %v", err))
 		return 1
 	}
@@ -537,8 +540,7 @@ func runSingleTestFile(t *testing.T, fileName string) bool {
 		utility.LogWarning(t, fmt.Sprintf("Failed to parse JSON file %s: %v\n", fileName, err))
 		return false
 	}
-	currentTestExecutionFile = fileName
-	if err := executeQuery(t, testCases); err != nil {
+	if err := executeQuery(t, testCases, fileName); err != nil {
 		utility.LogWarning(t, fmt.Sprintf("Test execution failed for %s: %v\n", fileName, err))
 		return false
 	}
@@ -550,18 +552,16 @@ func runSingleTestFile(t *testing.T, fileName string) bool {
 // executeQuery
 // Iterates through each test case and delegates execution based on the test type (BATCH or DML).
 // Logs success or failure for each test case and provides a structured test execution flow.
-func executeQuery(t *testing.T, testCases []TestCase) error {
+func executeQuery(t *testing.T, testCases []TestCase, fileName string) error {
 	allPassed := true
-	logger := log.New(os.Stdout, "", log.LstdFlags)
-
 	for _, testCase := range testCases {
 		utility.LogInfo(fmt.Sprintf("Executing Test: %s\nDescription: %s\n", testCase.Title, testCase.Description))
 		var testCaseResult bool
 		switch strings.ToLower(testCase.Kind) {
 		case "batch":
-			testCaseResult = executeBatchTestCases(t, testCase, logger)
+			testCaseResult = executeBatchTestCases(t, testCase, fileName)
 		default:
-			testCaseResult = executeDMLTestCases(t, testCase)
+			testCaseResult = executeDMLTestCases(t, testCase, fileName)
 		}
 		if !testCaseResult {
 			allPassed = false
@@ -578,19 +578,19 @@ func executeQuery(t *testing.T, testCases []TestCase) error {
 // executeDMLTestCases
 // Handles Data Manipulation Language (DML) operations such as INSERT, SELECT, UPDATE, and DELETE.
 // Routes each operation to the appropriate handler function based on the query type.
-func executeDMLTestCases(t *testing.T, testCase TestCase) bool {
+func executeDMLTestCases(t *testing.T, testCase TestCase, fileName string) bool {
 	allPassed := true
 	for _, operation := range testCase.Operations {
 		var result bool
 		switch strings.ToLower(operation.QueryType) {
 		case "insert":
-			result = executeInsert(t, operation)
+			result = executeInsert(t, operation, fileName)
 		case "select":
-			result = executeSelect(t, operation)
+			result = executeSelect(t, operation, fileName)
 		case "update":
-			result = executeUpdate(t, operation)
+			result = executeUpdate(t, operation, fileName)
 		case "delete":
-			result = executeDelete(t, operation)
+			result = executeDelete(t, operation, fileName)
 		default:
 			utility.LogWarning(t, fmt.Sprintf("Unknown operation type: %s", operation.QueryType))
 			result = false
@@ -603,8 +603,8 @@ func executeDMLTestCases(t *testing.T, testCase TestCase) bool {
 // executeInsert
 // Executes INSERT queries by substituting parameter values and logging results.
 // Logs an error if the query execution fails, otherwise logs the success message.
-func executeInsert(t *testing.T, operation Operation) bool {
-	params := utility.ConvertParams(operation.Params)
+func executeInsert(t *testing.T, operation Operation, fileName string) bool {
+	params := utility.ConvertParams(t, operation.Params, fileName, operation.Query)
 	err := session.Query(operation.Query, params...).Exec()
 
 	if err != nil {
@@ -619,7 +619,7 @@ func executeInsert(t *testing.T, operation Operation) bool {
 					return true
 
 				} else {
-					utility.LogError(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, err)
+					utility.LogError(t, fileName, operation.QueryDesc, operation.Query, err)
 					utility.LogWarning(t, fmt.Sprintf("Error message mismatch:\nExpected: '%s'\nActual:   '%s'\n", expectedErrMsg, err.Error()))
 					return false
 				}
@@ -627,7 +627,7 @@ func executeInsert(t *testing.T, operation Operation) bool {
 		}
 
 		// If no error was expected but an error occurred, log it as an error
-		utility.LogError(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, err)
+		utility.LogError(t, fileName, operation.QueryDesc, operation.Query, err)
 		return false
 	}
 	utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
@@ -637,8 +637,8 @@ func executeInsert(t *testing.T, operation Operation) bool {
 // executeSelect
 // Executes SELECT queries and delegates the result validation to a separate function.
 // Logs errors if query execution fails, otherwise validates the query results.
-func executeSelect(t *testing.T, operation Operation) bool {
-	params := utility.ConvertParams(operation.Params)
+func executeSelect(t *testing.T, operation Operation, fileName string) bool {
+	params := utility.ConvertParams(t, operation.Params, fileName, operation.Query)
 	iter := session.Query(operation.Query, params...).Iter()
 
 	var results []map[string]interface{}
@@ -655,17 +655,17 @@ func executeSelect(t *testing.T, operation Operation) bool {
 	}
 	// Handle execution errors
 	if err := iter.Close(); err != nil {
-		return handleSelectError(t, err, operation)
+		return handleSelectError(t, err, operation, fileName)
 
 	}
 
 	// Delegate result validation
-	return validateSelectResults(t, results, operation)
+	return validateSelectResults(t, results, operation, fileName)
 }
 
 // handleSelectError
 // Handles errors for SELECT operations, including cases like unknown functions or expected errors from test cases.
-func handleSelectError(t *testing.T, err error, operation Operation) bool {
+func handleSelectError(t *testing.T, err error, operation Operation, fileName string) bool {
 	// Handle unknown function errors gracefully
 	if strings.Contains(strings.ToLower(err.Error()), "unknown function") {
 		utility.LogInfo(fmt.Sprintf("Query failed as expected with error: %v", err))
@@ -693,7 +693,7 @@ func handleSelectError(t *testing.T, err error, operation Operation) bool {
 				utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
 				return true
 			} else {
-				utility.LogFailure(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, fmt.Sprintf("Expected error '%s' but got '%s'", expectedErrMsg, err.Error()))
+				utility.LogFailure(t, fileName, operation.QueryDesc, operation.Query, fmt.Sprintf("Expected error '%s' but got '%s'", expectedErrMsg, err.Error()))
 				return false
 			}
 
@@ -701,14 +701,14 @@ func handleSelectError(t *testing.T, err error, operation Operation) bool {
 	}
 
 	// Log unexpected errors
-	utility.LogError(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, err)
+	utility.LogError(t, fileName, operation.QueryDesc, operation.Query, err)
 	return false
 }
 
 // validateSelectResults
 // Compares the retrieved SELECT results with the expected outcome and logs success or failure.
 // Handles row count validation if WHERE clause is missing from the query.
-func validateSelectResults(t *testing.T, results []map[string]interface{}, operation Operation) bool {
+func validateSelectResults(t *testing.T, results []map[string]interface{}, operation Operation, fileName string) bool {
 	var eResult []map[string]interface{}
 
 	if operation.ExpectedMultiRowResult != nil {
@@ -720,15 +720,16 @@ func validateSelectResults(t *testing.T, results []map[string]interface{}, opera
 		eResult = utility.ConvertExpectedResult(operation.ExpectedResult)
 	}
 
-	// Check if query has WHERE clause – If not, validate row count
-	if !strings.Contains(strings.ToLower(operation.Query), "where") {
-		expectedCount, _ := eResult[0]["row_count"].(int)
-		if len(results) >= expectedCount {
-			utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
-			return true
-		} else {
-			utility.LogFailure(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, fmt.Sprintf("Expected at least %d rows but got %d", expectedCount, len(results)))
-			return false
+	// Check if expectedResult contains row_count – validate row count
+	if len(eResult) > 0 && operation.ExpectedMultiRowResult == nil {
+		if expectedCount, ok := eResult[0]["row_count"].(int); ok {
+			if len(results) >= expectedCount {
+				utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
+				return true
+			} else {
+				utility.LogFailure(t, fileName, operation.QueryDesc, operation.Query, fmt.Sprintf("Expected at least %d rows but got %d", expectedCount, len(results)))
+				return false
+			}
 		}
 	}
 
@@ -744,7 +745,7 @@ func validateSelectResults(t *testing.T, results []map[string]interface{}, opera
 	}
 
 	if diff != "" {
-		utility.LogFailure(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, diff)
+		utility.LogFailure(t, fileName, operation.QueryDesc, operation.Query, diff)
 		return false
 	} else {
 		utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
@@ -755,25 +756,27 @@ func validateSelectResults(t *testing.T, results []map[string]interface{}, opera
 // executeUpdate
 // Executes UPDATE queries with provided parameters and logs success or failure accordingly.
 // Errors during query execution are logged immediately.
-func executeUpdate(t *testing.T, operation Operation) bool {
-	params := utility.ConvertParams(operation.Params)
+func executeUpdate(t *testing.T, operation Operation, fileName string) bool {
+	params := utility.ConvertParams(t, operation.Params, fileName, operation.Query)
 	err := session.Query(operation.Query, params...).Exec()
 
 	if err != nil {
-		if expectedErr, ok := operation.ExpectedResult[0]["expect_error"].(bool); ok && expectedErr {
-			expectedErrMsg, _ := operation.ExpectedResult[0]["error_message"].(string)
-			if strings.EqualFold(err.Error(), expectedErrMsg) {
-				utility.LogInfo(fmt.Sprintf("Query failed as expected with error: %v", err))
-				utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
-				return true
+		if len(operation.ExpectedResult) > 0 {
+			if expectedErr, ok := operation.ExpectedResult[0]["expect_error"].(bool); ok && expectedErr {
+				expectedErrMsg, _ := operation.ExpectedResult[0]["error_message"].(string)
+				if strings.EqualFold(err.Error(), expectedErrMsg) {
+					utility.LogInfo(fmt.Sprintf("Query failed as expected with error: %v", err))
+					utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
+					return true
 
-			} else {
-				utility.LogError(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, err)
-				utility.LogWarning(t, fmt.Sprintf("Error message mismatch:\nExpected: '%s'\nActual:   '%s'\n", expectedErrMsg, err.Error()))
-				return false
+				} else {
+					utility.LogError(t, fileName, operation.QueryDesc, operation.Query, err)
+					utility.LogWarning(t, fmt.Sprintf("Error message mismatch:\nExpected: '%s'\nActual:   '%s'\n", expectedErrMsg, err.Error()))
+					return false
+				}
 			}
 		}
-		utility.LogError(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, err)
+		utility.LogError(t, fileName, operation.QueryDesc, operation.Query, err)
 		return false
 	}
 	utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
@@ -783,8 +786,8 @@ func executeUpdate(t *testing.T, operation Operation) bool {
 // executeDelete
 // Executes DELETE queries and verifies errors for operations involving USING TIMESTAMP when applicable.
 // If an error is expected (such as with Bigtable limitations), the function checks for the correct error message.
-func executeDelete(t *testing.T, operation Operation) bool {
-	params := utility.ConvertParams(operation.Params)
+func executeDelete(t *testing.T, operation Operation, fileName string) bool {
+	params := utility.ConvertParams(t, operation.Params, fileName, operation.Query)
 	iter := session.Query(operation.Query, params...).Iter()
 
 	if err := iter.Close(); err != nil {
@@ -811,7 +814,7 @@ func executeDelete(t *testing.T, operation Operation) bool {
 			utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
 			return true
 		}
-		utility.LogError(t, currentTestExecutionFile, operation.QueryDesc, operation.Query, err)
+		utility.LogError(t, fileName, operation.QueryDesc, operation.Query, err)
 		return false
 	}
 	utility.LogSuccess(t, operation.QueryDesc, operation.QueryType)
@@ -823,13 +826,13 @@ func executeDelete(t *testing.T, operation Operation) bool {
 // After batch execution, the function performs validation by running a SELECT (if provided) to ensure
 // the batch operation applied the expected results to the database.
 // Errors are logged, and differences between expected and actual results trigger failure messages.
-func executeBatchTestCases(t *testing.T, testCase TestCase, logger *log.Logger) bool {
+func executeBatchTestCases(t *testing.T, testCase TestCase, fileName string) bool {
 	batch := session.NewBatch(gocql.LoggedBatch)
 	var validateQuery *Operation
 
 	for _, operation := range testCase.Operations {
 		if strings.ToLower(operation.QueryType) == "batch" {
-			params := utility.ConvertParams(operation.Params)
+			params := utility.ConvertParams(t, operation.Params, fileName, operation.Query)
 			batch.Query(operation.Query, params...)
 		} else if strings.ToLower(operation.QueryType) == "validate" {
 			validateQuery = &operation // Store the validation query for later execution
@@ -843,7 +846,7 @@ func executeBatchTestCases(t *testing.T, testCase TestCase, logger *log.Logger) 
 	}
 
 	if validateQuery != nil {
-		return validateBatchResults(t, *validateQuery)
+		return validateBatchResults(t, *validateQuery, fileName)
 	}
 	return true
 }
@@ -851,8 +854,8 @@ func executeBatchTestCases(t *testing.T, testCase TestCase, logger *log.Logger) 
 // validateBatchResults performs a post-batch validation by running a SELECT query to check
 // if the inserted/updated records match the expected result.
 // Differences trigger failure logs, while matching records log a success message.
-func validateBatchResults(t *testing.T, validateQuery Operation) bool {
-	params := utility.ConvertParams(validateQuery.Params)
+func validateBatchResults(t *testing.T, validateQuery Operation, fileName string) bool {
+	params := utility.ConvertParams(t, validateQuery.Params, fileName, validateQuery.Query)
 	iter := session.Query(validateQuery.Query, params...).Iter()
 
 	var results []map[string]interface{}
@@ -865,12 +868,12 @@ func validateBatchResults(t *testing.T, validateQuery Operation) bool {
 	}
 
 	if err := iter.Close(); err != nil {
-		utility.LogError(t, currentTestExecutionFile, validateQuery.QueryDesc, validateQuery.Query, err)
+		utility.LogError(t, fileName, validateQuery.QueryDesc, validateQuery.Query, err)
 		return false
 	}
 	eResult := utility.ConvertExpectedResult(validateQuery.ExpectedResult)
 	if diff := cmp.Diff(results, eResult); diff != "" {
-		utility.LogFailure(t, currentTestExecutionFile, validateQuery.QueryDesc, validateQuery.Query, diff)
+		utility.LogFailure(t, fileName, validateQuery.QueryDesc, validateQuery.Query, diff)
 		return false
 	}
 	utility.LogSuccess(t, validateQuery.QueryDesc, validateQuery.QueryType)
