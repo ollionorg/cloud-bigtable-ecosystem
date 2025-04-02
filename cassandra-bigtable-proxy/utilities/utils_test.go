@@ -23,6 +23,8 @@ import (
 
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
+	"github.com/ollionorg/cassandra-to-bigtable-proxy/proxycore"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestKeyExistsInList tests the keyExistsInList function with various inputs.
@@ -216,309 +218,226 @@ func errorEquals(err1, err2 error) bool {
 	return true
 }
 
-func TestDecodeEncodedValues(t *testing.T) {
-	type args struct {
-		value     []byte
-		cqlType   string
-		protocolV primitive.ProtocolVersion
-	}
+func TestDecodeBytesToCassandraColumnType(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		want    interface{}
-		wantErr bool
+		name            string
+		input           []byte
+		dataType        datatype.PrimitiveType
+		protocolVersion primitive.ProtocolVersion
+		expected        any
+		expectError     bool
+		errorMessage    string
 	}{
 		{
-			name: "Decode int value",
-			args: args{
-				value:     []byte{0, 0, 0, 10},
-				cqlType:   "int",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    int32(10),
-			wantErr: false,
+			name:            "Decode varchar",
+			input:           []byte("test string"),
+			dataType:        datatype.Varchar,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        "test string",
+			expectError:     false,
 		},
 		{
-			name: "Decode timestamp value",
-			args: args{
-				value:     []byte{0, 0, 1, 96, 175, 4, 144, 0},
-				cqlType:   "timestamp",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC),
-			wantErr: false,
+			name: "Decode double",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(datatype.Double, primitive.ProtocolVersion4, float64(123.45))
+				return b
+			}(),
+			dataType:        datatype.Double,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        float64(123.45),
+			expectError:     false,
 		},
 		{
-			name: "Decode bigint value",
-			args: args{
-				value:     []byte{0, 0, 0, 0, 0, 0, 0, 10},
-				cqlType:   "bigint",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    int64(10),
-			wantErr: false,
+			name: "Decode float",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(datatype.Float, primitive.ProtocolVersion4, float32(123.45))
+				return b
+			}(),
+			dataType:        datatype.Float,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        float32(123.45),
+			expectError:     false,
 		},
 		{
-			name: "Decode boolean value (true)",
-			args: args{
-				value:     []byte{1},
-				cqlType:   "boolean",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    true,
-			wantErr: false,
+			name: "Decode bigint",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(datatype.Bigint, primitive.ProtocolVersion4, int64(12345))
+				return b
+			}(),
+			dataType:        datatype.Bigint,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        int64(12345),
+			expectError:     false,
 		},
 		{
-			name: "Decode float value",
-			args: args{
-				value:     []byte{0x40, 0x49, 0x0f, 0xdb},
-				cqlType:   "float",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    float32(3.141592653589793),
-			wantErr: false,
+			name: "Decode int",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(datatype.Int, primitive.ProtocolVersion4, int32(12345))
+				return b
+			}(),
+			dataType:        datatype.Int,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        int64(12345), // Note: int32 is converted to int64
+			expectError:     false,
 		},
 		{
-			name: "Decode double value",
-			args: args{
-				value:     []byte{0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18},
-				cqlType:   "double",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    float64(3.141592653589793),
-			wantErr: false,
+			name: "Decode boolean true",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(datatype.Boolean, primitive.ProtocolVersion4, true)
+				return b
+			}(),
+			dataType:        datatype.Boolean,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        true,
+			expectError:     false,
 		},
 		{
-			name: "Decode blob value",
-			args: args{
-				value:     []byte{0x01, 0x02, 0x03, 0x04}, // represents a binary blob
-				cqlType:   "blob",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    []byte{0x01, 0x02, 0x03, 0x04},
-			wantErr: false,
+			name: "Decode list of varchar",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(ListOfStr, primitive.ProtocolVersion4, []string{"test1", "test2"})
+				return b
+			}(),
+			dataType:        ListOfStr,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        []string{"test1", "test2"},
+			expectError:     false,
 		},
 		{
-			name: "Decode text value",
-			args: args{
-				value:     []byte("hello"),
-				cqlType:   "text",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    "hello",
-			wantErr: false,
+			name: "Decode list of bigint",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(ListOfBigInt, primitive.ProtocolVersion4, []int64{123, 456})
+				return b
+			}(),
+			dataType:        ListOfBigInt,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        []int64{123, 456},
+			expectError:     false,
 		},
 		{
-			name: "Unsupported CQL type",
-			args: args{
-				value:     []byte{0, 0, 0, 0},
-				cqlType:   "unsupported_type",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    nil,
-			wantErr: true,
+			name: "Decode list of double",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(ListOfDouble, primitive.ProtocolVersion4, []float64{123.45, 456.78})
+				return b
+			}(),
+			dataType:        ListOfDouble,
+			protocolVersion: primitive.ProtocolVersion4,
+			expected:        []float64{123.45, 456.78},
+			expectError:     false,
 		},
 		{
-			name: "Error in decoding",
-			args: args{
-				value:     []byte{0, 0},
-				cqlType:   "int",
-				protocolV: primitive.ProtocolVersion4,
-			},
-			want:    nil,
-			wantErr: true,
+			name:            "Invalid int data",
+			input:           []byte("invalid int"),
+			dataType:        datatype.Int,
+			protocolVersion: primitive.ProtocolVersion4,
+			expectError:     true,
+			errorMessage:    "cannot decode CQL int as *interface {} with ProtocolVersion OSS 4: cannot read int32: expected 4 bytes but got: 11",
+		},
+		{
+			name:            "Unsupported list element type",
+			input:           []byte("test"),
+			dataType:        ListOfBool, // List of boolean is not supported
+			protocolVersion: primitive.ProtocolVersion4,
+			expectError:     true,
+			errorMessage:    "unsupported list element type to decode",
+		},
+		{
+			name:            "Unsupported type",
+			input:           []byte("test"),
+			dataType:        datatype.Duration, // Duration type is not supported
+			protocolVersion: primitive.ProtocolVersion4,
+			expectError:     true,
+			errorMessage:    "unsupported Datatype to decode",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := DecodeEncodedValues(tt.args.value, tt.args.cqlType, tt.args.protocolV)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DecodeEncodedValues() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DecodeEncodedValues() = %v, want %v", got, tt.want)
+			result, err := DecodeBytesToCassandraColumnType(tt.input, tt.dataType, tt.protocolVersion)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
 }
 
-func TestDecodeBytesToCassandraColumnType(t *testing.T) {
-	bigIntList := []int64{}
-	bigIntList = append(bigIntList, 12)
-
-	type args struct {
-		b               []byte
-		choice          datatype.PrimitiveType
-		protocolVersion primitive.ProtocolVersion
-	}
+func TestDecodeNonPrimitive(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		want    interface{}
-		wantErr bool
+		name         string
+		input        []byte
+		dataType     datatype.PrimitiveType
+		expected     interface{}
+		expectError  bool
+		errorMessage string
 	}{
 		{
-			name: "Decode varchar",
-			args: args{
-				b:               []byte("test string"),
-				choice:          datatype.Varchar,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    "test string",
-			wantErr: false,
+			name: "Decode list of varchar",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(ListOfStr, primitive.ProtocolVersion4, []string{"test1", "test2"})
+				return b
+			}(),
+			dataType:    ListOfStr,
+			expected:    []string{"test1", "test2"},
+			expectError: false,
 		},
 		{
-			name: "Decode double",
-			args: args{
-				b:               []byte{64, 9, 33, 251, 84, 68, 45, 24},
-				choice:          datatype.Double,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    float64(3.141592653589793),
-			wantErr: false,
+			name: "Decode list of bigint",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(ListOfBigInt, primitive.ProtocolVersion4, []int64{123, 456})
+				return b
+			}(),
+			dataType:    ListOfBigInt,
+			expected:    []int64{123, 456},
+			expectError: false,
 		},
 		{
-			name: "Decode double with float",
-			args: args{
-				b:               []byte{64, 9, 33, 251, 84, 68, 45, 24},
-				choice:          datatype.Float,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    nil,
-			wantErr: true,
+			name: "Decode list of double",
+			input: func() []byte {
+				b, _ := proxycore.EncodeType(ListOfDouble, primitive.ProtocolVersion4, []float64{123.45, 456.78})
+				return b
+			}(),
+			dataType:    ListOfDouble,
+			expected:    []float64{123.45, 456.78},
+			expectError: false,
 		},
 		{
-			name: "Decode float",
-			args: args{
-				b:               []byte{63, 133, 235, 81},
-				choice:          datatype.Float,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    float32(1.046244),
-			wantErr: false,
+			name:         "Invalid list data",
+			input:        []byte("invalid list"),
+			dataType:     ListOfStr,
+			expectError:  true,
+			errorMessage: "EOF",
 		},
 		{
-			name: "Decode bigint",
-			args: args{
-				b:               []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				choice:          datatype.Bigint,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    int64(1),
-			wantErr: false,
+			name:         "Unsupported list element type",
+			input:        []byte("test"),
+			dataType:     ListOfBool, // List of boolean is not supported
+			expectError:  true,
+			errorMessage: "unsupported list element type to decode",
 		},
 		{
-			name: "Decode int",
-			args: args{
-				b:               []byte{0, 0, 0, 1},
-				choice:          datatype.Int,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    int64(1),
-			wantErr: false,
-		},
-		{
-			name: "Decode boolean",
-			args: args{
-				b:               []byte{1},
-				choice:          datatype.Boolean,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    true,
-			wantErr: false,
-		},
-		{
-			name: "Decode uuid",
-			args: args{
-				b:               []byte{0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0}, // Represents a UUID in bytes
-				choice:          datatype.Uuid,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    "12345678-9abc-def0-1234-56789abcdef0",
-			wantErr: false,
-		},
-		{
-			name: "Error in Decode uuid",
-			args: args{
-				b:               []byte{0x80, 0x00, 0x00, 0x00},
-				choice:          datatype.Uuid,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Error in Decode Int",
-			args: args{
-				b:               []byte("hello"),
-				choice:          datatype.Int,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Decode date",
-			args: args{
-				b:               []byte{0x80, 0x00, 0x00, 0x00},
-				choice:          datatype.Date,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    time.Unix(0, 0).UTC(),
-			wantErr: false,
-		},
-		{
-			name: "Decode blob",
-			args: args{
-				b:               []byte{0x01, 0x02, 0x03},
-				choice:          datatype.Blob,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    []byte{0x01, 0x02, 0x03},
-			wantErr: false,
-		},
-		{
-			name: "Decode Timestamp",
-			args: args{
-				b:               []byte{0, 0, 1, 96, 175, 4, 144, 0},
-				choice:          datatype.Timestamp,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC),
-			wantErr: false,
-		},
-		{
-			name: "Should go in the default and throw error",
-			args: args{
-				b:               []byte{0, 0, 1, 96, 175, 4, 144, 0},
-				choice:          datatype.Smallint,
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Should go in the default and run the bigint list",
-			args: args{
-				b:               []byte{0, 0, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 12},
-				choice:          datatype.NewListType(datatype.Bigint),
-				protocolVersion: primitive.ProtocolVersion4,
-			},
-			want:    bigIntList,
-			wantErr: false,
+			name:         "Non-list type",
+			input:        []byte("test"),
+			dataType:     datatype.Varchar,
+			expectError:  true,
+			errorMessage: "unsupported Datatype to decode",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := DecodeBytesToCassandraColumnType(tt.args.b, tt.args.choice, tt.args.protocolVersion)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DecodeBytesToCassandraColumnType() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DecodeBytesToCassandraColumnType() = %v, want %v", got, tt.want)
+			result, err := decodeNonPrimitive(tt.dataType, tt.input)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMessage != "" {
+					assert.Contains(t, err.Error(), tt.errorMessage)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
@@ -723,6 +642,372 @@ func TestTypeConversion(t *testing.T) {
 			}
 			if !tt.wantErr && !reflect.DeepEqual(got, tt.expected) {
 				t.Errorf("TypeConversion(%v) = %v, want %v", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestEncodeInt(t *testing.T) {
+	tests := []struct {
+		name string
+		args struct {
+			value interface{}
+			pv    primitive.ProtocolVersion
+		}
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "Valid string input",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: "12",
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 12}, // Replace with the bytes you expect
+			wantErr: false,
+		},
+		{
+			name: "String parsing error",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: "abc",
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Valid int32 input",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: int32(12),
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 12}, // Replace with the bytes you expect
+			wantErr: false,
+		},
+		{
+			name: "Valid []byte input",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: []byte{0, 0, 0, 12}, // Replace with actual bytes representing an int32 value
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 12}, // Replace with the bytes you expect
+			wantErr: false,
+		},
+		{
+			name: "Unsupported type",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: 12.34, // Unsupported float64 type.
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := EncodeInt(tt.args.value, tt.args.pv)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EncodeInt() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("EncodeInt() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEncodeBool(t *testing.T) {
+	tests := []struct {
+		name string
+		args struct {
+			value interface{}
+			pv    primitive.ProtocolVersion
+		}
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "Valid string 'true'",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: "true",
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 1},
+			wantErr: false,
+		},
+		{
+			name: "Valid string 'false'",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: "false",
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 0},
+			wantErr: false,
+		},
+		{
+			name: "String parsing error",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: "notabool",
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Valid bool true",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: true,
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 1},
+			wantErr: false,
+		},
+		{
+			name: "Valid bool false",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: false,
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 0},
+			wantErr: false,
+		},
+		{
+			name: "Valid []byte input for true",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: []byte{1},
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 1},
+			wantErr: false,
+		},
+		{
+			name: "Valid []byte input for false",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: []byte{0},
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 0},
+			wantErr: false,
+		},
+		{
+			name: "Unsupported type",
+			args: struct {
+				value interface{}
+				pv    primitive.ProtocolVersion
+			}{
+				value: 123,
+				pv:    primitive.ProtocolVersion4,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := EncodeBool(tt.args.value, tt.args.pv)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EncodeBool() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("EncodeBool() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDataConversionInInsertionIfRequired(t *testing.T) {
+	tests := []struct {
+		name string
+		args struct {
+			value        interface{}
+			pv           primitive.ProtocolVersion
+			cqlType      string
+			responseType string
+		}
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name: "Boolean to string true",
+			args: struct {
+				value        interface{}
+				pv           primitive.ProtocolVersion
+				cqlType      string
+				responseType string
+			}{
+				value:        "true",
+				pv:           primitive.ProtocolVersion4,
+				cqlType:      "boolean",
+				responseType: "string",
+			},
+			want:    "1",
+			wantErr: false,
+		},
+		{
+			name: "Boolean to string false",
+			args: struct {
+				value        interface{}
+				pv           primitive.ProtocolVersion
+				cqlType      string
+				responseType string
+			}{
+				value:        "false",
+				pv:           primitive.ProtocolVersion4,
+				cqlType:      "boolean",
+				responseType: "string",
+			},
+			want:    "0",
+			wantErr: false,
+		},
+		{
+			name: "Invalid boolean string",
+			args: struct {
+				value        interface{}
+				pv           primitive.ProtocolVersion
+				cqlType      string
+				responseType string
+			}{
+				// value is not a valid boolean string
+				value:        "notabool",
+				pv:           primitive.ProtocolVersion4,
+				cqlType:      "boolean",
+				responseType: "string",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Boolean to EncodeBool",
+			args: struct {
+				value        interface{}
+				pv           primitive.ProtocolVersion
+				cqlType      string
+				responseType string
+			}{
+				value:        true,
+				pv:           primitive.ProtocolVersion4,
+				cqlType:      "boolean",
+				responseType: "default",
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 1}, // Expecting boolean encoding, replace as needed
+			wantErr: false,
+		},
+		{
+			name: "Int to string",
+			args: struct {
+				value        interface{}
+				pv           primitive.ProtocolVersion
+				cqlType      string
+				responseType string
+			}{
+				value:        "123",
+				pv:           primitive.ProtocolVersion4,
+				cqlType:      "int",
+				responseType: "string",
+			},
+			want:    "123",
+			wantErr: false,
+		},
+		{
+			name: "Invalid int string",
+			args: struct {
+				value        interface{}
+				pv           primitive.ProtocolVersion
+				cqlType      string
+				responseType string
+			}{
+				// value is not a valid int string
+				value:        "notanint",
+				pv:           primitive.ProtocolVersion4,
+				cqlType:      "int",
+				responseType: "string",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Int to EncodeInt",
+			args: struct {
+				value        interface{}
+				pv           primitive.ProtocolVersion
+				cqlType      string
+				responseType string
+			}{
+				value:        int32(12),
+				pv:           primitive.ProtocolVersion4,
+				cqlType:      "int",
+				responseType: "default",
+			},
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 12}, // Expecting int encoding, replace as needed
+			wantErr: false,
+		},
+		{
+			name: "Unsupported cqlType",
+			args: struct {
+				value        interface{}
+				pv           primitive.ProtocolVersion
+				cqlType      string
+				responseType string
+			}{
+				value:        "anything",
+				pv:           primitive.ProtocolVersion4,
+				cqlType:      "unsupported",
+				responseType: "default",
+			},
+			want:    "anything",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DataConversionInInsertionIfRequired(tt.args.value, tt.args.pv, tt.args.cqlType, tt.args.responseType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DataConversionInInsertionIfRequired() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DataConversionInInsertionIfRequired() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
