@@ -199,7 +199,7 @@ func processElements(elements []cql.IRelationElementContext, tableName string, s
 			return nil, nil, nil, err
 		}
 
-		columnType, err := schemaMapping.GetColumnType(tableName, colName, keyspace)
+		columnType, err := schemaMapping.GetColumnType(keyspace, tableName, colName)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -279,7 +279,7 @@ func getOperator(val cql.IRelationElementContext) (string, error) {
 // Returns:
 //   - A string representing the actual value.
 //   - An error if parsing or formatting the value fails.
-func handleColumnType(val cql.IRelationElementContext, columnType *schemaMapping.ColumnType, placeholder string, params map[string]interface{}) (string, error) {
+func handleColumnType(val cql.IRelationElementContext, columnType *schemaMapping.Column, placeholder string, params map[string]interface{}) (string, error) {
 	if columnType == nil || columnType.CQLType == "" {
 		return "", nil
 	}
@@ -312,7 +312,7 @@ func handleColumnType(val cql.IRelationElementContext, columnType *schemaMapping
 //   - queryStr: CQL delete query with condition
 //
 // Returns: ClauseResponse and an error if any.
-func (t *Translator) TranslateDeleteQuerytoBigtable(queryStr string) (*DeleteQueryMap, error) {
+func (t *Translator) TranslateDeleteQuerytoBigtable(queryStr string) (*DeleteQueryMapping, error) {
 	lowerQuery := strings.ToLower(queryStr)
 	query := renameLiterals(queryStr)
 	lexer := cql.NewCqlLexer(antlr.NewInputStream(query))
@@ -327,14 +327,13 @@ func (t *Translator) TranslateDeleteQuerytoBigtable(queryStr string) (*DeleteQue
 	if kwDeleteObj == nil {
 		return nil, errors.New("error while parsing delete object")
 	}
-	queryType := kwDeleteObj.GetText()
 	tableSpec, err := parseTableFromDelete(deleteObj.FromSpec())
 	if err != nil {
 		return nil, err
 	} else if tableSpec.TableName == "" || tableSpec.KeyspaceName == "" {
 		return nil, errors.New("TranslateDeletetQuerytoBigtable: No table or keyspace name found in the query")
 	}
-	if !t.SchemaMappingConfig.InstanceExist(tableSpec.KeyspaceName) {
+	if !t.SchemaMappingConfig.InstanceExists(tableSpec.KeyspaceName) {
 		return nil, fmt.Errorf("keyspace %s does not exist", tableSpec.KeyspaceName)
 	}
 	if !t.SchemaMappingConfig.TableExist(tableSpec.KeyspaceName, tableSpec.TableName) {
@@ -349,11 +348,11 @@ func (t *Translator) TranslateDeleteQuerytoBigtable(queryStr string) (*DeleteQue
 		return nil, err
 	}
 	ifExistObj := deleteObj.IfExist()
-	var ifExists bool = false
+	var ifExist bool = false
 	if ifExistObj != nil {
 		val := strings.ToLower(ifExistObj.GetText())
-		if val == "ifexists" {
-			ifExists = true
+		if val == ifExists {
+			ifExist = true
 		}
 	}
 
@@ -383,8 +382,8 @@ func (t *Translator) TranslateDeleteQuerytoBigtable(queryStr string) (*DeleteQue
 			}
 		}
 	}
+	// The below code checking the reuired primary keys and actual primary keys when we are having clause statements
 	if len(primaryKeysFound) != len(primaryKeys) && len(clauseResponse.Clauses) > 0 {
-
 		missingPrime := findFirstMissingKey(primaryKeys, primaryKeysFound)
 		missingPkColumnType, err := t.SchemaMappingConfig.GetPkKeyType(tableSpec.TableName, tableSpec.KeyspaceName, missingPrime)
 		if err != nil {
@@ -392,10 +391,10 @@ func (t *Translator) TranslateDeleteQuerytoBigtable(queryStr string) (*DeleteQue
 		}
 		return nil, fmt.Errorf("some %s key parts are missing: %s", missingPkColumnType, missingPrime)
 	}
-	rowKey := strings.Join(primaryKeysFound[:], "#")
-	deleteQueryData := &DeleteQueryMap{
+	rowKey := strings.Join(primaryKeysFound[:], rowKeyJoinString)
+	deleteQueryData := &DeleteQueryMapping{
 		Query:           query,
-		QueryType:       queryType,
+		QueryType:       DELETE,
 		Table:           tableSpec.TableName,
 		Keyspace:        tableSpec.KeyspaceName,
 		Clauses:         clauseResponse.Clauses,
@@ -404,15 +403,15 @@ func (t *Translator) TranslateDeleteQuerytoBigtable(queryStr string) (*DeleteQue
 		PrimaryKeys:     primaryKeys,
 		RowKey:          rowKey,
 		TimestampInfo:   timestampInfo,
-		IfExists:        ifExists,
+		IfExists:        ifExist,
 		SelectedColumns: selectedColumns,
 	}
 	return deleteQueryData, nil
 }
 
 // BuildDeletePrepareQuery() Function to accept the values clause columns and form the rowKey and return the same
-func (t *Translator) BuildDeletePrepareQuery(values []*primitive.Value, st *DeleteQueryMap, variableColumnMetadata []*message.ColumnMetadata, protocolV primitive.ProtocolVersion) (string, TimestampInfo, error) {
-	parts := strings.Split(st.RowKey, "#")
+func (t *Translator) BuildDeletePrepareQuery(values []*primitive.Value, st *DeleteQueryMapping, variableColumnMetadata []*message.ColumnMetadata, protocolV primitive.ProtocolVersion) (string, TimestampInfo, error) {
+	parts := strings.Split(st.RowKey, rowKeyJoinString)
 	timestamp, values, err := ProcessTimestampByDelete(st, values)
 	if err != nil {
 		return "", TimestampInfo{}, fmt.Errorf("error while getting timestamp value")
@@ -423,8 +422,7 @@ func (t *Translator) BuildDeletePrepareQuery(values []*primitive.Value, st *Dele
 
 	valueMap := make(map[string]interface{})
 	for i, col := range variableColumnMetadata {
-		columnType, _ := t.SchemaMappingConfig.GetColumnType(st.Table, col.Name, st.Keyspace)
-		val, _ := utilities.DecodeEncodedValues(values[i].Contents, columnType.CQLType, protocolV)
+		val, _ := utilities.DecodeBytesToCassandraColumnType(values[i].Contents, variableColumnMetadata[i].Type, protocolV)
 		valueMap[col.Name] = val
 	}
 
@@ -437,7 +435,7 @@ func (t *Translator) BuildDeletePrepareQuery(values []*primitive.Value, st *Dele
 		parts[i] = convertedVal
 	}
 
-	rowKey := strings.Join(parts, "#")
+	rowKey := strings.Join(parts, rowKeyJoinString)
 	return rowKey, timestamp, nil
 }
 
@@ -463,7 +461,7 @@ func parseDeleteColumns(deleteColumns cql.IDeleteColumnListContext, tableName st
 				Column.MapKey = stringLiteral
 			}
 		}
-		_, err := tableConf.GetColumnType(tableName, Column.Name, keySpace)
+		_, err := tableConf.GetColumnType(keySpace, tableName, Column.Name)
 		if err != nil {
 			return nil, fmt.Errorf("undefined column name %s in table %s.%s", Column.Name, keySpace, tableName)
 		}

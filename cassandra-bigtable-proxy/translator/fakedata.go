@@ -9,109 +9,110 @@ import (
 var mockSchemaMappingConfig = map[string]map[string]map[string]*schemaMapping.Column{
 	"test_keyspace": {
 		"test_table": {
-			"column1": &schemaMapping.Column{
-				ColumnName:   "column1",
+			"pk_1_text": &schemaMapping.Column{
+				ColumnName:   "pk_1_text",
 				ColumnType:   "text",
 				IsPrimaryKey: true,
 				PkPrecedence: 1,
 				Metadata: message.ColumnMetadata{
 					Table: "test_table",
-					Name:  "column1",
+					Name:  "pk_1_text",
 					Index: 0,
 					Type:  datatype.Varchar,
 				},
 			},
-			"column2": &schemaMapping.Column{
-				ColumnName:   "column2",
-				ColumnType:   "blob",
-				IsPrimaryKey: false,
-				Metadata: message.ColumnMetadata{
-					Table: "test_table",
-					Name:  "column2",
-					Index: 1,
-					Type:  datatype.Blob,
-				},
-			},
-			"column3": &schemaMapping.Column{
-				ColumnName:   "column3",
-				ColumnType:   "boolean",
-				IsPrimaryKey: false,
-				Metadata: message.ColumnMetadata{
-					Table: "test_table",
-					Name:  "column3",
-					Index: 3,
-					Type:  datatype.Boolean,
-				},
-			},
-			"column5": &schemaMapping.Column{
-				ColumnName:   "column5",
-				ColumnType:   "timestamp",
-				IsPrimaryKey: false,
-				Metadata: message.ColumnMetadata{
-					Table: "test_table",
-					Name:  "column5",
-					Index: 4,
-					Type:  datatype.Timestamp,
-				},
-			},
-			"column6": &schemaMapping.Column{
-				ColumnName:   "column6",
-				ColumnType:   "int",
-				IsPrimaryKey: false,
-				Metadata: message.ColumnMetadata{
-					Table: "test_table",
-					Name:  "column6",
-					Index: 5,
-					Type:  datatype.Int,
-				},
-			},
-			"column7": &schemaMapping.Column{
-				ColumnName:   "column7",
-				ColumnType:   "set<text>",
-				IsPrimaryKey: false,
-				IsCollection: true,
-				Metadata: message.ColumnMetadata{
-					Table: "test_table",
-					Name:  "column7",
-					Index: 6,
-					Type:  datatype.NewSetType(datatype.Varchar),
-				},
-			},
-			"column8": &schemaMapping.Column{
-				ColumnName:   "column8",
-				ColumnType:   "map<text,boolean>",
-				IsPrimaryKey: false,
-				IsCollection: true,
-				Metadata: message.ColumnMetadata{
-					Table: "test_table",
-					Name:  "column8",
-					Index: 7,
-					Type:  datatype.NewMapType(datatype.Varchar, datatype.Boolean),
-				},
-			},
-			"column9": &schemaMapping.Column{
-				ColumnName:   "column9",
-				ColumnType:   "bigint",
-				IsPrimaryKey: false,
-				Metadata: message.ColumnMetadata{
-					Table: "test_table",
-					Name:  "column9",
-					Index: 8,
-					Type:  datatype.Bigint,
-				},
-			},
-			"column10": &schemaMapping.Column{
-				ColumnName:   "column10",
+			"pk_2_text": &schemaMapping.Column{
+				ColumnName:   "pk_2_text",
 				ColumnType:   "text",
 				IsPrimaryKey: true,
 				PkPrecedence: 2,
 				Metadata: message.ColumnMetadata{
 					Table: "test_table",
-					Name:  "column10",
-					Index: 9,
+					Name:  "pk_2_text",
+					Index: 1,
 					Type:  datatype.Varchar,
 				},
 			},
+			"blob_col": &schemaMapping.Column{
+				ColumnName:   "blob_col",
+				ColumnType:   "blob",
+				IsPrimaryKey: false,
+				Metadata: message.ColumnMetadata{
+					Table: "test_table",
+					Name:  "blob_col",
+					Index: 2,
+					Type:  datatype.Blob,
+				},
+			},
+			"bool_col": &schemaMapping.Column{
+				ColumnName:   "bool_col",
+				ColumnType:   "boolean",
+				IsPrimaryKey: false,
+				Metadata: message.ColumnMetadata{
+					Table: "test_table",
+					Name:  "bool_col",
+					Index: 3,
+					Type:  datatype.Boolean,
+				},
+			},
+			"timestamp_col": &schemaMapping.Column{
+				ColumnName:   "timestamp_col",
+				ColumnType:   "timestamp",
+				IsPrimaryKey: false,
+				Metadata: message.ColumnMetadata{
+					Table: "test_table",
+					Name:  "timestamp_col",
+					Index: 4,
+					Type:  datatype.Timestamp,
+				},
+			},
+			"int_col": &schemaMapping.Column{
+				ColumnName:   "int_col",
+				ColumnType:   "int",
+				IsPrimaryKey: false,
+				Metadata: message.ColumnMetadata{
+					Table: "test_table",
+					Name:  "int_col",
+					Index: 5,
+					Type:  datatype.Int,
+				},
+			},
+			"set_text_col": &schemaMapping.Column{
+				ColumnName:   "set_text_col",
+				ColumnType:   "set<text>",
+				IsPrimaryKey: false,
+				IsCollection: true,
+				Metadata: message.ColumnMetadata{
+					Table: "test_table",
+					Name:  "set_text_col",
+					Index: 6,
+					Type:  datatype.NewSetType(datatype.Varchar),
+				},
+			},
+			"map_text_bool_col": &schemaMapping.Column{
+				ColumnName:   "map_text_bool_col",
+				ColumnType:   "map<text,boolean>",
+				IsPrimaryKey: false,
+				IsCollection: true,
+				Metadata: message.ColumnMetadata{
+					Table: "test_table",
+					Name:  "map_text_bool_col",
+					Index: 7,
+					Type:  datatype.NewMapType(datatype.Varchar, datatype.Boolean),
+				},
+			},
+			"bigint_col": &schemaMapping.Column{
+				ColumnName:   "bigint_col",
+				ColumnType:   "bigint",
+				IsPrimaryKey: false,
+				Metadata: message.ColumnMetadata{
+					Table: "test_table",
+					Name:  "bigint_col",
+					Index: 8,
+					Type:  datatype.Bigint,
+				},
+			},
+
 			"map_text_text": &schemaMapping.Column{
 				ColumnName:   "map_text_text",
 				ColumnType:   "map<text,text>",
@@ -509,25 +510,25 @@ var mockSchemaMappingConfig = map[string]map[string]map[string]*schemaMapping.Co
 var mockPkMetadata = map[string]map[string][]schemaMapping.Column{
 	"test_keyspace": {"test_table": {
 		{
-			ColumnName:   "column1",
+			ColumnName:   "pk_1_text",
 			CQLType:      "text",
 			IsPrimaryKey: true,
 			PkPrecedence: 1,
 			Metadata: message.ColumnMetadata{
 				Table: "test_table",
-				Name:  "column1",
+				Name:  "pk_1_text",
 				Index: 0,
 				Type:  datatype.Varchar,
 			},
 		},
 		{
-			ColumnName:   "column10",
+			ColumnName:   "pk_2_text",
 			ColumnType:   "text",
 			IsPrimaryKey: true,
 			PkPrecedence: 2,
 			Metadata: message.ColumnMetadata{
 				Table: "test_table",
-				Name:  "column10",
+				Name:  "pk_2_text",
 				Index: 9,
 				Type:  datatype.Varchar,
 			},

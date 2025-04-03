@@ -30,8 +30,8 @@ import (
 
 // IsCollection() Function to determine if provided colunm if type of collection or not
 // It returns true if given column is of collection type or else return false
-func (t *Translator) IsCollection(tableName, columnName string, keySpace string) bool {
-	if colType, err := t.SchemaMappingConfig.GetColumnType(tableName, columnName, keySpace); err == nil {
+func (t *Translator) IsCollection(keySpace, tableName, columnName string) bool {
+	if colType, err := t.SchemaMappingConfig.GetColumnType(keySpace, tableName, columnName); err == nil {
 		return colType.IsCollection
 	}
 	return false
@@ -46,65 +46,62 @@ func (t *Translator) IsCollection(tableName, columnName string, keySpace string)
 //
 // Returns: ColumnsResponse struct and error if any
 func parseColumnsAndValuesFromInsert(input cql.IInsertColumnSpecContext, tableName string, schemaMapping *schemaMapping.SchemaMappingConfig, keyspace string) (*ColumnsResponse, error) {
-	if input != nil {
-		columnListObj := input.ColumnList()
-		if columnListObj == nil {
-			return nil, errors.New("parseColumnsAndValuesFromInsert: error while parsing columns")
-		}
-		columns := columnListObj.AllColumn()
-		if columns == nil {
-			return nil, errors.New("parseColumnsAndValuesFromInsert: error while parsing columns")
-		}
 
-		if len(columns) > 0 {
-			var columnArr []Column
-			var valuesArr []string
-			var paramKeys []string
-			var primaryColumns []string
-
-			for _, val := range columns {
-				columnName := val.GetText()
-				if columnName == "" {
-					return nil, errors.New("parseColumnsAndValuesFromInsert: No Columns found in the Insert Query")
-				}
-				columnName = strings.ReplaceAll(columnName, literalPlaceholder, "")
-				columnType, err := schemaMapping.GetColumnType(tableName, columnName, keyspace)
-				if err != nil {
-					return nil, fmt.Errorf("undefined column name %s in table %s.%s", columnName, keyspace, tableName)
-
-				}
-				isPrimaryKey := false
-				if columnType.IsPrimaryKey {
-					isPrimaryKey = true
-				}
-				column := Column{
-					Name:         columnName,
-					ColumnFamily: schemaMapping.SystemColumnFamily,
-					CQLType:      columnType.CQLType,
-					IsPrimaryKey: isPrimaryKey,
-				}
-				if columnType.IsPrimaryKey {
-					primaryColumns = append(primaryColumns, columnName)
-				}
-				valueName := "@" + columnName
-				columnArr = append(columnArr, column)
-				valuesArr = append(valuesArr, valueName)
-				paramKeys = append(paramKeys, columnName)
-
-			}
-
-			response := &ColumnsResponse{
-				Columns:       columnArr,
-				ValueArr:      valuesArr,
-				ParamKeys:     paramKeys,
-				PrimayColumns: primaryColumns,
-			}
-			return response, nil
-		}
-		return nil, errors.New("parseColumnsAndValuesFromInsert: No Columns found in the Insert Query")
+	if input == nil {
+		return nil, errors.New("parseColumnsAndValuesFromInsert: No Input paramaters found for columns")
 	}
 
-	return nil, errors.New("parseColumnsAndValuesFromInsert: No Input paramaters found for columns")
+	columnListObj := input.ColumnList()
+	if columnListObj == nil {
+		return nil, errors.New("parseColumnsAndValuesFromInsert: error while parsing columns")
+	}
+	columns := columnListObj.AllColumn()
+	if columns == nil {
+		return nil, errors.New("parseColumnsAndValuesFromInsert: error while parsing columns")
+	}
+
+	if len(columns) <= 0 {
+		return nil, errors.New("parseColumnsAndValuesFromInsert: No Columns found in the Insert Query")
+	}
+	var columnArr []Column
+	var paramKeys []string
+	var primaryColumns []string
+
+	for _, val := range columns {
+		columnName := val.GetText()
+		if columnName == "" {
+			return nil, errors.New("parseColumnsAndValuesFromInsert: No Columns found in the Insert Query")
+		}
+		columnName = strings.ReplaceAll(columnName, literalPlaceholder, "")
+		columnType, err := schemaMapping.GetColumnType(keyspace, tableName, columnName)
+		if err != nil {
+			return nil, fmt.Errorf("undefined column name %s in table %s.%s", columnName, keyspace, tableName)
+
+		}
+		isPrimaryKey := false
+		if columnType.IsPrimaryKey {
+			isPrimaryKey = true
+		}
+		column := Column{
+			Name:         columnName,
+			ColumnFamily: schemaMapping.SystemColumnFamily,
+			CQLType:      columnType.CQLType,
+			IsPrimaryKey: isPrimaryKey,
+		}
+		if columnType.IsPrimaryKey {
+			primaryColumns = append(primaryColumns, columnName)
+		}
+		columnArr = append(columnArr, column)
+		paramKeys = append(paramKeys, columnName)
+
+	}
+
+	response := &ColumnsResponse{
+		Columns:       columnArr,
+		ParamKeys:     paramKeys,
+		PrimayColumns: primaryColumns,
+	}
+	return response, nil
 }
 
 // setParamsFromValues() parses Values from the Insert Query
@@ -144,7 +141,7 @@ func setParamsFromValues(input cql.IInsertValuesSpecContext, columns []Column, s
 				var val interface{}
 				var unenVal interface{}
 				var err error
-				columnType, er := schemaMapping.GetColumnType(tableName, col.Name, keySpace)
+				columnType, er := schemaMapping.GetColumnType(keySpace, tableName, col.Name)
 				if er != nil {
 					return nil, nil, nil, er
 				}
@@ -175,10 +172,10 @@ func setParamsFromValues(input cql.IInsertValuesSpecContext, columns []Column, s
 //   - queryStr: Read the query, parse its columns, values, table name, type of query and keyspaces etc.
 //   - protocolV: Array of Column Names
 //
-// Returns: InsertQueryMap, build the InsertQueryMap and return it with nil value of error. In case of error
-// InsertQueryMap will return as nil and error will contains the error object
+// Returns: InsertQueryMapping, build the InsertQueryMapping and return it with nil value of error. In case of error
+// InsertQueryMapping will return as nil and error will contains the error object
 
-func (t *Translator) TranslateInsertQuerytoBigtable(queryStr string, protocolV primitive.ProtocolVersion) (*InsertQueryMap, error) {
+func (t *Translator) TranslateInsertQuerytoBigtable(queryStr string, protocolV primitive.ProtocolVersion) (*InsertQueryMapping, error) {
 	query := renameLiterals(queryStr)
 	lexer := cql.NewCqlLexer(antlr.NewInputStream(query))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -192,7 +189,6 @@ func (t *Translator) TranslateInsertQuerytoBigtable(queryStr string, protocolV p
 	if kwInsertObj == nil {
 		return nil, errors.New("could not parse insert object")
 	}
-	queryType := kwInsertObj.GetText()
 	insertObj.KwInto()
 	keyspace := insertObj.Keyspace()
 	table := insertObj.Table()
@@ -220,7 +216,7 @@ func (t *Translator) TranslateInsertQuerytoBigtable(queryStr string, protocolV p
 	if keyspaceName == "" {
 		return nil, errors.New("keyspace is null")
 	}
-	if !t.SchemaMappingConfig.InstanceExist(keyspaceName) {
+	if !t.SchemaMappingConfig.InstanceExists(keyspaceName) {
 		return nil, fmt.Errorf("keyspace %s does not exist", keyspaceName)
 	}
 	if !t.SchemaMappingConfig.TableExist(keyspaceName, tableName) {
@@ -256,19 +252,20 @@ func (t *Translator) TranslateInsertQuerytoBigtable(queryStr string, protocolV p
 	var rowKey string
 	var newValues []interface{} = values
 	var newColumns []Column = columnsResponse.Columns
-	var err1 error
+	var rawOutput *ProcessRawCollectionsOutput // Declare rawOutput
+
 	primaryKeys, err := getPrimaryKeys(t.SchemaMappingConfig, tableName, keyspaceName)
 	if err != nil {
 		return nil, err
 	}
 
 	if !ValidateRequiredPrimaryKeys(primaryKeys, columnsResponse.PrimayColumns) {
-		missingPrime := findFirstMissingKey(primaryKeys, columnsResponse.PrimayColumns)
-		missingPkColumnType, err := t.SchemaMappingConfig.GetPkKeyType(tableName, keyspaceName, missingPrime)
+		missingKey := findFirstMissingKey(primaryKeys, columnsResponse.PrimayColumns)
+		missingPkColumnType, err := t.SchemaMappingConfig.GetPkKeyType(tableName, keyspaceName, missingKey)
 		if err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf("some %s key parts are missing: %s", missingPkColumnType, missingPrime)
+		return nil, fmt.Errorf("some %s key parts are missing: %s", missingPkColumnType, missingKey)
 	}
 
 	if !strings.Contains(queryStr, "?") {
@@ -283,15 +280,26 @@ func (t *Translator) TranslateInsertQuerytoBigtable(queryStr string, protocolV p
 		rowKey = strings.Join(primkeyvalues[:], "#")
 
 		// Building new colum family, qualifier and values for collection type of data.
-		newColumns, newValues, delColumnFamily, _, _, err1 = processCollectionColumnsForRawQueries(columnsResponse.Columns, values, tableName, t, keyspaceName, nil)
-		if err1 != nil {
-			return nil, err1
+		rawInput := ProcessRawCollectionsInput{
+			Columns:    columnsResponse.Columns,
+			Values:     values,
+			TableName:  tableName,
+			Translator: t,
+			KeySpace:   keyspaceName,
 		}
+		rawOutput, err = processCollectionColumnsForRawQueries(rawInput)
+		if err != nil {
+			return nil, fmt.Errorf("error processing raw collection columns: %w", err)
+		}
+		newColumns = rawOutput.NewColumns
+		newValues = rawOutput.NewValues
+		delColumnFamily = rawOutput.DelColumnFamily
+
 	}
 
-	insertQueryData := &InsertQueryMap{
+	insertQueryData := &InsertQueryMapping{
 		Query:                query,
-		QueryType:            queryType,
+		QueryType:            INSERT,
 		Table:                tableName,
 		Keyspace:             keyspaceName,
 		Columns:              newColumns,
@@ -315,15 +323,16 @@ func (t *Translator) TranslateInsertQuerytoBigtable(queryStr string, protocolV p
 //   - tableName: tablename on which operation has to be performed
 //   - protocolV: cassandra protocol version
 //
-// Returns: InsertQueryMap, build the InsertQueryMap and return it with nil value of error. In case of error
-// InsertQueryMap will return as nil and error will contains the error object
-func (t *Translator) BuildInsertPrepareQuery(columnsResponse []Column, values []*primitive.Value, st *InsertQueryMap, protocolV primitive.ProtocolVersion) (*InsertQueryMap, error) {
+// Returns: InsertQueryMapping, build the InsertQueryMapping and return it with nil value of error. In case of error
+// InsertQueryMapping will return as nil and error will contains the error object
+func (t *Translator) BuildInsertPrepareQuery(columnsResponse []Column, values []*primitive.Value, st *InsertQueryMapping, protocolV primitive.ProtocolVersion) (*InsertQueryMapping, error) {
 	var newColumns []Column
 	var newValues []interface{}
 	var primaryKeys []string = st.PrimaryKeys
 	var delColumnFamily []string
 	var err error
 	var unencrypted map[string]interface{}
+	var prepareOutput *ProcessPrepareCollectionsOutput // Declare prepareOutput
 
 	if len(primaryKeys) == 0 {
 		primaryKeys, _ = getPrimaryKeys(t.SchemaMappingConfig, st.Table, st.Keyspace)
@@ -333,24 +342,45 @@ func (t *Translator) BuildInsertPrepareQuery(columnsResponse []Column, values []
 		return nil, err
 	}
 	// Building new colum family, qualifier and values for collection type of data.
-	newColumns, newValues, unencrypted, _, delColumnFamily, _, err = processCollectionColumnsForPrepareQueries(columnsResponse, values, st.Table, protocolV, primaryKeys, t, st.Keyspace, nil)
+	prepareInput := ProcessPrepareCollectionsInput{
+		ColumnsResponse: columnsResponse,
+		Values:          values,
+		TableName:       st.Table,
+		ProtocolV:       protocolV,
+		PrimaryKeys:     primaryKeys,
+		Translator:      t,
+		KeySpace:        st.Keyspace,
+		ComplexMeta:     nil, // Assuming nil for insert
+	}
+	prepareOutput, err = processCollectionColumnsForPrepareQueries(prepareInput)
 	if err != nil {
-		fmt.Println("Error processing columns in prepare insert:", err)
+		fmt.Println("Error processing prepared collection columns:", err)
 		return nil, err
 	}
+	newColumns = prepareOutput.NewColumns
+	newValues = prepareOutput.NewValues
+	unencrypted = prepareOutput.Unencrypted
+	delColumnFamily = prepareOutput.DelColumnFamily
 
 	rowKey, rkErr := generateRowKey(t.SchemaMappingConfig, st.Table, unencrypted, st.Keyspace)
 	if rkErr != nil {
 		return nil, rkErr
 	}
 
-	insertQueryData := &InsertQueryMap{
+	insertQueryData := &InsertQueryMapping{
 		Columns:              newColumns,
 		Values:               newValues,
 		PrimaryKeys:          primaryKeys,
 		RowKey:               rowKey,
 		DeleteColumnFamilies: delColumnFamily,
 		TimestampInfo:        timestampInfo,
+		Query:                st.Query,
+		QueryType:            st.QueryType,
+		Table:                st.Table,
+		Keyspace:             st.Keyspace,
+		Params:               st.Params,
+		ParamKeys:            st.PrimaryKeys,
+		IfNotExists:          st.IfNotExists,
 	}
 
 	return insertQueryData, nil

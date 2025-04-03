@@ -20,6 +20,7 @@ import (
 	"cloud.google.com/go/bigtable"
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
+	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 	"go.uber.org/zap"
 )
@@ -48,6 +49,7 @@ type SelectQueryMap struct {
 	Clauses          []Clause                  // List of clauses in the query
 	Limit            Limit                     // Limit clause details
 	OrderBy          OrderBy                   // Order by clause details
+	GroupByColumns   []string                  // Group by Columns
 	Params           map[string]interface{}    // Parameters for the query
 	ParamKeys        []string                  // column_name of the parameters
 	AliasMap         map[string]AsKeywordMeta  // Aliases used in the query
@@ -58,10 +60,26 @@ type SelectQueryMap struct {
 	VariableMetadata []*message.ColumnMetadata // Metadata of variable columns for prepared queries in Cassandra format
 }
 
+type OrderOperation string
+
+const (
+	Asc  OrderOperation = "asc"
+	Desc OrderOperation = "desc"
+)
+
+type QueryTypesEnum string
+
+const (
+	INSERT QueryTypesEnum = "INSERT"
+	SELECT QueryTypesEnum = "SELECT"
+	UPDATE QueryTypesEnum = "UPDATE"
+	DELETE QueryTypesEnum = "DELETE"
+)
+
 type OrderBy struct {
 	IsOrderBy bool
 	Column    string
-	Operation string
+	Operation OrderOperation
 }
 
 type Limit struct {
@@ -92,6 +110,7 @@ type Clause struct {
 	IsPrimaryKey bool
 }
 
+// This struct will be useful in combining all the clauses into one.
 type ClauseResponse struct {
 	Clauses   []Clause
 	Params    map[string]interface{}
@@ -108,17 +127,17 @@ type ComplexUpdateMeta struct {
 	PrependList      bool              // this is for list
 	Delete           bool              // this is for map/set/list
 	UpdateListIndex  string            // this is for List index
-	key              interface{}       // this key is for map key
+	mapKey           interface{}       // this key is for map key
 	ExpectedDatatype datatype.DataType // this datatype has to be provided in case of change in expected datatype.
 	Value            []byte            // this is value for setting at index for list
 	ListDelete       bool              // this is for list = list - {value1, value2}
 	ListDeleteValues [][]byte          // this stores the values to be deleted from list
 }
 
-// InsertQueryMap represents the mapping of an insert query along with its translation details.
-type InsertQueryMap struct {
+// InsertQueryMapping represents the mapping of an insert query along with its translation details.
+type InsertQueryMapping struct {
 	Query                string                    // Original query string
-	QueryType            string                    // Type of the query (e.g., INSERT)
+	QueryType            QueryTypesEnum            // Type of the query (e.g., INSERT)
 	Table                string                    // Table involved in the query
 	Keyspace             string                    // Keyspace to which the table belongs
 	Columns              []Column                  // List of columns involved in the insert operation
@@ -136,15 +155,14 @@ type InsertQueryMap struct {
 
 type ColumnsResponse struct {
 	Columns       []Column
-	ValueArr      []string
 	ParamKeys     []string
 	PrimayColumns []string
 }
 
-// DeleteQueryMap represents the mapping of a delete query along with its translation details.
-type DeleteQueryMap struct {
+// DeleteQueryMapping represents the mapping of a delete query along with its translation details.
+type DeleteQueryMapping struct {
 	Query             string                    // Original query string
-	QueryType         string                    // Type of the query (e.g., DELETE)
+	QueryType         QueryTypesEnum            // Type of the query (e.g., DELETE)
 	Table             string                    // Table involved in the query
 	Keyspace          string                    // Keyspace to which the table belongs
 	Clauses           []Clause                  // List of clauses in the delete query
@@ -160,11 +178,11 @@ type DeleteQueryMap struct {
 	SelectedColumns   []schemaMapping.SelectedColumns
 }
 
-// UpdateQueryMap represents the mapping of an update query along with its translation details.
-type UpdateQueryMap struct {
+// UpdateQueryMapping represents the mapping of an update query along with its translation details.
+type UpdateQueryMapping struct {
 	Query                 string // Original query string
 	TranslatedQuery       string
-	QueryType             string                    // Type of the query (e.g., UPDATE)
+	QueryType             QueryTypesEnum            // Type of the query (e.g., UPDATE)
 	Table                 string                    // Table involved in the query
 	Keyspace              string                    // Keyspace to which the table belongs
 	UpdateSetValues       []UpdateSetValue          // Values to be updated
@@ -187,7 +205,6 @@ type UpdateQueryMap struct {
 type UpdateSetValue struct {
 	Column       string
 	Value        string
-	RawValue     interface{}
 	ColumnFamily string
 	CQLType      string
 	Encrypted    interface{}
@@ -202,4 +219,45 @@ type UpdateSetResponse struct {
 type TableObj struct {
 	TableName    string
 	KeyspaceName string
+}
+
+// ProcessRawCollectionsInput holds the parameters for processCollectionColumnsForRawQueries.
+type ProcessRawCollectionsInput struct {
+	Columns        []Column
+	Values         []interface{}
+	TableName      string
+	Translator     *Translator
+	KeySpace       string
+	PrependColumns []string
+}
+
+// ProcessRawCollectionsOutput holds the results from processCollectionColumnsForRawQueries.
+type ProcessRawCollectionsOutput struct {
+	NewColumns      []Column
+	NewValues       []interface{}
+	DelColumnFamily []string
+	DelColumns      []Column
+	ComplexMeta     map[string]*ComplexUpdateMeta
+}
+
+// ProcessPrepareCollectionsInput holds the parameters for processCollectionColumnsForPrepareQueries.
+type ProcessPrepareCollectionsInput struct {
+	ColumnsResponse []Column
+	Values          []*primitive.Value
+	TableName       string
+	ProtocolV       primitive.ProtocolVersion
+	PrimaryKeys     []string
+	Translator      *Translator
+	KeySpace        string
+	ComplexMeta     map[string]*ComplexUpdateMeta
+}
+
+// ProcessPrepareCollectionsOutput holds the results from processCollectionColumnsForPrepareQueries.
+type ProcessPrepareCollectionsOutput struct {
+	NewColumns      []Column
+	NewValues       []interface{}
+	Unencrypted     map[string]interface{}
+	IndexEnd        int
+	DelColumnFamily []string
+	DelColumns      []Column
 }

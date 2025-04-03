@@ -18,6 +18,7 @@ package translator
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
@@ -33,16 +34,16 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		query string
 	}
 
-	inputRawQuery := `select column1, column2, column3 from  test_keyspace.test_table
-	where column1 = 'test' AND column3='true'
-	AND column5 <= '2015-05-03 13:30:54.234' AND column6 >= '123'
-	AND column9 > '-10000000' LIMIT 20000;;`
+	inputRawQuery := `select pk_1_text, blob_col, bool_col from  test_keyspace.test_table
+	where pk_1_text = 'test' AND bool_col='true'
+	AND timestamp_col <= '2015-05-03 13:30:54.234' AND int_col >= '123'
+	AND bigint_col > '-10000000' LIMIT 20000;;`
 	timeStamp, _ := parseTimestamp("2015-05-03 13:30:54.234")
 
-	inputPreparedQuery := `select column1, column2, column3 from  test_keyspace.test_table
-	where column1 = '?' AND column2='?' AND column3='?'
-	AND column5='?' AND column6='?'
-	AND column9='?';`
+	inputPreparedQuery := `select pk_1_text, blob_col, bool_col from  test_keyspace.test_table
+	where pk_1_text = '?' AND blob_col='?' AND bool_col='?'
+	AND timestamp_col='?' AND int_col='?'
+	AND bigint_col='?';`
 	tests := []struct {
 		name    string
 		fields  fields
@@ -53,18 +54,18 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "Writetime Query without as keyword",
 			args: args{
-				query: `select column1, WRITETIME(column2) from test_keyspace.test_table where column1 = 'test';`,
+				query: `select pk_1_text, WRITETIME(blob_col) from test_keyspace.test_table where pk_1_text = 'test';`,
 			},
 			wantErr: false,
 			want: &SelectQueryMap{
-				Query:           "SELECT cf1['column1'],WRITE_TIMESTAMP(cf1, 'column2') FROM test_table WHERE cf1['column1'] = @value1;",
+				Query:           "SELECT cf1['pk_1_text'],WRITE_TIMESTAMP(cf1, 'blob_col') FROM test_table WHERE cf1['pk_1_text'] = @value1;",
 				QueryType:       "select",
-				TranslatedQuery: "SELECT cf1['column1'],WRITE_TIMESTAMP(cf1, 'column2') FROM test_table WHERE cf1['column1'] = @value1;",
+				TranslatedQuery: "SELECT cf1['pk_1_text'],WRITE_TIMESTAMP(cf1, 'blob_col') FROM test_table WHERE cf1['pk_1_text'] = @value1;",
 				Table:           "test_table",
 				Keyspace:        "test_keyspace",
 				Clauses: []Clause{
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "=",
 						Value:        "@value1",
 						IsPrimaryKey: true,
@@ -85,18 +86,18 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "Writetime Query with as keyword",
 			args: args{
-				query: `select column1, WRITETIME(column2) as name from test_keyspace.test_table where column1 = 'test';`,
+				query: `select pk_1_text, WRITETIME(blob_col) as name from test_keyspace.test_table where pk_1_text = 'test';`,
 			},
 			wantErr: false,
 			want: &SelectQueryMap{
-				Query:           "SELECT cf1['column1'],WRITE_TIMESTAMP(cf1, 'column2') as name FROM test_table WHERE cf1['column1'] = @value1;",
+				Query:           "SELECT cf1['pk_1_text'],WRITE_TIMESTAMP(cf1, 'blob_col') as name FROM test_table WHERE cf1['pk_1_text'] = @value1;",
 				QueryType:       "select",
-				TranslatedQuery: "SELECT cf1['column1'],WRITE_TIMESTAMP(cf1, 'column2') as name FROM test_table WHERE cf1['column1'] = @value1;",
+				TranslatedQuery: "SELECT cf1['pk_1_text'],WRITE_TIMESTAMP(cf1, 'blob_col') as name FROM test_table WHERE cf1['pk_1_text'] = @value1;",
 				Table:           "test_table",
 				Keyspace:        "test_keyspace",
 				Clauses: []Clause{
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "=",
 						Value:        "@value1",
 						IsPrimaryKey: true,
@@ -117,18 +118,18 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "As Query",
 			args: args{
-				query: `select column2 as name from test_keyspace.test_table where column1 = 'test';`,
+				query: `select blob_col as name from test_keyspace.test_table where pk_1_text = 'test';`,
 			},
 			wantErr: false,
 			want: &SelectQueryMap{
-				Query:           "select column2 as name from test_keyspace.test_table where column1 = 'test'",
+				Query:           "select blob_col as name from test_keyspace.test_table where pk_1_text = 'test'",
 				QueryType:       "select",
-				TranslatedQuery: "SELECT cf1['column2'] as name FROM test_table WHERE cf1['column1'] = @value1;",
+				TranslatedQuery: "SELECT cf1['blob_col'] as name FROM test_table WHERE cf1['pk_1_text'] = @value1;",
 				Table:           "test_table",
 				Keyspace:        "test_keyspace",
 				Clauses: []Clause{
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "=",
 						Value:        "@value1",
 						IsPrimaryKey: true,
@@ -149,7 +150,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "Query without Columns",
 			args: args{
-				query: `select from key_space.test_table where column1 = 'test'`,
+				query: `select from key_space.test_table where pk_1_text = 'test'`,
 			},
 			wantErr: true,
 			want:    nil,
@@ -157,7 +158,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "test for raw query when column name not exist in schema mapping table",
 			args: args{
-				query: "select column101, column2, column3 from  key_space.test_table where column1 = 'test' AND column3='true' AND column5 <= '2015-05-03 13:30:54.234' AND column6 >= '123' AND column9 > '-10000000' LIMIT 20000;",
+				query: "select column101, blob_col, bool_col from  key_space.test_table where pk_1_text = 'test' AND bool_col='true' AND timestamp_col <= '2015-05-03 13:30:54.234' AND int_col >= '123' AND bigint_col > '-10000000' LIMIT 20000;",
 			},
 			want:    nil,
 			wantErr: true,
@@ -165,7 +166,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "Query without keyspace name",
 			args: args{
-				query: `select column1, column2 from test_table where column1 = '?' and column1 in ('?', '?');`,
+				query: `select pk_1_text, blob_col from test_table where pk_1_text = '?' and pk_1_text in ('?', '?');`,
 			},
 			wantErr: true,
 			want:    nil,
@@ -186,33 +187,33 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 			want: &SelectQueryMap{
 				Query:           inputRawQuery,
 				QueryType:       "select",
-				TranslatedQuery: "SELECT cf1['column1'],cf1['column2'],cf1['column3'] FROM test_table WHERE cf1['column1'] = @value1 AND TO_BOOL(cf1['column3']) = @value2 AND TO_TIME(cf1['column5']) <= @value3 AND TO_INT32(cf1['column6']) >= @value4 AND TO_INT64(cf1['column9']) > @value5 LIMIT 20000;",
+				TranslatedQuery: "SELECT cf1['pk_1_text'],cf1['blob_col'],cf1['bool_col'] FROM test_table WHERE cf1['pk_1_text'] = @value1 AND TO_INT64(cf1['bool_col']) = @value2 AND TO_TIME(cf1['timestamp_col']) <= @value3 AND TO_INT64(cf1['int_col']) >= @value4 AND TO_INT64(cf1['bigint_col']) > @value5 LIMIT 20000;",
 				Table:           "test_table",
 				Keyspace:        "test_keyspace",
 				Clauses: []Clause{
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "=",
 						Value:        "@value1",
 						IsPrimaryKey: true,
 					},
 					{
-						Column:   "column3",
+						Column:   "bool_col",
 						Operator: "=",
 						Value:    "@value2",
 					},
 					{
-						Column:   "column5",
+						Column:   "timestamp_col",
 						Operator: "<=",
 						Value:    "@value3",
 					},
 					{
-						Column:   "column6",
+						Column:   "int_col",
 						Operator: ">=",
 						Value:    "@value4",
 					},
 					{
-						Column:   "column9",
+						Column:   "bigint_col",
 						Operator: ">",
 						Value:    "@value5",
 					},
@@ -243,38 +244,38 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 			want: &SelectQueryMap{
 				Query:           inputPreparedQuery,
 				QueryType:       "select",
-				TranslatedQuery: "SELECT cf1['column1'],cf1['column2'],cf1['column3'] FROM test_table WHERE cf1['column1'] = @value1 AND TO_BLOB(cf1['column2']) = @value2 AND TO_BOOL(cf1['column3']) = @value3 AND TO_TIME(cf1['column5']) = @value4 AND TO_INT32(cf1['column6']) = @value5 AND TO_INT64(cf1['column9']) = @value6;",
+				TranslatedQuery: "SELECT cf1['pk_1_text'],cf1['blob_col'],cf1['bool_col'] FROM test_table WHERE cf1['pk_1_text'] = @value1 AND TO_BLOB(cf1['blob_col']) = @value2 AND TO_INT64(cf1['bool_col']) = @value3 AND TO_TIME(cf1['timestamp_col']) = @value4 AND TO_INT64(cf1['int_col']) = @value5 AND TO_INT64(cf1['bigint_col']) = @value6;",
 				Table:           "test_table",
 				Keyspace:        "test_keyspace",
 				Clauses: []Clause{
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "=",
 						Value:        "@value1",
 						IsPrimaryKey: true,
 					},
 					{
-						Column:   "column2",
+						Column:   "blob_col",
 						Operator: "=",
 						Value:    "@value2",
 					},
 					{
-						Column:   "column3",
+						Column:   "bool_col",
 						Operator: "=",
 						Value:    "@value3",
 					},
 					{
-						Column:   "column5",
+						Column:   "timestamp_col",
 						Operator: "=",
 						Value:    "@value4",
 					},
 					{
-						Column:   "column6",
+						Column:   "int_col",
 						Operator: "=",
 						Value:    "@value5",
 					},
 					{
-						Column:   "column9",
+						Column:   "bigint_col",
 						Operator: "=",
 						Value:    "@value6",
 					},
@@ -293,17 +294,17 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "test for query without clause success",
 			args: args{
-				query: `select column1, column2, column3 from test_keyspace.test_table ORDER BY column1 LIMIT 20000;`,
+				query: `select pk_1_text, blob_col, bool_col from test_keyspace.test_table ORDER BY pk_1_text LIMIT 20000;`,
 			},
 			want: &SelectQueryMap{
-				Query:           `select column1, column2, column3 from test_keyspace.test_table ORDER BY column1 LIMIT 20000;`,
+				Query:           `select pk_1_text, blob_col, bool_col from test_keyspace.test_table ORDER BY pk_1_text LIMIT 20000;`,
 				QueryType:       "select",
-				TranslatedQuery: "SELECT cf1['column1'],cf1['column2'],cf1['column3'] FROM test_table ORDER BY cf1['column1'] asc LIMIT 20000;",
+				TranslatedQuery: "SELECT cf1['pk_1_text'],cf1['blob_col'],cf1['bool_col'] FROM test_table ORDER BY cf1['pk_1_text'] asc LIMIT 20000;",
 				Table:           "test_table",
 				Keyspace:        "test_keyspace",
 				ColumnMeta: ColumnMeta{
 					Star:   false,
-					Column: []schemaMapping.SelectedColumns{{Name: "column1"}, {Name: "column2"}, {Name: "column3"}},
+					Column: []schemaMapping.SelectedColumns{{Name: "pk_1_text"}, {Name: "blob_col"}, {Name: "bool_col"}},
 				},
 				Limit: Limit{
 					IsLimit: true,
@@ -311,7 +312,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 				},
 				OrderBy: OrderBy{
 					IsOrderBy: true,
-					Column:    "column1",
+					Column:    "pk_1_text",
 					Operation: "asc",
 				},
 			},
@@ -336,7 +337,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "error at Clause parsing when value invalid",
 			args: args{
-				query: "select * from test_keyspace.test_table where column1=",
+				query: "select * from test_keyspace.test_table where pk_1_text=",
 			},
 			want:    nil,
 			wantErr: true,
@@ -344,11 +345,11 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "test with IN operator raw query",
 			args: args{
-				query: `select column1, column2 from test_keyspace.test_table where column1 = 'test' and column1 in ('abc', 'xyz');`,
+				query: `select pk_1_text, blob_col from test_keyspace.test_table where pk_1_text = 'test' and pk_1_text in ('abc', 'xyz');`,
 			},
 			wantErr: false,
 			want: &SelectQueryMap{
-				TranslatedQuery: "SELECT cf1['column1'],cf1['column2'] FROM test_table WHERE cf1['column1'] = @value1 AND cf1['column1'] IN UNNEST(@value2);",
+				TranslatedQuery: "SELECT cf1['pk_1_text'],cf1['blob_col'] FROM test_table WHERE cf1['pk_1_text'] = @value1 AND cf1['pk_1_text'] IN UNNEST(@value2);",
 				Keyspace:        "test_keyspace",
 				Params: map[string]interface{}{
 					"value1": "test",
@@ -357,13 +358,13 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 				ParamKeys: []string{"value1", "value2"},
 				Clauses: []Clause{
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "=",
 						Value:        "@value1",
 						IsPrimaryKey: true,
 					},
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "IN",
 						Value:        "@value2",
 						IsPrimaryKey: true,
@@ -374,23 +375,23 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "test with IN operator prepared query",
 			args: args{
-				query: `select column1, column2 from test_keyspace.test_table where column1 = '?' and column1 in ('?', '?');`,
+				query: `select pk_1_text, blob_col from test_keyspace.test_table where pk_1_text = '?' and pk_1_text in ('?', '?');`,
 			},
 			wantErr: false,
 			want: &SelectQueryMap{
-				TranslatedQuery: "SELECT cf1['column1'],cf1['column2'] FROM test_table WHERE cf1['column1'] = @value1 AND cf1['column1'] IN UNNEST(@value2);",
+				TranslatedQuery: "SELECT cf1['pk_1_text'],cf1['blob_col'] FROM test_table WHERE cf1['pk_1_text'] = @value1 AND cf1['pk_1_text'] IN UNNEST(@value2);",
 				Keyspace:        "test_keyspace",
 				Params:          map[string]interface{}{},
 				ParamKeys:       []string{"value1", "value2"},
 				Clauses: []Clause{
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "=",
 						Value:        "@value1",
 						IsPrimaryKey: true,
 					},
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "IN",
 						Value:        "@value2",
 						IsPrimaryKey: true,
@@ -417,7 +418,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "query with missing limit value",
 			args: args{
-				query: `select column1, column2, column3 from test_keyspace.test_table ORDER BY column1 LIMIT;`,
+				query: `select pk_1_text, blob_col, bool_col from test_keyspace.test_table ORDER BY pk_1_text LIMIT;`,
 			},
 			want:    nil,
 			wantErr: true,
@@ -425,7 +426,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "query with LIMIT before ORDER BY",
 			args: args{
-				query: `select column1, column2, column3 from test_keyspace.test_table LIMIT 100 ORDER BY column1;`,
+				query: `select pk_1_text, blob_col, bool_col from test_keyspace.test_table LIMIT 100 ORDER BY pk_1_text;`,
 			},
 			want:    nil,
 			wantErr: true,
@@ -433,7 +434,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "query with non-existent column in ORDER BY",
 			args: args{
-				query: `select column1, column2, column3 from test_keyspace.test_table ORDER BY column12343 LIMIT 100;`,
+				query: `select pk_1_text, blob_col, bool_col from test_keyspace.test_table ORDER BY column12343 LIMIT 100;`,
 			},
 			want:    nil,
 			wantErr: true,
@@ -441,7 +442,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "query with negative LIMIT value",
 			args: args{
-				query: `select column1, column2, column3 from test_keyspace.test_table ORDER BY column1 LIMIT -100;`,
+				query: `select pk_1_text, blob_col, bool_col from test_keyspace.test_table ORDER BY pk_1_text LIMIT -100;`,
 			},
 			want:    nil,
 			wantErr: true,
@@ -449,7 +450,7 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 		{
 			name: "query with duplicate negative LIMIT value (potential duplicate test case)",
 			args: args{
-				query: `select column1, column2, column3 from test_keyspace.test_table ORDER BY column1 LIMIT -100;`,
+				query: `select pk_1_text, blob_col, bool_col from test_keyspace.test_table ORDER BY pk_1_text LIMIT -100;`,
 			},
 			want:    nil,
 			wantErr: true,
@@ -496,13 +497,14 @@ func TestTranslator_TranslateSelectQuerytoBigtable(t *testing.T) {
 }
 
 func Test_getBigtableSelectQuery(t *testing.T) {
-	schemaMapping := &schemaMapping.SchemaMappingConfig{
-		Logger:         zap.NewNop(),
-		TablesMetaData: mockSchemaMappingConfig,
+	schemaMap := &schemaMapping.SchemaMappingConfig{
+		Logger:             zap.NewNop(),
+		TablesMetaData:     mockSchemaMappingConfig,
+		SystemColumnFamily: "cf1",
 	}
 	tr := &Translator{
 		Logger:              zap.NewNop(),
-		SchemaMappingConfig: schemaMapping,
+		SchemaMappingConfig: schemaMap,
 	}
 
 	type args struct {
@@ -581,6 +583,46 @@ func Test_getBigtableSelectQuery(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "GROUP BY with multiple columns",
+			args: args{
+				data: &SelectQueryMap{
+					QueryType: "select",
+					Table:     "test_table",
+					Keyspace:  "test_keyspace",
+					ColumnMeta: ColumnMeta{
+						Star: false,
+						Column: []schemaMapping.SelectedColumns{
+							{Name: "pk_1_text"},
+							{Name: "int_col"},
+						},
+					},
+					GroupByColumns: []string{"pk_1_text", "int_col"},
+				},
+			},
+			want:    "SELECT cf1['pk_1_text'],TO_INT64(cf1['int_col']) FROM test_table GROUP BY cf1['pk_1_text'],TO_INT64(cf1['int_col']);",
+			wantErr: false,
+		},
+		{
+			name: "GROUP BY with unsupported collection type",
+			args: args{
+				data: &SelectQueryMap{
+					QueryType: "select",
+					Table:     "test_table",
+					Keyspace:  "test_keyspace",
+					ColumnMeta: ColumnMeta{
+						Star: false,
+						Column: []schemaMapping.SelectedColumns{
+							{Name: "pk_1_text"},
+							{Name: "map_text_text"},
+						},
+					},
+					GroupByColumns: []string{"pk_1_text", "map_text_text"},
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
 			name: "error",
 			args: args{
 				data: &SelectQueryMap{},
@@ -631,27 +673,51 @@ func TestInferDataType(t *testing.T) {
 }
 
 func Test_parseTableFromSelect(t *testing.T) {
-	type args struct {
-		input cql.IFromSpecContext
-	}
 	tests := []struct {
 		name    string
-		args    args
+		query   string
 		want    *TableObj
 		wantErr bool
 	}{
 		{
-			name: "Invalid input",
-			args: args{
-				input: nil,
+			name:  "Valid keyspace.table format",
+			query: "SELECT * FROM test_keyspace.test_table",
+			want: &TableObj{
+				TableName:    "test_table",
+				KeyspaceName: "test_keyspace",
 			},
+			wantErr: false,
+		},
+		{
+			name:    "Missing keyspace",
+			query:   "SELECT * FROM test_table",
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "Empty query",
+			query:   "",
 			want:    nil,
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseTableFromSelect(tt.args.input)
+			p, err := NewCqlParser(tt.query, false)
+			if err != nil {
+				if !tt.wantErr {
+					t.Fatalf("Failed to create parser: %v", err)
+				}
+				return
+			}
+
+			var fromSpec cql.IFromSpecContext
+			if selectStmt := p.Select_(); selectStmt != nil {
+				fromSpec = selectStmt.FromSpec()
+			}
+
+			got, err := parseTableFromSelect(fromSpec)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseTableFromSelect() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -686,6 +752,829 @@ func Test_parseOrderByFromSelect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := parseOrderByFromSelect(tt.args.input); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseOrderByFromSelect() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func Test_processFunctionColumn(t *testing.T) {
+	// Create a mock schema mapping config
+	mockSchemaMappingConfig := map[string]map[string]map[string]*schemaMapping.Column{
+		"test_keyspace": {
+			"user_info": {
+				"age": {
+					ColumnName: "age",
+					CQLType:    "bigint",
+					ColumnType: "bigint",
+				},
+				"balance": {
+					ColumnName: "balance",
+					CQLType:    "float",
+					ColumnType: "float",
+				},
+				"name": {
+					ColumnName: "name",
+					CQLType:    "text",
+					ColumnType: "string",
+				},
+				"code": {
+					ColumnName: "code",
+					CQLType:    "int",
+					ColumnType: "int",
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name           string
+		columnMetadata schemaMapping.SelectedColumns
+		tableName      string
+		keySpace       string
+		inputColumns   []string
+		wantColumns    []string
+		wantDataType   string
+		wantErr        bool
+		errMsg         string
+	}{
+		{
+			name: "COUNT(*)",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "count",
+				FuncColumnName: "*",
+				IsFunc:         true,
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantColumns: []string{
+				"count(*)",
+			},
+			wantDataType: "bigint",
+			wantErr:      false,
+		},
+		{
+			name: "AVG with numeric column",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "avg",
+				FuncColumnName: "age",
+				IsFunc:         true,
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantColumns: []string{
+				"avg(TO_INT64(cf1['age']))",
+			},
+			wantDataType: "bigint",
+			wantErr:      false,
+		},
+		{
+			name: "SUM with alias",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "sum",
+				FuncColumnName: "balance",
+				IsFunc:         true,
+				IsAs:           true,
+				Alias:          "total_balance",
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantColumns: []string{
+				"sum(TO_FLOAT32(cf1['balance'])) as total_balance",
+			},
+			wantDataType: "float",
+			wantErr:      false,
+		},
+		{
+			name: "Invalid function",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "invalid_func",
+				FuncColumnName: "age",
+				IsFunc:         true,
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantErr:      true,
+			errMsg:       "unknown function 'invalid_func'",
+		},
+		{
+			name: "Non-numeric column in aggregate",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "sum",
+				FuncColumnName: "name",
+				IsFunc:         true,
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantErr:      true,
+			errMsg:       "column not supported for aggregate",
+		},
+		{
+			name: "AVG with float column",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "avg",
+				FuncColumnName: "balance",
+				IsFunc:         true,
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantColumns: []string{
+				"avg(TO_FLOAT32(cf1['balance']))",
+			},
+			wantDataType: "float",
+			wantErr:      false,
+		},
+		{
+			name: "MIN with int column",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "min",
+				FuncColumnName: "code",
+				IsFunc:         true,
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantColumns: []string{
+				"min(TO_INT64(cf1['code']))",
+			},
+			wantDataType: "int",
+			wantErr:      false,
+		},
+		{
+			name: "MAX with alias",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "max",
+				FuncColumnName: "age",
+				IsFunc:         true,
+				IsAs:           true,
+				Alias:          "max_age",
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantColumns: []string{
+				"max(TO_INT64(cf1['age'])) as max_age",
+			},
+			wantDataType: "bigint",
+			wantErr:      false,
+		},
+		{
+			name: "Missing column metadata",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "avg",
+				FuncColumnName: "nonexistent",
+				IsFunc:         true,
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantErr:      true,
+			errMsg:       "column metadata not found for column 'nonexistent' in table 'user_info' and keyspace 'test_keyspace'",
+		},
+		{
+			name: "Empty function name",
+			columnMetadata: schemaMapping.SelectedColumns{
+				FuncName:       "",
+				FuncColumnName: "age",
+				IsFunc:         true,
+			},
+			tableName:    "user_info",
+			keySpace:     "test_keyspace",
+			inputColumns: []string{},
+			wantErr:      true,
+			errMsg:       "unknown function ''",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			translator := &Translator{
+				SchemaMappingConfig: &schemaMapping.SchemaMappingConfig{
+					TablesMetaData:     mockSchemaMappingConfig,
+					SystemColumnFamily: "cf1",
+				},
+			}
+
+			gotColumns, gotDataType, err := processFunctionColumn(translator, tt.columnMetadata, tt.tableName, tt.keySpace, tt.inputColumns)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("processFunctionColumn() error = nil, wantErr %v", tt.wantErr)
+					return
+				}
+				if err.Error() != tt.errMsg {
+					t.Errorf("processFunctionColumn() error = %v, wantErr %v", err, tt.errMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("processFunctionColumn() unexpected error = %v", err)
+				return
+			}
+
+			if !reflect.DeepEqual(gotColumns, tt.wantColumns) {
+				t.Errorf("processFunctionColumn() gotColumns = %v, want %v", gotColumns, tt.wantColumns)
+			}
+
+			if gotDataType != tt.wantDataType {
+				t.Errorf("processFunctionColumn() gotDataType = %v, want %v", gotDataType, tt.wantDataType)
+			}
+		})
+	}
+}
+
+func Test_parseColumnsFromSelectWithParser(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   string
+		want    ColumnMeta
+		wantErr bool
+	}{
+		{
+			name:    "star query",
+			query:   "SELECT * FROM test_table",
+			want:    ColumnMeta{Star: true},
+			wantErr: false,
+		},
+		{
+			name:  "single column",
+			query: "SELECT pk_1_text FROM test_table",
+			want: ColumnMeta{
+				Column: []schemaMapping.SelectedColumns{
+					{Name: "pk_1_text"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "multiple columns",
+			query: "SELECT pk_1_text, blob_col, bool_col FROM test_table",
+			want: ColumnMeta{
+				Column: []schemaMapping.SelectedColumns{
+					{Name: "pk_1_text"},
+					{Name: "blob_col"},
+					{Name: "bool_col"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "column with alias",
+			query: "SELECT pk_1_text AS alias1 FROM test_table",
+			want: ColumnMeta{
+				Column: []schemaMapping.SelectedColumns{
+					{Name: "pk_1_text", IsAs: true, Alias: "alias1"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "function with star",
+			query: "SELECT COUNT(*) FROM test_table",
+			want: ColumnMeta{
+				Column: []schemaMapping.SelectedColumns{
+					{Name: "count_*", IsFunc: true, FuncName: "count", Alias: "", FuncColumnName: "*"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "writetime function",
+			query: "SELECT name,WRITETIME(pk_1_text) AS wt FROM test_table",
+			want: ColumnMeta{
+				Column: []schemaMapping.SelectedColumns{
+					{
+						Name: "name",
+					},
+					{
+						Name:              "writetime(pk_1_text)",
+						Alias:             "wt",
+						IsAs:              true,
+						FuncColumnName:    "pk_1_text",
+						IsWriteTimeColumn: true,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "map access",
+			query: "SELECT map_col['key1'] FROM test_table",
+			want: ColumnMeta{
+				Column: []schemaMapping.SelectedColumns{
+					{Name: "map_col", MapKey: "key1", Alias: "map_col_key1"},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewCqlParser(tt.query, false)
+			if err != nil {
+				t.Fatalf("Failed to create parser: %v", err)
+			}
+
+			selectElements := p.Select_().SelectElements()
+
+			got, err := parseColumnsFromSelect(selectElements)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseColumnsFromSelect() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseColumnsFromSelect() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_parseGroupByColumn(t *testing.T) {
+	tests := []struct {
+		name     string
+		query    string
+		expected []string
+	}{
+		{
+			name:     "Single column",
+			query:    "select * from table group by col1",
+			expected: []string{"col1"},
+		},
+		{
+			name:     "Multiple columns",
+			query:    "select * from table group by col1, col2, col3",
+			expected: []string{"col1", "col2", "col3"},
+		},
+		{
+			name:     "With semicolon",
+			query:    "select * from table group by col1;",
+			expected: []string{"col1"},
+		},
+		{
+			name:     "With ORDER BY",
+			query:    "select * from table group by col1 order by col2",
+			expected: []string{"col1"},
+		},
+		{
+			name:     "With LIMIT",
+			query:    "select * from table group by col1 limit 10",
+			expected: []string{"col1"},
+		},
+		{
+			name:     "No GROUP BY",
+			query:    "select * from table",
+			expected: nil,
+		},
+		{
+			name:     "Malformed GROUP BY",
+			query:    "select * from table group by",
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseGroupByColumn(tt.query)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("parseGroupByColumn() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func Test_dtAllowedInAggregate(t *testing.T) {
+	tests := []struct {
+		dataType string
+		expected bool
+	}{
+		{"int", true},
+		{"bigint", true},
+		{"float", true},
+		{"double", true},
+		{"text", false},
+		{"boolean", false},
+		{"timestamp", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.dataType, func(t *testing.T) {
+			got := dtAllowedInAggregate(tt.dataType)
+			if got != tt.expected {
+				t.Errorf("dtAllowedInAggregate(%q) = %v, want %v", tt.dataType, got, tt.expected)
+			}
+		})
+	}
+}
+
+func Test_parseLimitFromSelect(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   string
+		want    Limit
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:  "Valid numeric limit",
+			query: "SELECT * FROM test_table LIMIT 10",
+			want:  Limit{IsLimit: true, Count: "10"},
+		},
+		{
+			name:  "Placeholder limit",
+			query: "SELECT * FROM test_table LIMIT ?",
+			want:  Limit{IsLimit: true, Count: "?"},
+		},
+		{
+			name:  "No limit",
+			query: "SELECT * FROM test_table",
+			want:  Limit{IsLimit: false},
+		},
+		{
+			name:    "Invalid limit (negative)",
+			query:   "SELECT * FROM test_table LIMIT -10",
+			want:    Limit{},
+			wantErr: true,
+			errMsg:  "no viable alternative at input '-10'",
+		},
+		{
+			name:    "Invalid limit (zero)",
+			query:   "SELECT * FROM test_table LIMIT 0",
+			want:    Limit{},
+			wantErr: true,
+			errMsg:  "no viable alternative at input '0'",
+		},
+		{
+			name:    "Invalid limit (non-numeric)",
+			query:   "SELECT * FROM test_table LIMIT abc",
+			want:    Limit{},
+			wantErr: true,
+			errMsg:  "no viable alternative at input 'abc'",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewCqlParser(tt.query, false)
+			if err != nil {
+				t.Fatalf("Failed to create parser: %v", err)
+			}
+
+			var limitSpec cql.ILimitSpecContext
+			if selectStmt := p.Select_(); selectStmt != nil {
+				limitSpec = selectStmt.LimitSpec()
+			}
+
+			got, err := parseLimitFromSelect(limitSpec)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseLimitFromSelect() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("parseLimitFromSelect() error = %v, wantErr containing %q", err, tt.errMsg)
+				}
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseLimitFromSelect() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_funcAllowedInAggregate(t *testing.T) {
+	tests := []struct {
+		funcName string
+		expected bool
+	}{
+		{"avg", true},
+		{"sum", true},
+		{"min", true},
+		{"max", true},
+		{"count", true},
+		{"AVG", true}, // case insensitive
+		{"Sum", true}, // case insensitive
+		{"unknown", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.funcName, func(t *testing.T) {
+			got := funcAllowedInAggregate(tt.funcName)
+			if got != tt.expected {
+				t.Errorf("funcAllowedInAggregate(%q) = %v, want %v", tt.funcName, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestProcessStrings(t *testing.T) {
+	// Setup mock schema mapping config
+	mockSchemaMappingConfig := map[string]map[string]map[string]*schemaMapping.Column{
+		"test_keyspace": {
+			"user_info": {
+				"name": &schemaMapping.Column{
+					ColumnName: "name",
+					CQLType:    "text",
+					ColumnType: "text",
+				},
+				"age": &schemaMapping.Column{
+					ColumnName: "age",
+					CQLType:    "bigint",
+					ColumnType: "bigint",
+				},
+				"code": &schemaMapping.Column{
+					ColumnName: "code",
+					CQLType:    "int",
+					ColumnType: "int",
+				},
+				"map_col": &schemaMapping.Column{
+					ColumnName: "map_col",
+					CQLType:    "map<text,text>",
+					ColumnType: "map<text,text>",
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name            string
+		selectedColumns []schemaMapping.SelectedColumns
+		tableName       string
+		keySpace        string
+		isGroupBy       bool
+		wantAliases     map[string]AsKeywordMeta
+		wantColumns     []string
+		wantErr         bool
+	}{
+		{
+			name: "Simple column selection",
+			selectedColumns: []schemaMapping.SelectedColumns{
+				{Name: "name"},
+				{Name: "age"},
+			},
+			tableName:   "user_info",
+			keySpace:    "test_keyspace",
+			isGroupBy:   false,
+			wantAliases: map[string]AsKeywordMeta{},
+			wantColumns: []string{
+				"cf1['name']",
+				"cf1['age']",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Column with alias",
+			selectedColumns: []schemaMapping.SelectedColumns{
+				{Name: "name", IsAs: true, Alias: "username"},
+				{Name: "age"},
+			},
+			tableName: "user_info",
+			keySpace:  "test_keyspace",
+			isGroupBy: false,
+			wantAliases: map[string]AsKeywordMeta{
+				"username": {
+					Name:     "name",
+					Alias:    "username",
+					IsFunc:   false,
+					DataType: "text",
+				},
+			},
+			wantColumns: []string{
+				"cf1['name'] as username",
+				"cf1['age']",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Aggregate function",
+			selectedColumns: []schemaMapping.SelectedColumns{
+				{
+					Name:           "count_age",
+					IsFunc:         true,
+					FuncName:       "count",
+					FuncColumnName: "age",
+					IsAs:           true,
+					Alias:          "age_count",
+				},
+			},
+			tableName: "user_info",
+			keySpace:  "test_keyspace",
+			isGroupBy: false,
+			wantAliases: map[string]AsKeywordMeta{
+				"age_count": {
+					Name:     "age",
+					IsFunc:   true,
+					DataType: "bigint",
+					Alias:    "age_count",
+				},
+			},
+			wantColumns: []string{"count(TO_INT64(cf1['age'])) as age_count"},
+			wantErr:     false,
+		},
+		{
+			name: "Invalid column",
+			selectedColumns: []schemaMapping.SelectedColumns{
+				{Name: "invalid_column"},
+			},
+			tableName: "user_info",
+			keySpace:  "test_keyspace",
+			isGroupBy: false,
+			wantErr:   true,
+		},
+		{
+			name: "Regular column with alias",
+			selectedColumns: []schemaMapping.SelectedColumns{
+				{Name: "age", IsAs: true, Alias: "user_age"},
+			},
+			tableName: "user_info",
+			keySpace:  "test_keyspace",
+			isGroupBy: false,
+			wantAliases: map[string]AsKeywordMeta{
+				"user_age": {
+					Name:     "age",
+					Alias:    "user_age",
+					DataType: "bigint",
+				},
+			},
+			wantColumns: []string{"cf1['age'] as user_age"},
+			wantErr:     false,
+		},
+		{
+			name: "Collection column with alias",
+			selectedColumns: []schemaMapping.SelectedColumns{
+				{Name: "map_col", IsAs: true, Alias: "renamed_map"},
+			},
+			tableName: "user_info",
+			keySpace:  "test_keyspace",
+			isGroupBy: false,
+			wantAliases: map[string]AsKeywordMeta{
+				"renamed_map": {
+					Name:     "map_col",
+					Alias:    "renamed_map",
+					DataType: "map<text,text>",
+				},
+			},
+			wantColumns: []string{"cf1['map_col'] as renamed_map"},
+			wantErr:     false,
+		},
+		{
+			name: "Column with alias in GROUP BY",
+			selectedColumns: []schemaMapping.SelectedColumns{
+				{Name: "age", IsAs: true, Alias: "user_age"},
+			},
+			tableName: "user_info",
+			keySpace:  "test_keyspace",
+			isGroupBy: true,
+			wantAliases: map[string]AsKeywordMeta{
+				"user_age": {
+					Name:     "age",
+					Alias:    "user_age",
+					DataType: "bigint",
+				},
+			},
+			wantColumns: []string{"TO_INT64(cf1['age']) as user_age"},
+			wantErr:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &Translator{
+				Logger: zap.NewNop(),
+				SchemaMappingConfig: &schemaMapping.SchemaMappingConfig{
+					TablesMetaData:     mockSchemaMappingConfig,
+					SystemColumnFamily: "cf1",
+				},
+			}
+
+			gotAliases, gotColumns, err := processStrings(tr, tt.selectedColumns, tt.tableName, tt.keySpace, tt.isGroupBy)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("processStrings() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if !reflect.DeepEqual(gotAliases, tt.wantAliases) {
+					t.Errorf("processStrings() gotAliases = %v, want %v", gotAliases, tt.wantAliases)
+				}
+				if !reflect.DeepEqual(gotColumns, tt.wantColumns) {
+					t.Errorf("processStrings() gotColumns = %v, want %v", gotColumns, tt.wantColumns)
+				}
+			}
+		})
+	}
+}
+func Test_processAsColumn(t *testing.T) {
+	tests := []struct {
+		name           string
+		columnMetadata schemaMapping.SelectedColumns
+		tableName      string
+		columnFamily   string
+		colMeta        *schemaMapping.Column
+		columns        []string
+		isGroupBy      bool
+		want           []string
+	}{
+		{
+			name: "Non-collection column with GROUP BY",
+			columnMetadata: schemaMapping.SelectedColumns{
+				Name:  "pk_1_text",
+				Alias: "col1",
+			},
+			tableName:    "test_table",
+			columnFamily: "cf1",
+			colMeta: &schemaMapping.Column{
+				IsCollection: false,
+				ColumnType:   "text",
+				ColumnName:   "pk_1_text",
+			},
+			columns:   []string{},
+			isGroupBy: true,
+			want:      []string{"cf1['pk_1_text'] as col1"},
+		},
+		{
+			name: "Non-collection column without GROUP BY",
+			columnMetadata: schemaMapping.SelectedColumns{
+				Name:  "pk_1_text",
+				Alias: "col1",
+			},
+			tableName:    "test_table",
+			columnFamily: "cf1",
+			colMeta: &schemaMapping.Column{
+				ColumnName:   "pk_1_text",
+				IsCollection: false,
+			},
+			columns:   []string{},
+			isGroupBy: false,
+			want:      []string{"cf1['pk_1_text'] as col1"},
+		},
+		{
+			name: "Collection column without GROUP BY",
+			columnMetadata: schemaMapping.SelectedColumns{
+				Name:  "map_column",
+				Alias: "map1",
+			},
+			tableName:    "test_table",
+			columnFamily: "cf1",
+			colMeta: &schemaMapping.Column{
+				IsCollection: true,
+			},
+			columns:   []string{},
+			isGroupBy: false,
+			want:      []string{"`map_column` as map1"},
+		},
+		{
+			name: "With existing columns",
+			columnMetadata: schemaMapping.SelectedColumns{
+				Name:  "pk_1_text",
+				Alias: "col1",
+			},
+			tableName:    "test_table",
+			columnFamily: "cf1",
+			colMeta: &schemaMapping.Column{
+				IsCollection: false,
+			},
+			columns:   []string{"existing_column"},
+			isGroupBy: false,
+			want:      []string{"existing_column", "cf1['pk_1_text'] as col1"},
+		},
+		{
+			name: "WriteTime column",
+			columnMetadata: schemaMapping.SelectedColumns{
+				Name:              "test_table",
+				Alias:             "wt",
+				IsWriteTimeColumn: true,
+			},
+			tableName:    "test_table",
+			columnFamily: "cf1",
+			colMeta: &schemaMapping.Column{
+				IsCollection: false,
+			},
+			columns:   []string{},
+			isGroupBy: false,
+			want:      []string{"cf1['test_table'] as wt"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := processAsColumn(tt.columnMetadata, tt.tableName, tt.columnFamily, tt.colMeta, tt.columns, tt.isGroupBy)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("processAsColumn() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -60,7 +60,7 @@ func TestTranslator_TranslateDeleteQuerytoBigtable(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *DeleteQueryMap
+		want    *DeleteQueryMapping
 		wantErr bool
 	}{
 		{
@@ -71,7 +71,7 @@ func TestTranslator_TranslateDeleteQuerytoBigtable(t *testing.T) {
 			fields: fields{
 				SchemaMappingConfig: createSchemaMappingConfigs(),
 			},
-			want: &DeleteQueryMap{
+			want: &DeleteQueryMapping{
 				Query:           query,
 				QueryType:       "DELETE",
 				Table:           "user_info",
@@ -103,7 +103,7 @@ func TestTranslator_TranslateDeleteQuerytoBigtable(t *testing.T) {
 			fields: fields{
 				SchemaMappingConfig: createSchemaMappingConfigs(),
 			},
-			want: &DeleteQueryMap{
+			want: &DeleteQueryMapping{
 				Query:     "DELETE FROM test_keyspace.user_info WHERE name='test' AND age=15",
 				QueryType: "DELETE",
 				Table:     "user_info",
@@ -159,7 +159,7 @@ func TestTranslator_TranslateDeleteQuerytoBigtable(t *testing.T) {
 			fields: fields{
 				SchemaMappingConfig: createSchemaMappingConfigs(),
 			},
-			want: &DeleteQueryMap{
+			want: &DeleteQueryMapping{
 				Query:     "DELETE FROM test_keyspace.user_info WHERE name='test' AND age=15 IF EXISTS",
 				QueryType: "DELETE",
 				Table:     "user_info",
@@ -223,7 +223,7 @@ func TestTranslator_BuildDeletePrepareQuery(t *testing.T) {
 	}
 	type args struct {
 		values                 []*primitive.Value
-		st                     *DeleteQueryMap
+		st                     *DeleteQueryMapping
 		variableColumnMetadata []*message.ColumnMetadata
 		protocolV              primitive.ProtocolVersion
 	}
@@ -245,21 +245,21 @@ func TestTranslator_BuildDeletePrepareQuery(t *testing.T) {
 				values: []*primitive.Value{
 					{Contents: []byte("123")},
 				},
-				st: &DeleteQueryMap{
-					Query:       "DELETE FROM test_table WHERE column1=?",
+				st: &DeleteQueryMapping{
+					Query:       "DELETE FROM test_table WHERE pk_1_text=?",
 					QueryType:   "DELETE",
 					Table:       "test_table",
 					Keyspace:    "test_keyspace",
-					PrimaryKeys: []string{"column1"},
-					RowKey:      "column1",
+					PrimaryKeys: []string{"pk_1_text"},
+					RowKey:      "pk_1_text",
 					VariableMetadata: []*message.ColumnMetadata{
-						{Name: "column1"},
+						{Name: "pk_1_text"},
 					},
 				},
 				variableColumnMetadata: []*message.ColumnMetadata{{
 					Keyspace: "test_keyspace",
 					Table:    "test_table",
-					Name:     "column1",
+					Name:     "pk_1_text",
 					Index:    0,
 					Type:     datatype.Varchar,
 				}},
@@ -278,21 +278,21 @@ func TestTranslator_BuildDeletePrepareQuery(t *testing.T) {
 				values: []*primitive.Value{
 					{Contents: []byte("123")},
 				},
-				st: &DeleteQueryMap{
-					Query:       "DELETE FROM test_table WHERE column1=?",
+				st: &DeleteQueryMapping{
+					Query:       "DELETE FROM test_table WHERE pk_1_text=?",
 					QueryType:   "DELETE",
 					Table:       "test_table",
 					Keyspace:    "test_keyspace",
-					PrimaryKeys: []string{"column1", "column2"},
-					RowKey:      "column1",
+					PrimaryKeys: []string{"pk_1_text", "pk_2_text"},
+					RowKey:      "pk_1_text",
 					VariableMetadata: []*message.ColumnMetadata{
-						{Name: "column1"},
+						{Name: "pk_1_text"},
 					},
 				},
 				variableColumnMetadata: []*message.ColumnMetadata{{
 					Keyspace: "test_keyspace",
 					Table:    "test_table",
-					Name:     "column1",
+					Name:     "pk_1_text",
 					Index:    0,
 					Type:     datatype.Varchar,
 				}},
@@ -309,21 +309,21 @@ func TestTranslator_BuildDeletePrepareQuery(t *testing.T) {
 			},
 			args: args{
 				values: []*primitive.Value{},
-				st: &DeleteQueryMap{
-					Query:       "DELETE FROM test_table WHERE column1=?",
+				st: &DeleteQueryMapping{
+					Query:       "DELETE FROM test_table WHERE pk_1_text=?",
 					QueryType:   "DELETE",
 					Table:       "test_table",
 					Keyspace:    "test_keyspace",
-					PrimaryKeys: []string{"column1", "column1"},
-					RowKey:      "column1#column1",
+					PrimaryKeys: []string{"pk_1_text", "pk_1_text"},
+					RowKey:      "pk_1_text#pk_1_text",
 					VariableMetadata: []*message.ColumnMetadata{
-						{Name: "column1"},
+						{Name: "pk_1_text"},
 					},
 				},
 				variableColumnMetadata: []*message.ColumnMetadata{{
 					Keyspace: "test_keyspace",
 					Table:    "test_table",
-					Name:     "column1",
+					Name:     "pk_1_text",
 					Index:    0,
 					Type:     datatype.Varchar,
 				}},
@@ -342,15 +342,15 @@ func TestTranslator_BuildDeletePrepareQuery(t *testing.T) {
 				values: []*primitive.Value{
 					{Contents: []byte("123")},
 				},
-				st: &DeleteQueryMap{
-					Query:       "DELETE FROM test_table WHERE column1=?",
+				st: &DeleteQueryMapping{
+					Query:       "DELETE FROM test_table WHERE pk_1_text=?",
 					QueryType:   "DELETE",
 					Table:       "test_table",
 					Keyspace:    "test_keyspace",
-					PrimaryKeys: []string{"column"},
-					RowKey:      "column",
+					PrimaryKeys: []string{"pk_1_text"},
+					RowKey:      "pk_1_text",
 					VariableMetadata: []*message.ColumnMetadata{
-						{Name: "column1"},
+						{Name: "pk_1_text"},
 					},
 					TimestampInfo: TimestampInfo{
 						HasUsingTimestamp: true,
@@ -361,7 +361,7 @@ func TestTranslator_BuildDeletePrepareQuery(t *testing.T) {
 				variableColumnMetadata: []*message.ColumnMetadata{{
 					Keyspace: "test_keyspace",
 					Table:    "test_table",
-					Name:     "column1",
+					Name:     "pk_1_text",
 					Index:    0,
 					Type:     datatype.Varchar,
 				}},

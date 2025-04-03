@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
 	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
@@ -69,131 +70,131 @@ func TestTranslator_TranslateUpdateQuerytoBigtable(t *testing.T) {
 
 	// Define value1 and value2 as text for WHERE clause
 	value1 := "testText"
-	value2 := "column10"
+	value2 := "pk_2_text_value"
 
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *UpdateQueryMap
+		want    *UpdateQueryMapping
 		wantErr bool
 	}{
 		{
 			name: "update blob column",
 			args: args{
-				query: "UPDATE test_keyspace.test_table SET column2 = '0x0000000000000003' WHERE column1 = 'testText' AND column10 = 'column10';",
+				query: "UPDATE test_keyspace.test_table SET blob_col = '0x0000000000000003' WHERE pk_1_text = 'testText' AND pk_2_text = 'pk_2_text_value';",
 			},
 			wantErr: false,
-			want: &UpdateQueryMap{
+			want: &UpdateQueryMapping{
 				ParamKeys: []string{"set1", "value1", "value2"},
 				Params: map[string]interface{}{
 					"set1":   setBlob,
 					"value1": value1,
 					"value2": value2,
 				},
-				RowKey:   "testText#column10",
+				RowKey:   "testText#pk_2_text_value",
 				Keyspace: "test_keyspace",
 			},
 		},
 		{
 			name: "update boolean column",
 			args: args{
-				query: "UPDATE test_keyspace.test_table SET column3 = true WHERE column1 = 'testText' AND column10 = 'column10';",
+				query: "UPDATE test_keyspace.test_table SET bool_col = true WHERE pk_1_text = 'testText' AND pk_2_text = 'pk_2_text_value';",
 			},
 			wantErr: false,
-			want: &UpdateQueryMap{
+			want: &UpdateQueryMapping{
 				ParamKeys: []string{"set1", "value1", "value2"},
 				Params: map[string]interface{}{
 					"set1":   setTrueBool,
 					"value1": value1,
 					"value2": value2,
 				},
-				RowKey:   "testText#column10",
+				RowKey:   "testText#pk_2_text_value",
 				Keyspace: "test_keyspace",
 			},
 		},
 		{
 			name: "update timestamp column",
 			args: args{
-				query: "UPDATE test_keyspace.test_table SET column5 = '2024-08-12T12:34:56Z' WHERE column1 = 'testText' AND column10 = 'column10';",
+				query: "UPDATE test_keyspace.test_table SET timestamp_col = '2024-08-12T12:34:56Z' WHERE pk_1_text = 'testText' AND pk_2_text = 'pk_2_text_value';",
 			},
 			wantErr: false,
-			want: &UpdateQueryMap{
+			want: &UpdateQueryMapping{
 				ParamKeys: []string{"set1", "value1", "value2"},
 				Params: map[string]interface{}{
 					"set1":   setTimestamp,
 					"value1": value1,
 					"value2": value2,
 				},
-				RowKey:   "testText#column10",
+				RowKey:   "testText#pk_2_text_value",
 				Keyspace: "test_keyspace",
 			},
 		},
 		{
 			name: "update int column",
 			args: args{
-				query: "UPDATE test_keyspace.test_table SET column6 = 123 WHERE column1 = 'testText' AND column10 = 'column10';",
+				query: "UPDATE test_keyspace.test_table SET int_col = 123 WHERE pk_1_text = 'testText' AND pk_2_text = 'pk_2_text_value';",
 			},
 			wantErr: false,
-			want: &UpdateQueryMap{
+			want: &UpdateQueryMapping{
 				ParamKeys: []string{"set1", "value1", "value2"},
 				Params: map[string]interface{}{
 					"set1":   setInt,
 					"value1": value1,
 					"value2": value2,
 				},
-				RowKey:   "testText#column10",
+				RowKey:   "testText#pk_2_text_value",
 				Keyspace: "test_keyspace",
 			},
 		},
 		{
 			name: "update set<text> column",
 			args: args{
-				query: "UPDATE test_keyspace.test_table SET column7 = {'item1', 'item2'} WHERE column1 = 'testText' AND column10 = 'column10';",
+				query: "UPDATE test_keyspace.test_table SET set_text_col = {'item1', 'item2'} WHERE pk_1_text = 'testText' AND pk_2_text = 'pk_2_text_value';",
 			},
 			wantErr: false,
-			want: &UpdateQueryMap{
+			want: &UpdateQueryMapping{
 				ParamKeys: []string{"set1", "value1", "value2"},
 				Params: map[string]interface{}{
 					"set1":   setSetText,
 					"value1": value1,
 					"value2": value2,
 				},
-				RowKey:   "testText#column10",
+				RowKey:   "testText#pk_2_text_value",
 				Keyspace: "test_keyspace",
 			},
 		},
 		{
 			name: "update map<text,boolean> column",
 			args: args{
-				query: "UPDATE test_keyspace.test_table SET column8 = {'key1': true, 'key2': false} WHERE column1 = 'testText' AND column10 = 'column10';",
+				query: "UPDATE test_keyspace.test_table SET map_text_bool_col = {'key1': true, 'key2': false} WHERE pk_1_text = 'testText' AND pk_2_text = 'pk_2_text_value';",
 			},
 			wantErr: false,
-			want: &UpdateQueryMap{
+			want: &UpdateQueryMapping{
 				ParamKeys: []string{"set1", "value1", "value2"},
 				Params: map[string]interface{}{
 					"set1":   valueMapTextBool,
 					"value1": value1,
 					"value2": value2,
 				},
-				RowKey:   "testText#column10",
+				RowKey:   "testText#pk_2_text_value",
 				Keyspace: "test_keyspace",
 			},
 		},
 		{
 			name: "update bigint column",
 			args: args{
-				query: "UPDATE test_keyspace.test_table SET column9 = 1234567890 WHERE column1 = 'testText' AND column10 = 'column10';",
+				query: "UPDATE test_keyspace.test_table SET bigint_col = 1234567890 WHERE pk_1_text = 'testText' AND pk_2_text = 'pk_2_text_value';",
 			},
 			wantErr: false,
-			want: &UpdateQueryMap{
+			want: &UpdateQueryMapping{
 				ParamKeys: []string{"set1", "value1", "value2"},
 				Params: map[string]interface{}{
 					"set1":   setBigInt,
 					"value1": value1,
 					"value2": value2,
 				},
-				RowKey:   "testText#column10",
+				RowKey:   "testText#pk_2_text_value",
 				Keyspace: "test_keyspace",
 			},
 		},
@@ -216,21 +217,23 @@ func TestTranslator_TranslateUpdateQuerytoBigtable(t *testing.T) {
 				return
 			}
 
-			if got != nil && len(got.Params) > 0 && !reflect.DeepEqual(got.Params, tt.want.Params) {
-				t.Errorf("Translator.TranslateUpdateQuerytoBigtable() = %v, want %v", got.Params, tt.want.Params)
+			// Check specific fields instead of deep comparing the whole struct initially
+			if got != nil {
+				if !reflect.DeepEqual(got.Params, tt.want.Params) {
+					t.Errorf("Translator.TranslateUpdateQuerytoBigtable() Params = %v, want %v", got.Params, tt.want.Params)
+				}
+				if !reflect.DeepEqual(got.ParamKeys, tt.want.ParamKeys) {
+					t.Errorf("Translator.TranslateUpdateQuerytoBigtable() ParamKeys = %v, want %v", got.ParamKeys, tt.want.ParamKeys)
+				}
+				if !reflect.DeepEqual(got.RowKey, tt.want.RowKey) {
+					t.Errorf("Translator.TranslateUpdateQuerytoBigtable() RowKey = %v, want %v", got.RowKey, tt.want.RowKey)
+				}
+				if !reflect.DeepEqual(got.Keyspace, tt.want.Keyspace) {
+					t.Errorf("Translator.TranslateUpdateQuerytoBigtable() Keyspace = %v, want %v", got.Keyspace, tt.want.Keyspace)
+				}
+			} else if tt.want != nil {
+				t.Errorf("Translator.TranslateUpdateQuerytoBigtable() got nil, want %v", tt.want)
 			}
-
-			if got != nil && len(got.ParamKeys) > 0 && !reflect.DeepEqual(got.ParamKeys, tt.want.ParamKeys) {
-				t.Errorf("Translator.TranslateUpdateQuerytoBigtable() = %v, want %v", got.ParamKeys, tt.want.ParamKeys)
-			}
-			if got != nil && len(got.RowKey) > 0 && !reflect.DeepEqual(got.RowKey, tt.want.RowKey) {
-				t.Errorf("Translator.TranslateUpdateQuerytoBigtable() = %v, want %v", got.RowKey, tt.want.RowKey)
-			}
-
-			if got != nil && !reflect.DeepEqual(got.Keyspace, tt.want.Keyspace) {
-				t.Errorf("Translator.TranslateUpdateQuerytoBigtable() = %v, want %v", got.Keyspace, tt.want.Keyspace)
-			}
-
 		})
 	}
 }
@@ -243,14 +246,14 @@ func TestTranslator_BuildUpdatePrepareQuery(t *testing.T) {
 	type args struct {
 		columnsResponse []Column
 		values          []*primitive.Value
-		st              *UpdateQueryMap
+		st              *UpdateQueryMapping
 		protocolV       primitive.ProtocolVersion
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *UpdateQueryMap
+		want    *UpdateQueryMapping
 		wantErr bool
 	}{
 		{
@@ -266,41 +269,48 @@ func TestTranslator_BuildUpdatePrepareQuery(t *testing.T) {
 				},
 				columnsResponse: []Column{
 					{
-						Name:         "column1",
+						Name:         "pk_1_text",
 						ColumnFamily: "",
-						CQLType:      "",
+						CQLType:      "text",
 					},
 				},
-				st: &UpdateQueryMap{
-					Query:       "Update column2=? FROM test_table where column1=?",
+				st: &UpdateQueryMapping{
+					Query:       "Update blob_col=? FROM test_table where pk_1_text=?",
 					QueryType:   "Update",
 					Table:       "test_table",
 					Keyspace:    "test_keyspace",
-					PrimaryKeys: []string{"column1"},
-					RowKey:      "column1",
+					PrimaryKeys: []string{"pk_1_text"},
+					RowKey:      "pk_1_text_value", // Example RowKey based on pk_1_text
 					Clauses: []Clause{
 						{
-							Column:       "column1",
+							Column:       "pk_1_text",
 							Operator:     "=",
 							Value:        "",
 							IsPrimaryKey: true,
 						},
 					},
 					VariableMetadata: []*message.ColumnMetadata{
-						{Name: "column1"},
+						{
+							Name: "blob_col",
+							Type: datatype.Blob,
+						},
+						{
+							Name: "pk_1_text",
+							Type: datatype.Varchar,
+						},
 					},
 				},
 			},
-			want: &UpdateQueryMap{
-				Query:       "Update column2=? FROM test_table where column1=?",
+			want: &UpdateQueryMapping{
+				Query:       "Update blob_col=? FROM test_table where pk_1_text=?",
 				QueryType:   "Update",
 				Keyspace:    "test_keyspace",
-				PrimaryKeys: []string{"column1"},
+				PrimaryKeys: []string{"pk_1_text"},
 				RowKey:      "",
 				Table:       "test_table",
 				Clauses: []Clause{
 					{
-						Column:       "column1",
+						Column:       "pk_1_text",
 						Operator:     "=",
 						Value:        "",
 						IsPrimaryKey: true,
@@ -308,9 +318,9 @@ func TestTranslator_BuildUpdatePrepareQuery(t *testing.T) {
 				},
 				Columns: []Column{
 					{
-						Name:         "column1",
+						Name:         "blob_col",
 						ColumnFamily: "",
-						CQLType:      "",
+						CQLType:      "blob",
 					},
 				},
 				Values: []interface{}{[]interface{}(nil)},
@@ -329,7 +339,24 @@ func TestTranslator_BuildUpdatePrepareQuery(t *testing.T) {
 				t.Errorf("Translator.BuildUpdatePrepareQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got == tt.want {
+			// Comparing specific fields as the whole struct comparison might fail due to dynamic parts
+			if got != nil && tt.want != nil {
+				if got.Query != tt.want.Query {
+					t.Errorf("Translator.BuildUpdatePrepareQuery() Query = %v, want %v", got.Query, tt.want.Query)
+				}
+				if !reflect.DeepEqual(got.PrimaryKeys, tt.want.PrimaryKeys) {
+					t.Errorf("Translator.BuildUpdatePrepareQuery() PrimaryKeys = %v, want %v", got.PrimaryKeys, tt.want.PrimaryKeys)
+				}
+				if len(got.Clauses) != len(tt.want.Clauses) {
+					t.Errorf("Translator.BuildUpdatePrepareQuery() Clauses length mismatch = %d, want %d", len(got.Clauses), len(tt.want.Clauses))
+				} else {
+					for i := range got.Clauses {
+						if !reflect.DeepEqual(got.Clauses[i], tt.want.Clauses[i]) {
+							t.Errorf("Translator.BuildUpdatePrepareQuery() Clause[%d] = %v, want %v", i, got.Clauses[i], tt.want.Clauses[i])
+						}
+					}
+				}
+			} else if !(got == nil && tt.want == nil) {
 				t.Errorf("Translator.BuildUpdatePrepareQuery() = %v, want %v", got, tt.want)
 			}
 		})
