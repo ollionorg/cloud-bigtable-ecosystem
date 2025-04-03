@@ -16,7 +16,6 @@
 package utilities
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -143,47 +142,6 @@ const (
 	Error = "error"
 	Warn  = "warn"
 )
-
-// formatTimestamp formats the Timestamp into time.
-func FormatTimestamp(ts int64) (*time.Time, error) {
-	if ts == 0 {
-		return nil, errors.New("no valid timestamp found")
-	}
-	var formattedValue time.Time
-	const secondsThreshold = int64(1e10)
-	const millisecondsThreshold = int64(1e13)
-	const microsecondsThreshold = int64(1e16)
-	const nanosecondsThreshold = int64(1e18)
-
-	switch {
-	case ts < secondsThreshold:
-
-		formattedValue = time.Unix(ts, 0)
-	case ts >= secondsThreshold && ts < millisecondsThreshold:
-		formattedValue = time.UnixMilli(ts)
-	case ts >= millisecondsThreshold && ts < microsecondsThreshold:
-		formattedValue = time.UnixMicro(ts)
-	case ts >= microsecondsThreshold && ts < nanosecondsThreshold:
-		seconds := ts / int64(time.Second)
-		// Get the remaining nanoseconds
-		nanoseconds := ts % int64(time.Second)
-		formattedValue = time.Unix(seconds, nanoseconds)
-	default:
-		return nil, errors.New("no valid timestamp found")
-	}
-
-	return &formattedValue, nil
-}
-
-// keyExists checks if a key is present in a list of strings.
-func KeyExistsInList(key string, list []string) bool {
-	for _, item := range list {
-		if item == key {
-			return true // Key found
-		}
-	}
-	return false // Key not found
-}
 
 // GetCassandraColumnType() converts a string representation of a Cassandra data type into
 // a corresponding DataType value. It supports a range of common Cassandra data types,

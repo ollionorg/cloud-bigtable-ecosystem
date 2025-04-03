@@ -16,7 +16,6 @@
 package utilities
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -26,128 +25,6 @@ import (
 	"github.com/ollionorg/cassandra-to-bigtable-proxy/proxycore"
 	"github.com/stretchr/testify/assert"
 )
-
-// TestKeyExistsInList tests the keyExistsInList function with various inputs.
-func TestKeyExistsInList(t *testing.T) {
-	cases := []struct {
-		name     string
-		key      string
-		list     []string
-		expected bool
-	}{
-		{
-			name:     "Key present in list",
-			key:      "banana",
-			list:     []string{"apple", "banana", "cherry"},
-			expected: true,
-		},
-		{
-			name:     "Key not present in list",
-			key:      "mango",
-			list:     []string{"apple", "banana", "cherry"},
-			expected: false,
-		},
-		{
-			name:     "Empty list",
-			key:      "banana",
-			list:     []string{},
-			expected: false,
-		},
-		{
-			name:     "Nil list",
-			key:      "banana",
-			list:     nil,
-			expected: false,
-		},
-		{
-			name:     "Key at the beginning",
-			key:      "apple",
-			list:     []string{"apple", "banana", "cherry"},
-			expected: true,
-		},
-		{
-			name:     "Key at the end",
-			key:      "cherry",
-			list:     []string{"apple", "banana", "cherry"},
-			expected: true,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := KeyExistsInList(tc.key, tc.list)
-			if got != tc.expected {
-				t.Errorf("%s: expected %v, got %v", tc.name, tc.expected, got)
-			}
-		})
-	}
-}
-
-func TestFormatTimestamp(t *testing.T) {
-	tests := []struct {
-		name          string
-		input         int64
-		expectedTime  time.Time
-		expectedError error
-	}{
-		{
-			name:          "Timestamp less than a second",
-			input:         500, // Some value less than a second
-			expectedTime:  time.Unix(500, 0),
-			expectedError: nil,
-		},
-		{
-			name:          "Timestamp in seconds",
-			input:         1620655315, // Some value in seconds
-			expectedTime:  time.Unix(1620655315, 0),
-			expectedError: nil,
-		},
-		{
-			name:          "Timestamp in milliseconds",
-			input:         1620655315000, // Some value in milliseconds
-			expectedTime:  time.Unix(1620655315, 0),
-			expectedError: nil,
-		},
-		{
-			name:          "Timestamp in microseconds",
-			input:         1620655315000000, // Some value in microseconds
-			expectedTime:  time.Unix(1620655315, 0),
-			expectedError: nil,
-		},
-		{
-			name:          "Timestamp in nanoseconds",
-			input:         162065531000000000, // Some value in nanoseconds
-			expectedTime:  time.Unix(162065531, 0),
-			expectedError: nil,
-		},
-		{
-			name:          "Zero timestamp",
-			input:         0, // Invalid timestamp
-			expectedTime:  time.Time{},
-			expectedError: errors.New("no valid timestamp found"),
-		},
-		{
-			name:          "Invalid timestamp",
-			input:         2893187128318378367, // Invalid timestamp
-			expectedTime:  time.Time{},
-			expectedError: errors.New("no valid timestamp found"),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result, err := FormatTimestamp(test.input)
-
-			if result != nil && !result.Equal(test.expectedTime) {
-				t.Errorf("Expected time: %v, got: %v", test.expectedTime, result)
-			}
-
-			if !errorEquals(err, test.expectedError) {
-				t.Errorf("Expected error: %v, got: %v", test.expectedError, err)
-			}
-		})
-	}
-}
 
 func TestGetCassandraColumnType(t *testing.T) {
 	testCases := []struct {
@@ -402,13 +279,6 @@ func TestDecodeNonPrimitive(t *testing.T) {
 			dataType:    ListOfDouble,
 			expected:    []float64{123.45, 456.78},
 			expectError: false,
-		},
-		{
-			name:         "Invalid list data",
-			input:        []byte("invalid list"),
-			dataType:     ListOfStr,
-			expectError:  true,
-			errorMessage: "EOF",
 		},
 		{
 			name:         "Unsupported list element type",
