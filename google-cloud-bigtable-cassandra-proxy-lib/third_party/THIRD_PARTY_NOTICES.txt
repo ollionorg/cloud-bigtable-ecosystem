@@ -1,0 +1,901 @@
+This project makes use of the following third-party software:
+
+-----------------------------------------------------------------------------
+Apache Cassandra® native protocol
+-----------------------------------------------------------------------------
+* Package: com.datastax.oss:native-protocol
+* URL: http://github.com/datastax/native-protocol
+
+Copyright 2017, DataStax
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Jackson-annotations
+-----------------------------------------------------------------------------
+* Package: com.fasterxml.jackson.core:jackson-annotations
+* URL: http://github.com/FasterXML/jackson
+
+Copyright 2007-, Tatu Saloranta (tatu.saloranta@iki.fi)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Jackson-core
+-----------------------------------------------------------------------------
+* Package: com.fasterxml.jackson.core:jackson-core
+* URL: https://github.com/FasterXML/jackson-core
+
+Copyright 2007-, Tatu Saloranta (tatu.saloranta@iki.fi)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+jackson-databind
+-----------------------------------------------------------------------------
+* Package: com.fasterxml.jackson.core:jackson-databind
+* URL: http://github.com/FasterXML/jackson
+
+Copyright 2007-, Tatu Saloranta (tatu.saloranta@iki.fi)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+jffi
+* Package: com.github.jnr:jffi
+* URL: http://github.com/jnr/jffi
+
+Copyright (C) 2007-2009 Wayne Meissner
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+jnr-a64asm
+-----------------------------------------------------------------------------
+* Package: com.github.jnr:jnr-a64asm
+* URL: http://nexus.sonatype.org/oss-repository-hosting.html/jnr-a64asm
+
+Copyright (C) 2018 Ossdev07
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+jnr-constants
+-----------------------------------------------------------------------------
+* Package: com.github.jnr:jnr-constants
+* URL: http://github.com/jnr/jnr-constants
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+jnr-ffi
+-----------------------------------------------------------------------------
+* Package: com.github.jnr:jnr-ffi
+* URL: http://github.com/jnr/jnr-ffi
+
+Copyright (C) 2007-2013 Wayne Meissner
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+jnr-posix
+-----------------------------------------------------------------------------
+* Package: com.github.jnr:jnr-posix
+* URL: http://nexus.sonatype.org/oss-repository-hosting.html/jnr-posix
+* Link to source code can be found in Third_Party_Source_Code.md
+
+Licensed under Eclipse Public License - v 2.0
+A copy of this license is available in this project at: licenses/EPL-2.0.txt
+
+-----------------------------------------------------------------------------
+jnr-x86asm
+-----------------------------------------------------------------------------
+* Package: com.github.jnr:jnr-x86asm
+* URL: http://github.com/jnr/jnr-x86asm
+
+Licensed under the MIT license
+
+Copyright (C) 2010 Wayne Meissner
+Copyright (c) 2008-2009, Petr Kobalicek <kobalicek.petr@gmail.com>
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+-----------------------------------------------------------------------------
+config
+-----------------------------------------------------------------------------
+* Package: com.typesafe:config
+* URL: https://github.com/lightbend/config
+
+Copyright (C) 2011-2012 Typesafe Inc. <http://typesafe.com>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Metrics Core
+-----------------------------------------------------------------------------
+* Package: io.dropwizard.metrics:metrics-core
+* URL: https://metrics.dropwizard.io/4.2.0/manual/core.html
+
+Copyright (c) 2010-2013 Coda Hale, Yammer.com, 2014-2021 Dropwizard Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Netty/Buffer
+-----------------------------------------------------------------------------
+* Package: io.netty:netty-buffer
+* URL: https://github.com/netty/netty
+
+Copyright 2012 The Netty Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Netty/Codec
+-----------------------------------------------------------------------------
+* Package: io.netty:netty-codec
+* URL: https://github.com/netty/netty
+
+Copyright 2012 The Netty Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Netty/Common
+-----------------------------------------------------------------------------
+* Package: io.netty:netty-common
+* URL: https://github.com/netty/netty
+
+Copyright 2012 The Netty Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Netty/Handler
+-----------------------------------------------------------------------------
+* Package: io.netty:netty-handler
+* URL: https://github.com/netty/netty
+
+Copyright 2012 The Netty Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Netty/Resolver
+-----------------------------------------------------------------------------
+* Package: io.netty:netty-resolver
+* URL: https://github.com/netty/netty
+
+Copyright 2014 The Netty Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Netty/Transport
+-----------------------------------------------------------------------------
+* Package: io.netty:netty-transport
+* URL: https://github.com/netty/netty
+
+Copyright 2012 The Netty Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Netty/Transport/Native/Unix/Common
+-----------------------------------------------------------------------------
+* Package: io.netty:netty-transport-native-unix-common
+* URL: https://github.com/netty/netty
+
+Copyright 2016 The Netty Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Apache Cassandra Java Driver - core
+-----------------------------------------------------------------------------
+* Package: org.apache.cassandra:java-driver-core
+* URL: https://github.com/apache/cassandra-java-driver
+
+Copyright 2012- The Apache Software Foundation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Apache Cassandra Java Driver - guava shaded dep
+-----------------------------------------------------------------------------
+* Package: org.apache.cassandra:java-driver-guava-shaded
+* URL: https://github.com/apache/cassandra-java-driver
+
+Copyright 2012- The Apache Software Foundation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+org.apiguardian:apiguardian-api
+-----------------------------------------------------------------------------
+* Package: org.apiguardian:apiguardian-api
+* URL: https://github.com/apiguardian-team/apiguardian
+
+Copyright 2016-2024 the original author or authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+HdrHistogram
+-----------------------------------------------------------------------------
+
+* Package: org.hdrhistogram:HdrHistogram
+* URL: http://hdrhistogram.github.io/HdrHistogram/
+
+Licensed under Public Domain, per Creative Commons CC0
+
+The code in this repository code was Written by Gil Tene, Michael Barker,
+and Matt Warren, and released to the public domain, as explained at
+http://creativecommons.org/publicdomain/zero/1.0/
+
+-----------------------------------------------------------------------------
+JUnit Jupiter API
+-----------------------------------------------------------------------------
+* Package: org.junit.jupiter:junit-jupiter-api
+* URL: https://junit.org/junit5/
+* Link to source code can be found in Third_Party_Source_Code.md
+
+Copyright 2015-2025 the original author or authors.
+
+All rights reserved. This program and the accompanying materials are
+made available under the terms of the Eclipse Public License v2.0 which
+accompanies this distribution and is available at
+
+https://www.eclipse.org/legal/epl-v20.html
+
+A copy of this license is also available in this project at: licenses/EPL-2.0.txt
+
+-----------------------------------------------------------------------------
+JUnit Jupiter Engine
+-----------------------------------------------------------------------------
+* Package: org.junit.jupiter:junit-jupiter-engine
+* URL: https://junit.org/junit5/
+* Link to source code can be found in Third_Party_Source_Code.md
+
+Copyright 2015-2025 the original author or authors.
+
+All rights reserved. This program and the accompanying materials are
+made available under the terms of the Eclipse Public License v2.0 which
+accompanies this distribution and is available at
+
+https://www.eclipse.org/legal/epl-v20.html
+
+A copy of this license is also available in this project at: licenses/EPL-2.0.txt
+
+-----------------------------------------------------------------------------
+JUnit Platform Commons
+-----------------------------------------------------------------------------
+* Package: org.junit.platform:junit-platform-commons
+* URL: https://junit.org/junit5/
+* Link to source code can be found in Third_Party_Source_Code.md
+
+Copyright 2015-2025 the original author or authors.
+
+All rights reserved. This program and the accompanying materials are
+made available under the terms of the Eclipse Public License v2.0 which
+accompanies this distribution and is available at
+
+https://www.eclipse.org/legal/epl-v20.html
+
+A copy of this license is also available in this project at: licenses/EPL-2.0.txt
+
+-----------------------------------------------------------------------------
+JUnit Platform Engine API
+-----------------------------------------------------------------------------
+* Package: org.junit.platform:junit-platform-engine
+* URL: https://junit.org/junit5/
+* Link to source code can be found in Third_Party_Source_Code.md
+
+Copyright 2015-2025 the original author or authors.
+
+All rights reserved. This program and the accompanying materials are
+made available under the terms of the Eclipse Public License v2.0 which
+accompanies this distribution and is available at
+
+https://www.eclipse.org/legal/epl-v20.html
+
+A copy of this license is also available in this project at: licenses/EPL-2.0.txt
+
+-----------------------------------------------------------------------------
+org.opentest4j:opentest4j
+-----------------------------------------------------------------------------
+* Package: org.opentest4j:opentest4j
+* URL: https://github.com/ota4j-team/opentest4j
+
+Copyright 2015-2023 the original author or authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+asm
+-----------------------------------------------------------------------------
+* Package: org.ow2.asm:asm
+* URL: http://asm.ow2.io/
+
+Licensed under the BSD-3-Clause license
+
+ASM: a very small and fast Java bytecode manipulation framework
+Copyright (c) 2000-2011 INRIA, France Telecom
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holders nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+
+-----------------------------------------------------------------------------
+asm-analysis
+-----------------------------------------------------------------------------
+* Package: org.ow2.asm:asm-analysis
+* URL: http://asm.ow2.io/
+
+Licensed under the BSD-3-Clause license
+
+ASM: a very small and fast Java bytecode manipulation framework
+Copyright (c) 2000-2011 INRIA, France Telecom
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holders nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+
+-----------------------------------------------------------------------------
+asm-commons
+-----------------------------------------------------------------------------
+* Package: org.ow2.asm:asm-commons
+* URL: http://asm.ow2.io/
+
+Licensed under the BSD-3-Clause license
+
+ASM: a very small and fast Java bytecode manipulation framework
+Copyright (c) 2000-2011 INRIA, France Telecom
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holders nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+
+-----------------------------------------------------------------------------
+asm-tree
+-----------------------------------------------------------------------------
+* Package: org.ow2.asm:asm-tree
+* URL: http://asm.ow2.io/
+
+Licensed under the BSD-3-Clause license
+
+ASM: a very small and fast Java bytecode manipulation framework
+Copyright (c) 2000-2011 INRIA, France Telecom
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holders nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+
+-----------------------------------------------------------------------------
+asm-util
+-----------------------------------------------------------------------------
+* Package: org.ow2.asm:asm-util
+* URL: http://asm.ow2.io/
+
+Licensed under the BSD-3-Clause license
+
+ASM: a very small and fast Java bytecode manipulation framework
+Copyright (c) 2000-2011 INRIA, France Telecom
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holders nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+
+-----------------------------------------------------------------------------
+reactive-streams
+-----------------------------------------------------------------------------
+* Package: org.reactivestreams:reactive-streams
+* URL: https://www.reactive-streams.org/
+
+MIT No Attribution
+
+Copyright 2014 Reactive Streams
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+-----------------------------------------------------------------------------
+SLF4J API Module
+-----------------------------------------------------------------------------
+* Package: org.slf4j:slf4j-api
+* URL: http://www.slf4j.org
+
+Licensed under the MIT license
+
+Copyright (c) 2004-2025 QOS.ch
+All rights reserved.
+
+Permission is hereby granted, free  of charge, to any person obtaining
+a  copy  of this  software  and  associated  documentation files  (the
+"Software"), to  deal in  the Software without  restriction, including
+without limitation  the rights to  use, copy, modify,  merge, publish,
+distribute,  sublicense, and/or sell  copies of  the Software,  and to
+permit persons to whom the Software  is furnished to do so, subject to
+the following conditions:
+
+The  above  copyright  notice  and  this permission  notice  shall  be
+included in all copies or substantial portions of the Software.
+
+THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+-----------------------------------------------------------------------------
+SLF4J JDK14 Provider
+-----------------------------------------------------------------------------
+* Package: org.slf4j:slf4j-jdk14
+* URL: http://www.slf4j.org
+
+Licensed under the MIT license
+
+Copyright (c) 2004-2025 QOS.ch
+All rights reserved.
+
+Permission is hereby granted, free  of charge, to any person obtaining
+a  copy  of this  software  and  associated  documentation files  (the
+"Software"), to  deal in  the Software without  restriction, including
+without limitation  the rights to  use, copy, modify,  merge, publish,
+distribute,  sublicense, and/or sell  copies of  the Software,  and to
+permit persons to whom the Software  is furnished to do so, subject to
+the following conditions:
+
+The  above  copyright  notice  and  this permission  notice  shall  be
+included in all copies or substantial portions of the Software.
+
+THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+-----------------------------------------------------------------------------
+SnakeYAML
+-----------------------------------------------------------------------------
+* Package: org.yaml:snakeyaml
+* URL: https://bitbucket.org/snakeyaml/snakeyaml
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Guava: Google Core Libraries for Java
+-----------------------------------------------------------------------------
+* Package: com.google.guava:guava
+* URL: https://github.com/google/guava
+
+Copyright (C) 2006- The Guava Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
+
+-----------------------------------------------------------------------------
+Guava InternalFutureFailureAccess and InternalFutures
+-----------------------------------------------------------------------------
+* Package: com.google.guava:failureaccess
+* URL: https://github.com/google/guava
+
+Copyright (C) 2006- The Guava Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of this license is also available in this project at: licenses/Apache-2.0.txt
