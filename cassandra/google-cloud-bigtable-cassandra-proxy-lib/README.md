@@ -5,7 +5,7 @@ A Java library for interacting with the Cloud Bigtable Cassandra Proxy
 # How to build library
 
 - Ensure you have the installed [these pre-requisites](../cassandra-bigtable-proxy/README.md#pre-requisites)
-- Navigate to the parent directory (`google-cloud-bigtable-ecosystem`)
+- Navigate to the parent directory (`cassandra`)
 - Run the following Maven command
 
 ```shell

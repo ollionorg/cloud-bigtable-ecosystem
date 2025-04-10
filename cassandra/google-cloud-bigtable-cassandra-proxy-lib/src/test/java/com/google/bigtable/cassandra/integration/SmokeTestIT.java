@@ -59,7 +59,7 @@ public class SmokeTestIT {
     BigtableCqlSessionFactory bigtableCqlSessionFactory = new BigtableCqlSessionFactory(
         bigtableCqlConfiguration);
 
-    LOGGER.info("Creating CqlSession with BigtableCqlConfiguration: " + bigtableCqlConfiguration);
+    LOGGER.info("Creating CqlSession");
 
     // Create CqlSession
     try (CqlSession session = bigtableCqlSessionFactory.newSession()) {

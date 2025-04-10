@@ -17,14 +17,13 @@ limitations under the License.
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>google-cloud-bigtable-ecosystem</artifactId>
+    <artifactId>google-cloud-bigtable-cassandra-proxy-parent</artifactId>
     <groupId>com.google.cloud</groupId>
     <packaging>pom</packaging>
     <version>0.1.0-SNAPSHOT</version>
-    <name>Google Cloud Bigtable Ecosystem</name>
-    <url>https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem</url>
+    <url>https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra</url>
     <description>
-        This repository serves as a central hub for resources related to Google Cloud Bigtable, providing links to various tools, libraries, and documentation that contribute to the Bigtable Ecosystem.
+        Parent project for google-cloud-bigtable-cassandra-proxy-*
     </description>
 
     <properties>
