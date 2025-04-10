@@ -35,7 +35,7 @@
 set -eo pipefail
 
 export CGO_ENABLED=0 # https://github.com/golang/go/issues/22510
-export RELATIVE_SOURCE_DIR=../cassandra-bigtable-proxy
+export RELATIVE_SOURCE_DIR=../../cassandra-bigtable-proxy
 
 function build() {
   local env="${1}"

@@ -4,8 +4,8 @@ A Java library for interacting with the Cloud Bigtable Cassandra Proxy
 
 # How to build library
 
-- Ensure you have the installed [these pre-requisites](../cassandra-bigtable-proxy/README.md#pre-requisites)
-- Navigate to the parent directory (`cassandra`)
+- Ensure you have the installed [these pre-requisites](../../cassandra-bigtable-proxy/README.md#pre-requisites)
+- Navigate to the parent directory (`cassandra-bigtable-cql-client-java`)
 - Run the following Maven command
 
 ```shell
@@ -62,7 +62,7 @@ For the `google-cloud-bigtable-cassandra-proxy-core` package, specify the releva
 
 # How to use
 
-First ensure that these [setup steps](../cassandra-bigtable-proxy/README.md##setting-up-bigtable-instance-and-schema-configuration) have been completed.
+First ensure that these [setup steps](../../cassandra-bigtable-proxy/README.md##setting-up-bigtable-instance-and-schema-configuration) have been completed.
 
 Example usage below:
 
@@ -97,11 +97,11 @@ class MyClass {
 }
 ```
 
-See also [here](../google-cloud-bigtable-cassandra-proxy-lib-example) for another example.
+See also [here](../example) for another example.
 
 # Supported Cassandra versions
 
-See [here](../cassandra-bigtable-proxy/README.md)
+See [here](../../cassandra-bigtable-proxy/README.md)
 
 # Configuring CQL session
 
