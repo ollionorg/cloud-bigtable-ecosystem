@@ -18,6 +18,7 @@ package schemaMapping
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
@@ -33,11 +34,10 @@ type Column struct {
 	ColumnName   string
 	ColumnType   string
 	IsPrimaryKey bool
-	PkPrecedence int64
+	PkPrecedence int
 	IsCollection bool
 	KeyType      string
 	Metadata     message.ColumnMetadata
-	ColumnFamily string
 }
 
 type SchemaMappingConfig struct {
@@ -56,7 +56,8 @@ type SelectedColumns struct {
 	Alias             string
 	MapKey            string
 	ListIndex         string
-	WriteTimeColumn   string
+	FuncColumnName    string
+	MapColumnName     string
 	KeyType           string
 	IsWriteTimeColumn bool
 }
@@ -78,6 +79,20 @@ func (c *SchemaMappingConfig) GetPkByTableName(tableName string, keySpace string
 		return nil, fmt.Errorf("could not find metadata for the table: %s", tableName)
 	}
 	return pkMeta, nil
+}
+
+func (c *SchemaMappingConfig) GetPkByTableNameWithFilter(tableName string, keySpace string, filterPrimaryKeys []string) ([]Column, error) {
+	pmks, err := c.GetPkByTableName(tableName, keySpace)
+	if err != nil {
+		return nil, err
+	}
+	var result []Column
+	for _, pmk := range pmks {
+		if slices.Contains(filterPrimaryKeys, pmk.ColumnName) {
+			result = append(result, pmk)
+		}
+	}
+	return result, nil
 }
 
 // GetColumnType retrieves the metadata for a specified column in a given table and keyspace.
@@ -102,7 +117,7 @@ func (c *SchemaMappingConfig) GetColumnType(keyspace, tableName, columnName stri
 
 	col, ok := td[columnName]
 	if !ok {
-		return nil, fmt.Errorf("could not find column metadata for the table: %s", tableName)
+		return nil, fmt.Errorf("could not find column %s metadata for the table: %s", columnName, tableName)
 	}
 
 	return &Column{
@@ -202,7 +217,7 @@ func (c *SchemaMappingConfig) getSpecificColumnsMetadataForSelectedColumns(colum
 		if column, ok := columnsMap[columnName]; ok {
 			columnMetadataList = append(columnMetadataList, c.cloneColumnMetadata(&column.Metadata, int32(i)))
 		} else if columnMeta.IsWriteTimeColumn {
-			metadata, err := c.handleSpecialColumn(columnsMap, getTimestampColumnName(columnMeta.Alias, columnMeta.WriteTimeColumn), int32(i), true)
+			metadata, err := c.handleSpecialColumn(columnsMap, getTimestampColumnName(columnMeta.Alias, columnMeta.FuncColumnName), int32(i), true)
 			if err != nil {
 				return nil, err
 			}

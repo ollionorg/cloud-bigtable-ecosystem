@@ -1028,7 +1028,7 @@ func Test_GetSpecificColumnsMetadataForSelectedColumns(t *testing.T) {
 				{
 					Name:              "writetime_column",
 					IsWriteTimeColumn: true,
-					WriteTimeColumn:   "column1",
+					FuncColumnName:    "column1",
 				},
 			},
 			tableName: "test_table",
@@ -1177,7 +1177,7 @@ func Test_GetSpecificColumnsMetadataForSelectedColumns(t *testing.T) {
 				{
 					Name:              "no_write_time_column",
 					IsWriteTimeColumn: true,
-					WriteTimeColumn:   "nonexistent_column",
+					FuncColumnName:    "nonexistent_column",
 				},
 			},
 			tableName:     "test_table",
