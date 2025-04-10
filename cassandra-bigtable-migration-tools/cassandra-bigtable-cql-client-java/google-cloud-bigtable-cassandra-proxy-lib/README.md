@@ -97,7 +97,7 @@ class MyClass {
 }
 ```
 
-See also [here](../example) for another example.
+Additional examples can be found [here](../example) and [here](./src/test/java/com/google/bigtable/cassandra/integration/SmokeTestIT.java).
 
 # Supported Cassandra versions
 
