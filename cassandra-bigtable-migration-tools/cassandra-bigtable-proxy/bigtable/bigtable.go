@@ -33,13 +33,13 @@ import (
 	"google.golang.org/grpc/status"
 
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
+	otelgo "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/otel"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/responsehandler"
+	rh "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/responsehandler"
+	schemaMapping "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/schema-mapping"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/translator"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/utilities"
 	"github.com/datastax/go-cassandra-native-protocol/message"
-	otelgo "github.com/ollionorg/cassandra-to-bigtable-proxy/otel"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/utilities"
 	"go.uber.org/zap"
 )
 

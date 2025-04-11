@@ -26,8 +26,8 @@ import (
 	"time"
 
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
+	rh "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/responsehandler"
 	"github.com/datastax/go-cassandra-native-protocol/message"
-	rh "github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )

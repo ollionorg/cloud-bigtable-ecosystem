@@ -17,10 +17,10 @@ package responsehandler
 
 import (
 	btpb "cloud.google.com/go/bigtable/apiv2/bigtablepb"
+	schemaMapping "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/schema-mapping"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/translator"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
-	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
 	"go.uber.org/zap"
 )
 

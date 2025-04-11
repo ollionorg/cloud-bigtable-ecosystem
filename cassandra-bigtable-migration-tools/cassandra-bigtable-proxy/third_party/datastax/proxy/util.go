@@ -23,13 +23,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/responsehandler"
+	schemaMapping "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/schema-mapping"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/translator"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/utilities"
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/responsehandler"
-	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/translator"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/utilities"
 )
 
 type TimeTrackInfo struct {

@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/third_party/datastax/proxy"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/datastax/proxy"
 )
 
 func main() {

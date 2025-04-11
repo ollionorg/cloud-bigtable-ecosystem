@@ -19,10 +19,10 @@ package translator
 import (
 	"errors"
 
+	cql "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/cqlparser"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/utilities"
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/datastax/go-cassandra-native-protocol/message"
-	cql "github.com/ollionorg/cassandra-to-bigtable-proxy/third_party/cqlparser"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/utilities"
 )
 
 func (t *Translator) TranslateCreateTableToBigtable(query string) (*CreateTableStatementMap, error) {

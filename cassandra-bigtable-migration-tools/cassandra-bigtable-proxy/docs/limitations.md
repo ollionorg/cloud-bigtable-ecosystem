@@ -63,9 +63,8 @@ Due to limitations in the CQL grammar, you might encounter issues with certain c
 
 Currently, the proxy supports `ORDER BY` queries with the following limitations:
 
-1. Only column names are supported in ORDER BY clauses, not column indexes
-2. Only a single column can be used in the ORDER BY clause
-3. The column must be a non-collection data type
+1. Only a single column can be used in the ORDER BY clause
+2. The column must be a non-collection data type
 
 For example:
 
@@ -74,7 +73,6 @@ For example:
 SELECT * FROM keyspace.table ORDER BY column1 ASC LIMIT 10;
 
 -- Not Supported:
-SELECT * FROM keyspace.table ORDER BY 1 ASC;  -- Column index not supported
 SELECT * FROM keyspace.table ORDER BY column1, column2 ASC;  -- Multiple columns not supported
 SELECT * FROM keyspace.table ORDER BY collection_column ASC;  -- Collection columns not supported
 ```
@@ -85,8 +83,7 @@ If your queries involve ordering by multiple columns or using column indices, th
 
 Currently, the proxy supports `GROUP BY` queries with the following limitations:
 
-1. Only column names are supported in GROUP BY clauses, not column indexes.
-2. The column must be a non-collection data type
+1. The column must be a non-collection data type
 
 For example:
 
@@ -95,7 +92,6 @@ For example:
 SELECT column1, COUNT(*) FROM keyspace.table GROUP BY column1;
 
 -- Not Supported:
-SELECT column1, COUNT(*) FROM keyspace.table GROUP BY 1;  -- Column index not supported
 SELECT column1, COUNT(*) FROM keyspace.table GROUP BY collection_column;  -- Collection columns not supported
 ```
 
@@ -207,10 +203,20 @@ If your queries use unsupported operators, you'll need to modify them to use onl
 ## 12. Using timestamp 
 We do support USING TIMESTAMP for INSERT and UPDATE operation.
 
+Supported format:
+- 1299038700000
+
+Not supported formats:
+- '2011-02-03 04:05+0000'
+- '2011-02-03 04:05:00+0000'
+- '2011-02-03 04:05:00.000+0000'
+- '2011-02-03T04:05+0000'
+- '2011-02-03T04:05:00+0000'
+- '2011-02-03T04:05:00.000+0000'
+
 Example-
 
 ```python
-
 timestamp = int(time.time())  # Cassandra expects microseconds
 
 query = f"""
@@ -219,7 +225,6 @@ USING TIMESTAMP {timestamp};
 """
 
 session.execute(SimpleStatement(query))
-
 ```
 
 ## 13. Using timestamp not supported with DELETE operation
