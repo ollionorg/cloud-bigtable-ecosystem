@@ -17,9 +17,9 @@
 package translator
 
 import (
+	schemaMapping "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/schema-mapping"
 	"github.com/datastax/go-cassandra-native-protocol/datatype"
 	"github.com/datastax/go-cassandra-native-protocol/message"
-	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
 )
 
 var mockSchemaMappingConfig = map[string]map[string]map[string]*schemaMapping.Column{

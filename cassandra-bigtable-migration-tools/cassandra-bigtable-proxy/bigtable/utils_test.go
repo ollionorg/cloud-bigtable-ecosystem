@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
+	schemaMapping "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/schema-mapping"
 	"github.com/stretchr/testify/assert"
 )
 

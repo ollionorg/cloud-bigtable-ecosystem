@@ -23,11 +23,11 @@ import (
 	"strconv"
 	"strings"
 
+	schemaMapping "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/schema-mapping"
+	cql "github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/cqlparser"
+	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/utilities"
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/datastax/go-cassandra-native-protocol/primitive"
-	schemaMapping "github.com/ollionorg/cassandra-to-bigtable-proxy/schema-mapping"
-	cql "github.com/ollionorg/cassandra-to-bigtable-proxy/third_party/cqlparser"
-	"github.com/ollionorg/cassandra-to-bigtable-proxy/utilities"
 )
 
 // parseAssignments() processes a list of assignment elements from a CQL update statement,

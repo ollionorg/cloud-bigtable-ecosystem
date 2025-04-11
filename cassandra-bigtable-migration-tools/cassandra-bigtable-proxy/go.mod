@@ -1,4 +1,4 @@
-module github.com/ollionorg/cassandra-to-bigtable-proxy
+module github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy
 
 go 1.23.0
 
