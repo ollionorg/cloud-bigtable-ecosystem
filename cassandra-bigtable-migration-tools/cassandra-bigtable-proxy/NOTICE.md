@@ -7,7 +7,7 @@ cel.dev/expr
 * Version: v0.19.2
 * License: [Apache-2.0](https://github.com/google/cel-spec/blob/v0.19.2/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 cloud.google.com/go
@@ -16,7 +16,7 @@ cloud.google.com/go
 * Version: v0.118.3
 * License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/v0.118.3/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 cloud.google.com/go/auth
@@ -25,7 +25,7 @@ cloud.google.com/go/auth
 * Version: v0.15.0
 * License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/auth/v0.15.0/auth/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 cloud.google.com/go/auth/oauth2adapt
@@ -34,7 +34,7 @@ cloud.google.com/go/auth/oauth2adapt
 * Version: v0.2.7
 * License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/auth/oauth2adapt/v0.2.7/auth/oauth2adapt/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 cloud.google.com/go/bigtable
@@ -43,7 +43,7 @@ cloud.google.com/go/bigtable
 * Version: v1.35.1-0.20250324160538-2019ab237918
 * License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/2019ab237918/bigtable/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 cloud.google.com/go/compute/metadata
@@ -52,7 +52,7 @@ cloud.google.com/go/compute/metadata
 * Version: v0.6.0
 * License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/compute/metadata/v0.6.0/compute/metadata/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 cloud.google.com/go/iam
@@ -61,7 +61,7 @@ cloud.google.com/go/iam
 * Version: v1.4.1
 * License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/iam/v1.4.1/iam/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 cloud.google.com/go/longrunning
@@ -70,7 +70,7 @@ cloud.google.com/go/longrunning
 * Version: v0.6.5
 * License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/longrunning/v0.6.5/longrunning/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 cloud.google.com/go/monitoring
@@ -79,7 +79,7 @@ cloud.google.com/go/monitoring
 * Version: v1.24.0
 * License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/monitoring/v1.24.0/monitoring/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy
@@ -88,7 +88,7 @@ github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migra
 * Version: Unknown
 * License: [Apache-2.0](https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/blob/HEAD/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/cqlparser
@@ -97,7 +97,7 @@ github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migra
 * Version: Unknown
 * License: [MIT](https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/blob/HEAD/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/cqlparser/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/datastax
@@ -106,7 +106,7 @@ github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migra
 * Version: Unknown
 * License: [Apache-2.0](https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/blob/HEAD/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/datastax/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
@@ -115,7 +115,7 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
 * Version: v1.25.0
 * License: [Apache-2.0](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/detectors/gcp/v1.25.0/detectors/gcp/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/alecthomas/kong
@@ -124,7 +124,7 @@ github.com/alecthomas/kong
 * Version: v0.2.17
 * License: [MIT](https://github.com/alecthomas/kong/blob/v0.2.17/COPYING)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/antlr4-go/antlr/v4
@@ -133,7 +133,7 @@ github.com/antlr4-go/antlr/v4
 * Version: v4.13.0
 * License: [BSD-3-Clause](https://github.com/antlr4-go/antlr/blob/v4.13.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/cenkalti/backoff/v4
@@ -142,7 +142,7 @@ github.com/cenkalti/backoff/v4
 * Version: v4.3.0
 * License: [MIT](https://github.com/cenkalti/backoff/blob/v4.3.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/cespare/xxhash/v2
@@ -151,7 +151,7 @@ github.com/cespare/xxhash/v2
 * Version: v2.3.0
 * License: [MIT](https://github.com/cespare/xxhash/blob/v2.3.0/LICENSE.txt)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/cncf/xds/go
@@ -160,7 +160,7 @@ github.com/cncf/xds/go
 * Version: v0.0.0-20250121191232-2f005788dc42
 * License: [Apache-2.0](https://github.com/cncf/xds/blob/2f005788dc42/go/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/datastax/go-cassandra-native-protocol
@@ -169,7 +169,7 @@ github.com/datastax/go-cassandra-native-protocol
 * Version: v0.0.0-20211124104234-f6aea54fa801
 * License: [Apache-2.0](https://github.com/datastax/go-cassandra-native-protocol/blob/f6aea54fa801/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/envoyproxy/go-control-plane/envoy
@@ -178,7 +178,7 @@ github.com/envoyproxy/go-control-plane/envoy
 * Version: v1.32.4
 * License: [Apache-2.0](https://github.com/envoyproxy/go-control-plane/blob/envoy/v1.32.4/envoy/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/envoyproxy/protoc-gen-validate/validate
@@ -187,7 +187,7 @@ github.com/envoyproxy/protoc-gen-validate/validate
 * Version: v1.2.1
 * License: [Apache-2.0](https://github.com/envoyproxy/protoc-gen-validate/blob/v1.2.1/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/felixge/httpsnoop
@@ -196,7 +196,7 @@ github.com/felixge/httpsnoop
 * Version: v1.0.4
 * License: [MIT](https://github.com/felixge/httpsnoop/blob/v1.0.4/LICENSE.txt)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/go-logr/logr
@@ -205,7 +205,7 @@ github.com/go-logr/logr
 * Version: v1.4.2
 * License: [Apache-2.0](https://github.com/go-logr/logr/blob/v1.4.2/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/go-logr/stdr
@@ -214,7 +214,7 @@ github.com/go-logr/stdr
 * Version: v1.2.2
 * License: [Apache-2.0](https://github.com/go-logr/stdr/blob/v1.2.2/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/google/s2a-go
@@ -223,7 +223,7 @@ github.com/google/s2a-go
 * Version: v0.1.9
 * License: [Apache-2.0](https://github.com/google/s2a-go/blob/v0.1.9/LICENSE.md)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/google/uuid
@@ -232,7 +232,7 @@ github.com/google/uuid
 * Version: v1.6.0
 * License: [BSD-3-Clause](https://github.com/google/uuid/blob/v1.6.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/googleapis/enterprise-certificate-proxy/client
@@ -241,7 +241,7 @@ github.com/googleapis/enterprise-certificate-proxy/client
 * Version: v0.3.5
 * License: [Apache-2.0](https://github.com/googleapis/enterprise-certificate-proxy/blob/v0.3.5/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/googleapis/gax-go/v2
@@ -250,7 +250,7 @@ github.com/googleapis/gax-go/v2
 * Version: v2.14.1
 * License: [BSD-3-Clause](https://github.com/googleapis/gax-go/blob/v2.14.1/v2/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/grpc-ecosystem/grpc-gateway/v2
@@ -259,7 +259,7 @@ github.com/grpc-ecosystem/grpc-gateway/v2
 * Version: v2.22.0
 * License: [BSD-3-Clause](https://github.com/grpc-ecosystem/grpc-gateway/blob/v2.22.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/hashicorp/golang-lru
@@ -268,7 +268,7 @@ github.com/hashicorp/golang-lru
 * Version: v0.5.4
 * License: [MPL-2.0](https://github.com/hashicorp/golang-lru/blob/v0.5.4/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/natefinch/lumberjack
@@ -277,7 +277,7 @@ github.com/natefinch/lumberjack
 * Version: v2.0.0
 * License: [MIT](https://github.com/natefinch/lumberjack/blob/v2.0.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 github.com/pkg/errors
@@ -286,7 +286,7 @@ github.com/pkg/errors
 * Version: v0.9.1
 * License: [BSD-2-Clause](https://github.com/pkg/errors/blob/v0.9.1/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/auto/sdk
@@ -295,7 +295,7 @@ go.opentelemetry.io/auto/sdk
 * Version: v1.1.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-instrumentation/blob/sdk/v1.1.0/sdk/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/contrib/detectors/gcp
@@ -304,7 +304,7 @@ go.opentelemetry.io/contrib/detectors/gcp
 * Version: v1.34.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/detectors/gcp/v1.34.0/detectors/gcp/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
@@ -313,7 +313,7 @@ go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
 * Version: v0.59.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/google.golang.org/grpc/otelgrpc/v0.59.0/instrumentation/google.golang.org/grpc/otelgrpc/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
@@ -322,7 +322,7 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
 * Version: v0.59.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.59.0/instrumentation/net/http/otelhttp/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/otel
@@ -331,7 +331,7 @@ go.opentelemetry.io/otel
 * Version: v1.35.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/v1.35.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc
@@ -340,7 +340,7 @@ go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc
 * Version: v1.24.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlpmetric/otlpmetricgrpc/v1.24.0/exporters/otlp/otlpmetric/otlpmetricgrpc/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/otel/exporters/otlp/otlptrace
@@ -349,7 +349,7 @@ go.opentelemetry.io/otel/exporters/otlp/otlptrace
 * Version: v1.31.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/v1.31.0/exporters/otlp/otlptrace/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc
@@ -358,7 +358,7 @@ go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc
 * Version: v1.24.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/otlptracegrpc/v1.24.0/exporters/otlp/otlptrace/otlptracegrpc/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/otel/metric
@@ -367,7 +367,7 @@ go.opentelemetry.io/otel/metric
 * Version: v1.35.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.35.0/metric/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/otel/sdk
@@ -376,7 +376,7 @@ go.opentelemetry.io/otel/sdk
 * Version: v1.35.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.35.0/sdk/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/otel/sdk/metric
@@ -385,7 +385,7 @@ go.opentelemetry.io/otel/sdk/metric
 * Version: v1.35.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/metric/v1.35.0/sdk/metric/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/otel/trace
@@ -394,7 +394,7 @@ go.opentelemetry.io/otel/trace
 * Version: v1.35.0
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.35.0/trace/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.opentelemetry.io/proto/otlp
@@ -403,7 +403,7 @@ go.opentelemetry.io/proto/otlp
 * Version: v1.3.1
 * License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-proto-go/blob/otlp/v1.3.1/otlp/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.uber.org/multierr
@@ -412,7 +412,7 @@ go.uber.org/multierr
 * Version: v1.11.0
 * License: [MIT](https://github.com/uber-go/multierr/blob/v1.11.0/LICENSE.txt)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 go.uber.org/zap
@@ -421,7 +421,7 @@ go.uber.org/zap
 * Version: v1.26.0
 * License: [MIT](https://github.com/uber-go/zap/blob/v1.26.0/LICENSE.txt)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 golang.org/x/crypto
@@ -430,7 +430,7 @@ golang.org/x/crypto
 * Version: v0.36.0
 * License: [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.36.0:LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 golang.org/x/exp
@@ -439,7 +439,7 @@ golang.org/x/exp
 * Version: v0.0.0-20230817173708-d852ddb80c63
 * License: [BSD-3-Clause](https://cs.opensource.google/go/x/exp/+/d852ddb8:LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 golang.org/x/net
@@ -448,7 +448,7 @@ golang.org/x/net
 * Version: v0.37.0
 * License: [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.37.0:LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 golang.org/x/oauth2
@@ -457,7 +457,7 @@ golang.org/x/oauth2
 * Version: v0.27.0
 * License: [BSD-3-Clause](https://cs.opensource.google/go/x/oauth2/+/v0.27.0:LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 golang.org/x/sync/semaphore
@@ -466,7 +466,7 @@ golang.org/x/sync/semaphore
 * Version: v0.12.0
 * License: [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.12.0:LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 golang.org/x/sys/unix
@@ -475,7 +475,7 @@ golang.org/x/sys/unix
 * Version: v0.31.0
 * License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.31.0:LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 golang.org/x/text
@@ -484,7 +484,7 @@ golang.org/x/text
 * Version: v0.23.0
 * License: [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.23.0:LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 golang.org/x/time/rate
@@ -493,7 +493,7 @@ golang.org/x/time/rate
 * Version: v0.10.0
 * License: [BSD-3-Clause](https://cs.opensource.google/go/x/time/+/v0.10.0:LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 google.golang.org/api
@@ -502,7 +502,7 @@ google.golang.org/api
 * Version: v0.224.0
 * License: [BSD-3-Clause](https://github.com/googleapis/google-api-go-client/blob/v0.224.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 google.golang.org/api/internal/third_party/uritemplates
@@ -511,7 +511,7 @@ google.golang.org/api/internal/third_party/uritemplates
 * Version: v0.224.0
 * License: [BSD-3-Clause](https://github.com/googleapis/google-api-go-client/blob/v0.224.0/internal/third_party/uritemplates/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 google.golang.org/genproto/googleapis/api
@@ -520,7 +520,7 @@ google.golang.org/genproto/googleapis/api
 * Version: v0.0.0-20250303144028-a0af3efb3deb
 * License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/a0af3efb3deb/googleapis/api/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 google.golang.org/genproto/googleapis/rpc
@@ -529,7 +529,7 @@ google.golang.org/genproto/googleapis/rpc
 * Version: v0.0.0-20250303144028-a0af3efb3deb
 * License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/a0af3efb3deb/googleapis/rpc/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 google.golang.org/genproto/googleapis/type
@@ -538,7 +538,7 @@ google.golang.org/genproto/googleapis/type
 * Version: v0.0.0-20250303144028-a0af3efb3deb
 * License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/a0af3efb3deb/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 google.golang.org/grpc
@@ -547,7 +547,7 @@ google.golang.org/grpc
 * Version: v1.71.0
 * License: [Apache-2.0](https://github.com/grpc/grpc-go/blob/v1.71.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 google.golang.org/protobuf
@@ -556,7 +556,7 @@ google.golang.org/protobuf
 * Version: v1.36.5
 * License: [BSD-3-Clause](https://github.com/protocolbuffers/protobuf-go/blob/v1.36.5/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
 -----------------------------------------------------------------------------
 gopkg.in/yaml.v2
@@ -565,5 +565,5 @@ gopkg.in/yaml.v2
 * Version: v2.4.0
 * License: [Apache-2.0](https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE)
 
-A copy of this license is also available in this project at: third_party/licenses
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
