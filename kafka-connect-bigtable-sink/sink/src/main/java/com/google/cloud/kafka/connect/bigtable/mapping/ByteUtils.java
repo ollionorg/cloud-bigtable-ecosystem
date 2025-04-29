@@ -27,12 +27,9 @@ import java.nio.charset.StandardCharsets;
  */
 public class ByteUtils {
 
-  public static final long BYTE_ARRAY_BASE_OFFSET;
-
   private static final String UTF8_CSN;
 
   static {
-    BYTE_ARRAY_BASE_OFFSET = -1L;
     UTF8_CSN = StandardCharsets.UTF_8.name();
   }
 
