@@ -1,569 +1,845 @@
 This project makes use of the following third-party software:
 
------------------------------------------------------------------------------
+--------------------------------------------
 cel.dev/expr
------------------------------------------------------------------------------
-* Name: cel.dev/expr
-* Version: v0.19.2
-* License: [Apache-2.0](https://github.com/google/cel-spec/blob/v0.19.2/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+--------------------------------------------
 cloud.google.com/go
------------------------------------------------------------------------------
-* Name: cloud.google.com/go
-* Version: v0.118.3
-* License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/v0.118.3/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 cloud.google.com/go/auth
------------------------------------------------------------------------------
-* Name: cloud.google.com/go/auth
-* Version: v0.15.0
-* License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/auth/v0.15.0/auth/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 cloud.google.com/go/auth/oauth2adapt
------------------------------------------------------------------------------
-* Name: cloud.google.com/go/auth/oauth2adapt
-* Version: v0.2.7
-* License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/auth/oauth2adapt/v0.2.7/auth/oauth2adapt/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 cloud.google.com/go/bigtable
------------------------------------------------------------------------------
-* Name: cloud.google.com/go/bigtable
-* Version: v1.35.1-0.20250324160538-2019ab237918
-* License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/2019ab237918/bigtable/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 cloud.google.com/go/compute/metadata
------------------------------------------------------------------------------
-* Name: cloud.google.com/go/compute/metadata
-* Version: v0.6.0
-* License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/compute/metadata/v0.6.0/compute/metadata/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 cloud.google.com/go/iam
------------------------------------------------------------------------------
-* Name: cloud.google.com/go/iam
-* Version: v1.4.1
-* License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/iam/v1.4.1/iam/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 cloud.google.com/go/longrunning
------------------------------------------------------------------------------
-* Name: cloud.google.com/go/longrunning
-* Version: v0.6.5
-* License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/longrunning/v0.6.5/longrunning/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 cloud.google.com/go/monitoring
------------------------------------------------------------------------------
-* Name: cloud.google.com/go/monitoring
-* Version: v1.24.0
-* License: [Apache-2.0](https://github.com/googleapis/google-cloud-go/blob/monitoring/v1.24.0/monitoring/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy
------------------------------------------------------------------------------
-* Name: github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy
-* Version: Unknown
-* License: [Apache-2.0](https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/blob/HEAD/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/LICENSE)
 
+--------------------------------------------
+cloud.google.com/go/secretmanager
+--------------------------------------------
+Copyright 2025 Google LLC
+
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/cqlparser
------------------------------------------------------------------------------
-* Name: github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/cqlparser
-* Version: Unknown
-* License: [MIT](https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/blob/HEAD/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/cqlparser/LICENSE)
 
-A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
-
------------------------------------------------------------------------------
-github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/datastax
------------------------------------------------------------------------------
-* Name: github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/datastax
-* Version: Unknown
-* License: [Apache-2.0](https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/blob/HEAD/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/third_party/datastax/LICENSE)
-
-A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
-
------------------------------------------------------------------------------
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
------------------------------------------------------------------------------
-* Name: github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
-* Version: v1.25.0
-* License: [Apache-2.0](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/detectors/gcp/v1.25.0/detectors/gcp/LICENSE)
-
-A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
-
------------------------------------------------------------------------------
+--------------------------------------------
 github.com/alecthomas/kong
------------------------------------------------------------------------------
-* Name: github.com/alecthomas/kong
-* Version: v0.2.17
-* License: [MIT](https://github.com/alecthomas/kong/blob/v0.2.17/COPYING)
+--------------------------------------------
+Copyright (C) 2018 Alec Thomas
 
+License: MIT
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 github.com/antlr4-go/antlr/v4
------------------------------------------------------------------------------
-* Name: github.com/antlr4-go/antlr/v4
-* Version: v4.13.0
-* License: [BSD-3-Clause](https://github.com/antlr4-go/antlr/blob/v4.13.0/LICENSE)
+--------------------------------------------
+Copyright (c) 2012-2022 The ANTLR Project. All rights reserved.
 
+License:  BSD-3-Clause license
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+	--------------------------------------------
+github.com/bitly/go-hostpool
+--------------------------------------------
+Copyright (c) 2015 Bitly
+
+	License: IT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/bmizerany/assert
+--------------------------------------------
+No copyright found.
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/BurntSushi/toml
+--------------------------------------------
+Copyright (c) 2013 TOML authors
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/cenkalti/backoff/v4
------------------------------------------------------------------------------
-* Name: github.com/cenkalti/backoff/v4
-* Version: v4.3.0
-* License: [MIT](https://github.com/cenkalti/backoff/blob/v4.3.0/LICENSE)
+--------------------------------------------
+Copyright (c) 2014 Cenk Altı
 
+License: MIT
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 github.com/cespare/xxhash/v2
------------------------------------------------------------------------------
-* Name: github.com/cespare/xxhash/v2
-* Version: v2.3.0
-* License: [MIT](https://github.com/cespare/xxhash/blob/v2.3.0/LICENSE.txt)
+--------------------------------------------
+Copyright (c) 2016 Caleb Spare
 
+License: MIT
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 github.com/cncf/xds/go
------------------------------------------------------------------------------
-* Name: github.com/cncf/xds/go
-* Version: v0.0.0-20250121191232-2f005788dc42
-* License: [Apache-2.0](https://github.com/cncf/xds/blob/2f005788dc42/go/LICENSE)
+--------------------------------------------
+No copyright found.
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/coreos/go-systemd
+--------------------------------------------
+Copyright 2015 CoreOS, Inc.
+
+License: Apache-2.0
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/datastax/go-cassandra-native-protocol
------------------------------------------------------------------------------
-* Name: github.com/datastax/go-cassandra-native-protocol
-* Version: v0.0.0-20211124104234-f6aea54fa801
-* License: [Apache-2.0](https://github.com/datastax/go-cassandra-native-protocol/blob/f6aea54fa801/LICENSE)
+--------------------------------------------
+Copyright 2020 DataStax
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/davecgh/go-spew
+--------------------------------------------
+Copyright (c) 2012-2016 Dave Collins <dave@davec.name>
+
+License: ISC
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/envoyproxy/go-control-plane
+--------------------------------------------
+Copyright 2020 Envoyproxy Authors
+
+License: Apache-2.0
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/envoyproxy/go-control-plane/envoy
------------------------------------------------------------------------------
-* Name: github.com/envoyproxy/go-control-plane/envoy
-* Version: v1.32.4
-* License: [Apache-2.0](https://github.com/envoyproxy/go-control-plane/blob/envoy/v1.32.4/envoy/LICENSE)
+--------------------------------------------
+Copyright 2020 Envoyproxy Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-github.com/envoyproxy/protoc-gen-validate/validate
------------------------------------------------------------------------------
-* Name: github.com/envoyproxy/protoc-gen-validate/validate
-* Version: v1.2.1
-* License: [Apache-2.0](https://github.com/envoyproxy/protoc-gen-validate/blob/v1.2.1/LICENSE)
 
+--------------------------------------------
+github.com/envoyproxy/go-control-plane/ratelimit
+--------------------------------------------
+Copyright 2020 Envoyproxy Authors
+
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/envoyproxy/protoc-gen-validate
+--------------------------------------------
+Copyright 2020 Envoyproxy Authors
+
+License: Apache-2.0
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/felixge/httpsnoop
------------------------------------------------------------------------------
-* Name: github.com/felixge/httpsnoop
-* Version: v1.0.4
-* License: [MIT](https://github.com/felixge/httpsnoop/blob/v1.0.4/LICENSE.txt)
+--------------------------------------------
+Copyright (c) 2016 Felix Geisendörfer (felix@debuggable.com)
 
+License: MIT
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 github.com/go-logr/logr
------------------------------------------------------------------------------
-* Name: github.com/go-logr/logr
-* Version: v1.4.2
-* License: [Apache-2.0](https://github.com/go-logr/logr/blob/v1.4.2/LICENSE)
+--------------------------------------------
+Copyright 2023 The logr Authors.
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 github.com/go-logr/stdr
------------------------------------------------------------------------------
-* Name: github.com/go-logr/stdr
-* Version: v1.2.2
-* License: [Apache-2.0](https://github.com/go-logr/stdr/blob/v1.2.2/LICENSE)
+--------------------------------------------
+Copyright 2023 The logr Authors.
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/gocql/gocql
+--------------------------------------------
+Copyright 2024 The Apache Software Foundation
+
+License: Apache-2.0
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/golang/protobuf
+--------------------------------------------
+Copyright 2010 The Go Authors.  All rights reserved.
+
+License: BSD 3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/golang/snappy
+--------------------------------------------
+Copyright 2011 The Snappy-Go Authors. All rights reserved.
+
+License: BSD 3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/google/btree
+--------------------------------------------
+Copyright 2025 Google LLC
+
+License: Apache-2.0
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/google/go-cmp
+--------------------------------------------
+Copyright 2025 Google LLC
+
+License: Apache-2.0
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/google/s2a-go
------------------------------------------------------------------------------
-* Name: github.com/google/s2a-go
-* Version: v0.1.9
-* License: [Apache-2.0](https://github.com/google/s2a-go/blob/v0.1.9/LICENSE.md)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 github.com/google/uuid
------------------------------------------------------------------------------
-* Name: github.com/google/uuid
-* Version: v1.6.0
-* License: [BSD-3-Clause](https://github.com/google/uuid/blob/v1.6.0/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-github.com/googleapis/enterprise-certificate-proxy/client
------------------------------------------------------------------------------
-* Name: github.com/googleapis/enterprise-certificate-proxy/client
-* Version: v0.3.5
-* License: [Apache-2.0](https://github.com/googleapis/enterprise-certificate-proxy/blob/v0.3.5/LICENSE)
 
+--------------------------------------------
+github.com/googleapis/enterprise-certificate-proxy
+--------------------------------------------
+Copyright 2025 Google LLC
+
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 github.com/googleapis/gax-go/v2
------------------------------------------------------------------------------
-* Name: github.com/googleapis/gax-go/v2
-* Version: v2.14.1
-* License: [BSD-3-Clause](https://github.com/googleapis/gax-go/blob/v2.14.1/v2/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
+--------------------------------------------
+Copyright 2025 Google LLC
+
+License: Apache-2.0
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/grpc-ecosystem/grpc-gateway/v2
------------------------------------------------------------------------------
-* Name: github.com/grpc-ecosystem/grpc-gateway/v2
-* Version: v2.22.0
-* License: [BSD-3-Clause](https://github.com/grpc-ecosystem/grpc-gateway/blob/v2.22.0/LICENSE)
+--------------------------------------------
+Copyright (c) 2015, Gengo, Inc.
 
+License: BSD 3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/hailocab/go-hostpool
+--------------------------------------------
+Copyright (c) 2015 Bitly
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/hashicorp/golang-lru
------------------------------------------------------------------------------
-* Name: github.com/hashicorp/golang-lru
-* Version: v0.5.4
-* License: [MPL-2.0](https://github.com/hashicorp/golang-lru/blob/v0.5.4/LICENSE)
+--------------------------------------------
+Copyright (c) HashiCorp, Inc.
 
+License: MPL-2.0 license
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/kr/pretty
+--------------------------------------------
+Copyright 2012 Keith Rarick
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/kr/pty
+--------------------------------------------
+Copyright (c) 2019 Keith Rarick
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/kr/text
+--------------------------------------------
+Copyright 2012 Keith Rarick
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/natefinch/lumberjack
------------------------------------------------------------------------------
-* Name: github.com/natefinch/lumberjack
-* Version: v2.0.0
-* License: [MIT](https://github.com/natefinch/lumberjack/blob/v2.0.0/LICENSE)
+--------------------------------------------
+Copyright (c) 2014 Nate Finch
 
+License: MIT
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/pierrec/lz4/v4
+--------------------------------------------
+Copyright (c) 2015, Pierre Curto
+
+License: BSD 3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 github.com/pkg/errors
------------------------------------------------------------------------------
-* Name: github.com/pkg/errors
-* Version: v0.9.1
-* License: [BSD-2-Clause](https://github.com/pkg/errors/blob/v0.9.1/LICENSE)
+--------------------------------------------
+Copyright (c) 2015, Dave Cheney <dave@cheney.net>
 
+License: BSD-2-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+github.com/planetscale/vtprotobuf
+--------------------------------------------
+Copyright (c) 2021, PlanetScale Inc. All rights reserved.Copyright (c) 2013, The GoGo Authors. All rights reserved. Copyright (c) 2018 The Go Authors. All rights reserved.
+
+License: BSD 3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/pmezard/go-difflib
+--------------------------------------------
+Copyright (c) 2013, Patrick Mezard
+
+License: BSD-3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/rogpeppe/go-internal
+--------------------------------------------
+Copyright (c) 2018 The Go Authors. All rights reserved.
+
+License: BSD-3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/rs/xid
+--------------------------------------------
+Copyright (c) 2015 Olivier Poitrey <rs@dailymotion.com>
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/rs/zerolog
+--------------------------------------------
+Copyright (c) 2015 Olivier Poitrey <rs@dailymotion.com>
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/stretchr/objx
+--------------------------------------------
+Copyright (c) 2014 Stretchr, Inc. Copyright (c) 2017-2018 objx contributors.
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/stretchr/testify
+--------------------------------------------
+Copyright (c) 2012-2020 Mat Ryer, Tyler Bunnell and contributors.
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+github.com/tj/assert
+--------------------------------------------
+Copyright (c) 2019 TJ Holowaychuk. Copyright (c) 2012-2018 Mat Ryer and Tyler Bunnell.
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 go.opentelemetry.io/auto/sdk
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/auto/sdk
-* Version: v1.1.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-instrumentation/blob/sdk/v1.1.0/sdk/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/contrib/detectors/gcp
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/contrib/detectors/gcp
-* Version: v1.34.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/detectors/gcp/v1.34.0/detectors/gcp/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
-* Version: v0.59.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/google.golang.org/grpc/otelgrpc/v0.59.0/instrumentation/google.golang.org/grpc/otelgrpc/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
-* Version: v0.59.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.59.0/instrumentation/net/http/otelhttp/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/otel
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/otel
-* Version: v1.35.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/v1.35.0/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc
-* Version: v1.24.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlpmetric/otlpmetricgrpc/v1.24.0/exporters/otlp/otlpmetric/otlpmetricgrpc/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/otel/exporters/otlp/otlptrace
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/otel/exporters/otlp/otlptrace
-* Version: v1.31.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/v1.31.0/exporters/otlp/otlptrace/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc
-* Version: v1.24.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/otlptracegrpc/v1.24.0/exporters/otlp/otlptrace/otlptracegrpc/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/otel/metric
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/otel/metric
-* Version: v1.35.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.35.0/metric/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/otel/sdk
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/otel/sdk
-* Version: v1.35.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.35.0/sdk/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/otel/sdk/metric
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/otel/sdk/metric
-* Version: v1.35.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/metric/v1.35.0/sdk/metric/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/otel/trace
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/otel/trace
-* Version: v1.35.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.35.0/trace/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.opentelemetry.io/proto/otlp
------------------------------------------------------------------------------
-* Name: go.opentelemetry.io/proto/otlp
-* Version: v1.3.1
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-proto-go/blob/otlp/v1.3.1/otlp/LICENSE)
+--------------------------------------------
+Copyright The OpenTelemetry Authors
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+go.uber.org/atomic
+--------------------------------------------
+Copyright (c) 2016 Uber Technologies, Inc.
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+go.uber.org/goleak
+--------------------------------------------
+Copyright (c) 2016 Uber Technologies, Inc.
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 go.uber.org/multierr
------------------------------------------------------------------------------
-* Name: go.uber.org/multierr
-* Version: v1.11.0
-* License: [MIT](https://github.com/uber-go/multierr/blob/v1.11.0/LICENSE.txt)
+--------------------------------------------
+Copyright (c) 2016 Uber Technologies, Inc.
 
+License: MIT
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 go.uber.org/zap
------------------------------------------------------------------------------
-* Name: go.uber.org/zap
-* Version: v1.26.0
-* License: [MIT](https://github.com/uber-go/zap/blob/v1.26.0/LICENSE.txt)
+--------------------------------------------
+Copyright (c) 2016 Uber Technologies, Inc.
 
+License: MIT
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 golang.org/x/crypto
------------------------------------------------------------------------------
-* Name: golang.org/x/crypto
-* Version: v0.36.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.36.0:LICENSE)
+--------------------------------------------
+Copyright 2009 The Go Authors.
 
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 golang.org/x/exp
------------------------------------------------------------------------------
-* Name: golang.org/x/exp
-* Version: v0.0.0-20230817173708-d852ddb80c63
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/exp/+/d852ddb8:LICENSE)
+--------------------------------------------
+Copyright 2009 The Go Authors.
 
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 golang.org/x/net
------------------------------------------------------------------------------
-* Name: golang.org/x/net
-* Version: v0.37.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.37.0:LICENSE)
+--------------------------------------------
+Copyright 2009 The Go Authors.
 
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 golang.org/x/oauth2
------------------------------------------------------------------------------
-* Name: golang.org/x/oauth2
-* Version: v0.27.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/oauth2/+/v0.27.0:LICENSE)
+--------------------------------------------
+Copyright 2009 The Go Authors.
 
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-golang.org/x/sync/semaphore
------------------------------------------------------------------------------
-* Name: golang.org/x/sync/semaphore
-* Version: v0.12.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.12.0:LICENSE)
 
+--------------------------------------------
+golang.org/x/sync
+--------------------------------------------
+Copyright 2009 The Go Authors.
+
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-golang.org/x/sys/unix
------------------------------------------------------------------------------
-* Name: golang.org/x/sys/unix
-* Version: v0.31.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.31.0:LICENSE)
 
+--------------------------------------------
+golang.org/x/sys
+--------------------------------------------
+Copyright 2009 The Go Authors.
+
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 golang.org/x/text
------------------------------------------------------------------------------
-* Name: golang.org/x/text
-* Version: v0.23.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.23.0:LICENSE)
+--------------------------------------------
+Copyright 2009 The Go Authors.
 
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-golang.org/x/time/rate
------------------------------------------------------------------------------
-* Name: golang.org/x/time/rate
-* Version: v0.10.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/time/+/v0.10.0:LICENSE)
 
+--------------------------------------------
+golang.org/x/time
+--------------------------------------------
+Copyright 2009 The Go Authors.
+
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+golang.org/x/tools
+--------------------------------------------
+Copyright 2009 The Go Authors.
+
+License: BSD-3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+golang.org/x/xerrors
+--------------------------------------------
+Copyright 2009 The Go Authors.
+
+License: BSD-3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 google.golang.org/api
------------------------------------------------------------------------------
-* Name: google.golang.org/api
-* Version: v0.224.0
-* License: [BSD-3-Clause](https://github.com/googleapis/google-api-go-client/blob/v0.224.0/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-google.golang.org/api/internal/third_party/uritemplates
------------------------------------------------------------------------------
-* Name: google.golang.org/api/internal/third_party/uritemplates
-* Version: v0.224.0
-* License: [BSD-3-Clause](https://github.com/googleapis/google-api-go-client/blob/v0.224.0/internal/third_party/uritemplates/LICENSE)
 
+--------------------------------------------
+google.golang.org/genproto
+--------------------------------------------
+Copyright 2025 Google LLC
+
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 google.golang.org/genproto/googleapis/api
------------------------------------------------------------------------------
-* Name: google.golang.org/genproto/googleapis/api
-* Version: v0.0.0-20250303144028-a0af3efb3deb
-* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/a0af3efb3deb/googleapis/api/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 google.golang.org/genproto/googleapis/rpc
------------------------------------------------------------------------------
-* Name: google.golang.org/genproto/googleapis/rpc
-* Version: v0.0.0-20250303144028-a0af3efb3deb
-* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/a0af3efb3deb/googleapis/rpc/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
-google.golang.org/genproto/googleapis/type
------------------------------------------------------------------------------
-* Name: google.golang.org/genproto/googleapis/type
-* Version: v0.0.0-20250303144028-a0af3efb3deb
-* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/a0af3efb3deb/LICENSE)
 
-A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
-
------------------------------------------------------------------------------
+--------------------------------------------
 google.golang.org/grpc
------------------------------------------------------------------------------
-* Name: google.golang.org/grpc
-* Version: v1.71.0
-* License: [Apache-2.0](https://github.com/grpc/grpc-go/blob/v1.71.0/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
 google.golang.org/protobuf
------------------------------------------------------------------------------
-* Name: google.golang.org/protobuf
-* Version: v1.36.5
-* License: [BSD-3-Clause](https://github.com/protocolbuffers/protobuf-go/blob/v1.36.5/LICENSE)
+--------------------------------------------
+Copyright 2025 Google LLC
 
+License: BSD-3-Clause
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
------------------------------------------------------------------------------
+
+--------------------------------------------
+gopkg.in/check.v1
+--------------------------------------------
+Copyright (c) 2010-2013 Gustavo Niemeyer <gustavo@niemeyer.net>
+
+License: BSD-2-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+gopkg.in/inf.v0
+--------------------------------------------
+Copyright (c) 2012 Péter Surányi. Portions Copyright (c) 2009 The Go Authors. All rights reserved.
+
+License: BSD-3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+gopkg.in/natefinch/lumberjack.v2
+--------------------------------------------
+Copyright (c) 2014 Nate Finch
+
+License: MIT
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
 gopkg.in/yaml.v2
------------------------------------------------------------------------------
-* Name: gopkg.in/yaml.v2
-* Version: v2.4.0
-* License: [Apache-2.0](https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE)
+--------------------------------------------
+Copyright 2011-2016 Canonical Ltd.
 
+License: Apache-2.0
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
 
+
+--------------------------------------------
+gopkg.in/yaml.v3
+--------------------------------------------
+Copyright (c) 2006-2011 Kirill Simonov
+
+License: Apache-2.0
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+
+
+--------------------------------------------
+rsc.io/binaryregexp
+--------------------------------------------
+Copyright (c) 2009 The Go Authors. All rights reserved.
+
+License: BSD-3-Clause
+A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
