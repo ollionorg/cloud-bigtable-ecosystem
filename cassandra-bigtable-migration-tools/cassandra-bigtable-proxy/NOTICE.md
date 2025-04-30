@@ -1,3 +1,5 @@
+This project makes use of the following third-party software:
+
 --------------------------------------------
 cel.dev/expr
 --------------------------------------------
