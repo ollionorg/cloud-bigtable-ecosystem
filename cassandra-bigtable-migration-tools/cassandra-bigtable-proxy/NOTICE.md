@@ -366,6 +366,7 @@ Copyright (c) HashiCorp, Inc.
 
 License: MPL-2.0 license
 A copy of this license is also available in this project at: [third_party/licenses](./third_party/licenses)
+A copy of the source code is available at https://third-party-mirror.googlesource.com/golang/lru/
 
 
 --------------------------------------------
