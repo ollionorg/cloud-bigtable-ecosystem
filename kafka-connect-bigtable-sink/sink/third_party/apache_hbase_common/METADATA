@@ -1,0 +1,16 @@
+name: "Apache HBase - Common"
+description: "Common functionality for HBase."
+third_party {
+  url {
+    type: HOMEPAGE
+    value: "https://hbase.apache.org/"
+  }
+  url {
+    type: GIT
+    value: "https://github.com/apache/hbase"
+  }
+  version: "rel/2.5.11"
+  last_upgrade_date { year: 2025 month: 3 day: 6 }
+  license_type: NOTICE
+  local_modifications: "Copied hbase-common/src/main/java/org/apache/hadoop/hbase/util/Bytes.java, renamed it to ByteUtils, and modified it so that it only included what we need for this project to limit dependencies."
+}
