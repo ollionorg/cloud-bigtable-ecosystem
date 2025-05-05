@@ -1,1 +1,0 @@
-See [README here](./google-cloud-bigtable-cassandra-proxy-lib/README.md).

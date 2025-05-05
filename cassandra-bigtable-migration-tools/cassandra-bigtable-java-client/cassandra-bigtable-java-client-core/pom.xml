@@ -20,15 +20,15 @@ limitations under the License.
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>google-cloud-bigtable-cassandra-proxy-parent</artifactId>
+    <artifactId>cassandra-bigtable-java-client-parent</artifactId>
     <groupId>com.google.cloud</groupId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+  <artifactId>cassandra-bigtable-java-client-core</artifactId>
   <packaging>jar</packaging>
   <description>
-    A Java wrapper for the Cloud Bigtable Cassandra Proxy
+    A Java wrapper around the Cassandra to Cloud Bigtable Proxy Adaptor
   </description>
 
   <properties>
