@@ -20,15 +20,15 @@ limitations under the License.
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>google-cloud-bigtable-cassandra-proxy-parent</artifactId>
+    <artifactId>cassandra-bigtable-java-client-parent</artifactId>
     <groupId>com.google.cloud</groupId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>google-cloud-bigtable-cassandra-proxy-bom</artifactId>
+  <artifactId>cassandra-bigtable-java-client-bom</artifactId>
   <packaging>pom</packaging>
   <description>
-    BOM for Cloud Bigtable Cassandra Proxy
+    BOM for Cassandra to Bigtable Client for Java
   </description>
 
   <dependencyManagement>
@@ -36,55 +36,55 @@ limitations under the License.
       <!--linux/386-->
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+        <artifactId>cassandra-bigtable-java-client-core</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <classifier>linux-386</classifier>
       </dependency>
       <!--linux/amd64-->
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+        <artifactId>cassandra-bigtable-java-client-core</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <classifier>linux-amd64</classifier>
       </dependency>
       <!--linux/arm64-->
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+        <artifactId>cassandra-bigtable-java-client-core</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <classifier>linux-arm64</classifier>
       </dependency>
       <!--darwin/amd64-->
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+        <artifactId>cassandra-bigtable-java-client-core</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <classifier>darwin-amd64</classifier>
       </dependency>
       <!--darwin/arm64-->
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+        <artifactId>cassandra-bigtable-java-client-core</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <classifier>darwin-arm64</classifier>
       </dependency>
       <!--windows/386-->
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+        <artifactId>cassandra-bigtable-java-client-core</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <classifier>windows-386</classifier>
       </dependency>
       <!--windows/amd64-->
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+        <artifactId>cassandra-bigtable-java-client-core</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <classifier>windows-amd64</classifier>
       </dependency>
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-lib</artifactId>
+        <artifactId>cassandra-bigtable-java-client-lib</artifactId>
         <version>0.1.0-SNAPSHOT</version>
       </dependency>
     </dependencies>

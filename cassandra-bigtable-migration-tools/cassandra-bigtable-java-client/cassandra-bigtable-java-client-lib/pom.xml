@@ -20,12 +20,12 @@ limitations under the License.
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>google-cloud-bigtable-cassandra-proxy-parent</artifactId>
+    <artifactId>cassandra-bigtable-java-client-parent</artifactId>
     <groupId>com.google.cloud</groupId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>google-cloud-bigtable-cassandra-proxy-lib</artifactId>
+  <artifactId>cassandra-bigtable-java-client-lib</artifactId>
   <packaging>jar</packaging>
   <description>
     Bigtable CQL Client for Java library
@@ -51,7 +51,7 @@ limitations under the License.
   <dependencies>
     <dependency>
       <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+      <artifactId>cassandra-bigtable-java-client-core</artifactId>
       <version>0.1.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
@@ -97,7 +97,7 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+      <artifactId>cassandra-bigtable-java-client-core</artifactId>
       <version>0.1.0-SNAPSHOT</version>
       <classifier>linux-amd64</classifier>
       <scope>test</scope>

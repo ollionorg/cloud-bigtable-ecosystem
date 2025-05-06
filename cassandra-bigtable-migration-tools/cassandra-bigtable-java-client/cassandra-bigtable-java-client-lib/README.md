@@ -1,11 +1,11 @@
-# google-cloud-bigtable-cassandra-proxy-lib
+# Cassandra to Bigtable Client for Java
 
-A Java library for interacting with the Cloud Bigtable Cassandra Proxy
+The Cassandra to Bigtable Client for Java lets you integrate your Cassandra-based Java applications with Bigtable using CQL.
 
 # How to build library
 
 - Ensure you have the installed [these pre-requisites](../../cassandra-bigtable-proxy/README.md#pre-requisites)
-- Navigate to the parent directory (`cassandra-bigtable-cql-client-java`)
+- Navigate to the parent directory (`cassandra-bigtable-java-client`)
 - Run the following Maven command
 
 ```shell
@@ -19,7 +19,7 @@ Add the following dependency to the `<dependencyManagement><dependencies>` secti
 ```xml
 <dependency>
   <groupId>com.google.cloud</groupId>
-  <artifactId>google-cloud-bigtable-cassandra-proxy-bom</artifactId>
+  <artifactId>cassandra-bigtable-java-client-bom</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <type>pom</type>
   <scope>import</scope>
@@ -31,11 +31,11 @@ Add the dependencies below to the `<dependencies>` section of your Maven `pom.xm
 ```xml
 <dependency>
   <groupId>com.google.cloud</groupId>
-  <artifactId>google-cloud-bigtable-cassandra-proxy-lib</artifactId>
+  <artifactId>cassandra-bigtable-java-client-lib</artifactId>
 </dependency>
 <dependency>
   <groupId>com.google.cloud</groupId>
-  <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+  <artifactId>cassandra-bigtable-java-client-core</artifactId>
   <classifier>SPECIFY-CLASSIFIER-HERE</classifier>
 </dependency>
 <dependency>
@@ -47,7 +47,7 @@ Add the dependencies below to the `<dependencies>` section of your Maven `pom.xm
 
 ## Classifiers
 
-For the `google-cloud-bigtable-cassandra-proxy-core` package, specify the relevant `<classifier>` corresponding to the target platform/architecture: 
+For the `cassandra-bigtable-java-client-core` package, specify the relevant `<classifier>` corresponding to the target platform/architecture: 
 
 - Linux Builds
   - `linux-386`

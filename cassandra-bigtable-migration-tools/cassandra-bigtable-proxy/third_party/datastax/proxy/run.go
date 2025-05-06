@@ -425,7 +425,7 @@ func (c *runConfig) listenAndServe(p *Proxy, mux *http.ServeMux, ctx context.Con
 	for _, listener := range listeners {
 		go func(l net.Listener) {
 			defer wg.Done()
-			// WARNING: Do NOT change this log - the google-cloud-bigtable-cassandra-proxy-lib and compliance tests use the "Starting to serve on listener" log message to check for start up.
+			// WARNING: Do NOT change this log - the cassandra-bigtable-java-client-lib and compliance tests use the "Starting to serve on listener" log message to check for start up.
 			logger.Info(fmt.Sprintf("Starting to serve on listener: %v\n", l.Addr()))
 			err := p.Serve(l)
 			if err != nil && err != ErrProxyClosed {

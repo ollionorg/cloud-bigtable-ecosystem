@@ -63,7 +63,7 @@ for the full list of classifiers):
 ```xml
 <dependency>
   <groupId>com.google.cloud</groupId>
-  <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+  <artifactId>cassandra-bigtable-java-client-core</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <classifier>linux-amd64</classifier>
   <scope>test</scope>

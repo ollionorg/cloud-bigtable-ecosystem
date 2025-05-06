@@ -17,13 +17,13 @@ limitations under the License.
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>google-cloud-bigtable-cassandra-proxy-parent</artifactId>
+    <artifactId>cassandra-bigtable-java-client-parent</artifactId>
     <groupId>com.google.cloud</groupId>
     <packaging>pom</packaging>
     <version>0.1.0-SNAPSHOT</version>
     <url>https://github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem</url>
     <description>
-        Parent project for google-cloud-bigtable-cassandra-proxy-*
+        Parent project for Cassandra to Bigtable Client for Java
     </description>
 
     <properties>
@@ -32,9 +32,9 @@ limitations under the License.
     </properties>
 
     <modules>
-      <module>google-cloud-bigtable-cassandra-proxy-core</module>
-      <module>google-cloud-bigtable-cassandra-proxy-lib</module>
-      <module>google-cloud-bigtable-cassandra-proxy-bom</module>
+      <module>cassandra-bigtable-java-client-core</module>
+      <module>cassandra-bigtable-java-client-lib</module>
+      <module>cassandra-bigtable-java-client-bom</module>
     </modules>
 
 </project>

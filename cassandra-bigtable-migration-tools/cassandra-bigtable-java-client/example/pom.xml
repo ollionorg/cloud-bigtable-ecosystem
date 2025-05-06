@@ -34,7 +34,7 @@ limitations under the License.
     <dependencies>
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-bigtable-cassandra-proxy-bom</artifactId>
+        <artifactId>cassandra-bigtable-java-client-bom</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <type>pom</type>
         <scope>import</scope>
@@ -45,11 +45,11 @@ limitations under the License.
   <dependencies>
     <dependency>
       <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-bigtable-cassandra-proxy-lib</artifactId>
+      <artifactId>cassandra-bigtable-java-client-lib</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-bigtable-cassandra-proxy-core</artifactId>
+      <artifactId>cassandra-bigtable-java-client-core</artifactId>
       <classifier>linux-amd64</classifier>
     </dependency>
     <dependency>
