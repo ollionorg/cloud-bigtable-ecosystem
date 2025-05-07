@@ -38,6 +38,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * This code is copied from hbase-common using Apache 2.0 License. This code has been modified to
  * remove functions that we don't need.
+ *
+ * @see <a
+ *     href="https://github.com/apache/hbase/blob/master/hbase-common/src/main/java/org/apache/hadoop/hbase/util/Bytes.java">Bytes.java</a>
  */
 public class ByteUtils {
 
