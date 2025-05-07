@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Field;
@@ -200,28 +199,28 @@ public class ValueMapper {
     } else if (value instanceof ByteBuffer) {
       return serialize(((ByteBuffer) value).array(), Optional.empty());
     } else if (value instanceof Integer) {
-      return Bytes.toBytes((Integer) value);
+      return ByteUtils.toBytes((Integer) value);
     } else if (value instanceof Long) {
-      return Bytes.toBytes((Long) value);
+      return ByteUtils.toBytes((Long) value);
     } else if (value instanceof Short) {
-      return Bytes.toBytes((Short) value);
+      return ByteUtils.toBytes((Short) value);
     } else if (value instanceof Byte) {
-      return Bytes.toBytes((Byte) value);
+      return ByteUtils.toBytes((Byte) value);
     } else if (value instanceof Float) {
-      return Bytes.toBytes((Float) value);
+      return ByteUtils.toBytes((Float) value);
     } else if (value instanceof Double) {
-      return Bytes.toBytes((Double) value);
+      return ByteUtils.toBytes((Double) value);
     } else if (value instanceof Boolean) {
-      return Bytes.toBytes((Boolean) value);
+      return ByteUtils.toBytes((Boolean) value);
     } else if (value instanceof String) {
-      return Bytes.toBytes((String) value);
+      return ByteUtils.toBytes((String) value);
     } else if (value instanceof Character) {
       return serialize(Character.toString((Character) value), Optional.empty());
     } else if (value instanceof Date) {
       // Note that the value might have different Kafka Connect schema: Date, Time or Timestamp.
       return serialize(((Date) value).getTime(), Optional.empty());
     } else if (value instanceof BigDecimal) {
-      return Bytes.toBytes((BigDecimal) value);
+      return ByteUtils.toBytes((BigDecimal) value);
     } else if (value instanceof Map || value instanceof Struct || value instanceof List) {
       try {
         return jsonMapper.writeValueAsBytes(value);
