@@ -17,7 +17,9 @@ To use this sink connector, set the connector class to the following:
 `connector.class = com.google.cloud.kafka.connect.bigtable.BigtableSinkConnector`
 
 
-### gcp.bigtable.instance.id
+### Connectivity
+
+`gcp.bigtable.instance.id`
 
 The ID of the Cloud Bigtable instance.
 
@@ -27,7 +29,7 @@ The ID of the Cloud Bigtable instance.
 * Importance: high
 
 
-### gcp.bigtable.project.id
+`gcp.bigtable.project.id`
 
 The ID of the GCP project.
 
@@ -37,7 +39,7 @@ The ID of the GCP project.
 * Importance: high
 
 
-### gcp.bigtable.credentials.json
+`gcp.bigtable.credentials.json`
 
 The path to the JSON service key file. Configure at most one of `gcp.bigtable.credentials.path` and `gcp.bigtable.credentials.json`. If neither is provided, Application Default Credentials will be used.
 
@@ -47,7 +49,7 @@ The path to the JSON service key file. Configure at most one of `gcp.bigtable.cr
 * Importance: high
 
 
-### gcp.bigtable.credentials.path
+`gcp.bigtable.credentials.path`
 
 The path to the JSON service key file. Configure at most one of `gcp.bigtable.credentials.path` and `gcp.bigtable.credentials.json`. If neither is provided, Application Default Credentials will be used.
 
@@ -56,8 +58,19 @@ The path to the JSON service key file. Configure at most one of `gcp.bigtable.cr
 * Valid Values: 
 * Importance: high
 
+`gcp.bigtable.app.profile.id`
 
-### insert.mode
+The application profile that the connector should use. If none is supplied, the default app profile will be used.
+
+* Type: string
+* Default: null
+* Valid Values:
+* Importance: medium
+
+
+### Writes
+
+`insert.mode`
 
 Defines the insertion mode to use. Supported modes are:
 - insert - Insert new record only. If the row to be written already exists in the table, an error is thrown.
@@ -69,7 +82,7 @@ Defines the insertion mode to use. Supported modes are:
 * Importance: high
 
 
-### auto.create.column.families
+`auto.create.column.families`
 
 Whether to automatically create missing columns families in the table relative to the record schema.
 Does not imply auto-creation of tables.
@@ -84,7 +97,7 @@ Note that column family auto-creation is slow. It may slow down not only the rec
 * Importance: medium
 
 
-### auto.create.tables
+`auto.create.tables`
 
 Whether to automatically create the destination table if it is found to be missing.
 When enabled, the records for which the auto-creation fails, are failed.
@@ -97,7 +110,7 @@ Note that table auto-creation is slow (multiple seconds). It may slow down not o
 * Importance: medium
 
 
-### default.column.family
+`default.column.family`
 
 Any root-level fields on the SinkRecord that aren't objects will be added to this column family. If empty, the fields will be ignored. Use `${topic}` within the column family name to specify the originating topic name.
 
@@ -107,7 +120,7 @@ Any root-level fields on the SinkRecord that aren't objects will be added to thi
 * Importance: medium
 
 
-### default.column.qualifier
+`default.column.qualifier`
 
 Any root-level values on the SinkRecord that aren't objects will be added to this column within default column family. If empty, the value will be ignored.
 
@@ -117,30 +130,7 @@ Any root-level values on the SinkRecord that aren't objects will be added to thi
 * Importance: medium
 
 
-### error.mode
-
-Specifies how to handle errors that result from writes, after retries. It is ignored if DLQ is configured. Supported modes are:
-- fail - The connector fails and must be manually restarted.
-- warn - The connector logs a warning and continues operating normally.
-- ignore - The connector does not log a warning but continues operating normally.
-
-* Type: string
-* Default: FAIL
-* Valid Values: (case insensitive) [IGNORE, FAIL, WARN]
-* Importance: medium
-
-
-### gcp.bigtable.app.profile.id
-
-The application profile that the connector should use. If none is supplied, the default app profile will be used.
-
-* Type: string
-* Default: null
-* Valid Values: 
-* Importance: medium
-
-
-### max.batch.size
+`max.batch.size`
 
 The maximum number of records that can be batched into a batch of upserts. Note that since only a batch size of 1 for inserts is supported, `max.batch.size` must be exactly `1` when `insert.mode` is set to `INSERT`.
 
@@ -150,24 +140,14 @@ The maximum number of records that can be batched into a batch of upserts. Note 
 * Importance: medium
 
 
-### retry.timeout.ms
-
-Maximum time in milliseconds allocated for retrying database operations before trying other error handling mechanisms.
-
-* Type: long
-* Default: 90000 (90 seconds)
-* Valid Values: [0,...]
-* Importance: medium
-
-
-### row.key.definition
+`row.key.definition`
 
 A comma separated list of Kafka Record key field names that specifies the order of Kafka key fields to be concatenated to form the row key.
 
 For example the list: `username, post_id, time_stamp` when applied to a Kafka key: `{'username': 'bob','post_id': '213', 'time_stamp': '123123'}` and with delimiter `#` gives the row key `bob#213#123123`. You can also access terms nested in the key by using `.` as a delimiter. If this configuration is empty or unspecified and the Kafka Message Key is a
 - struct, all the fields in the struct are used to construct the row key.
 - byte array, the row key is set to the byte array as is.
-- primitive, the row key is set to the primitive stringified.If prefixes, more complicated delimiters, and string constants are required in your Row Key, consider configuring an SMT to add relevant fields to the Kafka Record key.
+- primitive, the row key is set to the primitive stringified. If prefixes, more complicated delimiters, and string constants are required in your Row Key, consider configuring an SMT to add relevant fields to the Kafka Record key.
 
 * Type: list
 * Default: ""
@@ -175,7 +155,7 @@ For example the list: `username, post_id, time_stamp` when applied to a Kafka ke
 * Importance: medium
 
 
-### table.name.format
+`table.name.format`
 
 Name of the destination table. Use `${topic}` within the table name to specify the originating topic name.
 
@@ -187,7 +167,7 @@ For example, `user_${topic}` for the topic `stats` will map to the table name `u
 * Importance: medium
 
 
-### value.null.mode
+`value.null.mode`
 
 Defines what to do with `null`s within Kafka values. Supported modes are:
 - write - Serialize `null`s to empty byte arrays.
@@ -200,7 +180,7 @@ Defines what to do with `null`s within Kafka values. Supported modes are:
 * Importance: medium
 
 
-### row.key.delimiter
+`row.key.delimiter`
 
 The delimiter used in concatenating Kafka key fields in the row key. If this configuration is empty or unspecified, the key fields will be concatenated together directly.
 
@@ -208,6 +188,31 @@ The delimiter used in concatenating Kafka key fields in the row key. If this con
 * Default: ""
 * Valid Values: 
 * Importance: low
+
+
+### Error Handling
+
+`error.mode`
+
+Specifies how to handle errors that result from writes, after retries. It is ignored if DLQ is configured. Supported modes are:
+- fail - The connector fails and must be manually restarted.
+- warn - The connector logs a warning and continues operating normally.
+- ignore - The connector does not log a warning but continues operating normally.
+
+* Type: string
+* Default: FAIL
+* Valid Values: (case insensitive) [IGNORE, FAIL, WARN]
+* Importance: medium
+
+`retry.timeout.ms`
+
+Maximum time in milliseconds allocated for retrying database operations before trying other error handling mechanisms.
+
+* Type: long
+* Default: 90000 (90 seconds)
+* Valid Values: [0,...]
+* Importance: medium
+
 
 ## Usage
 
