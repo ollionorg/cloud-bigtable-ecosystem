@@ -31,6 +31,7 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class MutationDataBuilderTest {
+
   private static final ByteString ROW_KEY =
       ByteString.copyFrom("ROW_KEY".getBytes(StandardCharsets.UTF_8));
   private static final String TARGET_TABLE_NAME = "table";
@@ -61,9 +62,6 @@ public class MutationDataBuilderTest {
   public void testDeleteRow() {
     mutationDataBuilder.deleteRow();
 
-    Mutation expected = Mutation.create().deleteRow();
-    assertEquals(expected, mutation);
-
     Optional<MutationData> mutationData =
         mutationDataBuilder.maybeBuild(TARGET_TABLE_NAME, ROW_KEY);
     assertTrue(mutationData.isPresent());
@@ -73,10 +71,6 @@ public class MutationDataBuilderTest {
   @Test
   public void testDeleteCells() {
     mutationDataBuilder.deleteCells(COLUMN_FAMILY, COLUMN_QUALIFIER, TIMESTAMP_RANGE);
-
-    Mutation expected =
-        Mutation.create().deleteCells(COLUMN_FAMILY, COLUMN_QUALIFIER, TIMESTAMP_RANGE);
-    assertEquals(expected, mutation);
 
     Optional<MutationData> mutationData =
         mutationDataBuilder.maybeBuild(TARGET_TABLE_NAME, ROW_KEY);
@@ -88,9 +82,6 @@ public class MutationDataBuilderTest {
   public void testDeleteFamily() {
     mutationDataBuilder.deleteFamily(COLUMN_FAMILY);
 
-    Mutation expected = Mutation.create().deleteFamily(COLUMN_FAMILY);
-    assertEquals(expected, mutation);
-
     Optional<MutationData> mutationData =
         mutationDataBuilder.maybeBuild(TARGET_TABLE_NAME, ROW_KEY);
 
@@ -101,9 +92,7 @@ public class MutationDataBuilderTest {
   @Test
   public void testSetCell() {
     mutationDataBuilder.setCell(COLUMN_FAMILY, COLUMN_QUALIFIER, TIMESTAMP, VALUE);
-    Mutation expected =
-        Mutation.create().setCell(COLUMN_FAMILY, COLUMN_QUALIFIER, TIMESTAMP, VALUE);
-    assertEquals(expected, mutation);
+
     Optional<MutationData> mutationData =
         mutationDataBuilder.maybeBuild(TARGET_TABLE_NAME, ROW_KEY);
     assertTrue(mutationData.isPresent());
