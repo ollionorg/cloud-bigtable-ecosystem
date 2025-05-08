@@ -36,7 +36,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.cloud.kafka.connect.bigtable.util.BasicPropertiesFactory;
-import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableDataClient;
 import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableTableAdminClient;
 import java.util.HashMap;
 import java.util.List;

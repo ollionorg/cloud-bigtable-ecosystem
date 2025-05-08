@@ -33,9 +33,11 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.apache.curator.shaded.com.google.common.util.concurrent.Futures;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -49,6 +51,7 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class ResourceAutoCreationIT extends BaseKafkaConnectBigtableIT {
+
   private static final JsonConverter JSON_CONVERTER = JsonConverterFactory.create(true, false);
   private static final String KEY1 = "key1";
   private static final String KEY2 = "key2";
@@ -111,7 +114,8 @@ public class ResourceAutoCreationIT extends BaseKafkaConnectBigtableIT {
             .anyMatch(r -> Arrays.equals(KEY3.getBytes(StandardCharsets.UTF_8), r.key())));
     assertConnectorAndAllTasksAreRunning(testId);
     // With the column family created.
-    bigtableAdmin.modifyFamilies(ModifyColumnFamiliesRequest.of(testId).addFamily(COLUMN_FAMILY2));
+    Futures.getUnchecked(bigtableAdmin.modifyFamiliesAsync(
+        ModifyColumnFamiliesRequest.of(testId).addFamily(COLUMN_FAMILY2)));
     connect.kafka().produce(testId, KEY4, serializedValue2);
     waitUntilBigtableContainsNumberOfRows(testId, 2);
     assertTrue(
@@ -285,9 +289,10 @@ public class ResourceAutoCreationIT extends BaseKafkaConnectBigtableIT {
   }
 
   /**
-   * This test checks consequences of design choices described in comments in {@link
-   * com.google.cloud.kafka.connect.bigtable.mapping.MutationDataBuilder#deleteCells(String,
-   * ByteString, Range.TimestampRange)} and {@link
+   * This test checks consequences of design choices described in comments in
+   * {@link com.google.cloud.kafka.connect.bigtable.mapping.MutationDataBuilder#deleteCells(String,
+   * ByteString, Range.TimestampRange)} and
+   * {@link
    * com.google.cloud.kafka.connect.bigtable.mapping.MutationDataBuilder#deleteFamily(String)}.
    */
   @Test

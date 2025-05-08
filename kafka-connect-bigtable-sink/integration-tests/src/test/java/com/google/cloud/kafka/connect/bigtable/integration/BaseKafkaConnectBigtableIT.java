@@ -26,6 +26,8 @@ import com.google.cloud.bigtable.admin.v2.models.Table;
 import com.google.cloud.bigtable.data.v2.BigtableDataClient;
 import com.google.cloud.bigtable.data.v2.models.Query;
 import com.google.cloud.bigtable.data.v2.models.Row;
+import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableDataClient;
+import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableTableAdminClient;
 import com.google.protobuf.ByteString;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +48,8 @@ public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
 
   private final Logger logger = LoggerFactory.getLogger(BaseKafkaConnectBigtableIT.class);
 
-  public BigtableDataClient bigtableData;
-  public BigtableTableAdminClient bigtableAdmin;
+  public IBigtableDataClient bigtableData;
+  public IBigtableTableAdminClient bigtableAdmin;
 
   @Before
   public void setUpBigtable() {
@@ -87,7 +89,7 @@ public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
     }
   }
 
-  public Map<ByteString, Row> readAllRows(BigtableDataClient bigtable, String table) {
+  public Map<ByteString, Row> readAllRows(IBigtableDataClient bigtable, String table) {
     Integer numRecords = null;
     try {
       Query query = Query.create(table);

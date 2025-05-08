@@ -9,10 +9,15 @@ import java.util.List;
 public interface IBigtableTableAdminClient {
 
   List<String> listTables();
-  public ApiFuture<Table> createTableAsync(CreateTableRequest request);
+  Table getTable(String id);
+  Table createTable(CreateTableRequest request);
 
-    ApiFuture<Table> getTableAsync(String tableId);
-   ApiFuture<Table> modifyFamiliesAsync(ModifyColumnFamiliesRequest request);
+  ApiFuture<Table> createTableAsync(CreateTableRequest request);
+
+  ApiFuture<Table> getTableAsync(String tableId);
+
+  ApiFuture<Table> modifyFamiliesAsync(ModifyColumnFamiliesRequest request);
+
   void close();
 
 }
