@@ -28,6 +28,7 @@ import com.google.cloud.bigtable.data.v2.models.Query;
 import com.google.cloud.bigtable.data.v2.models.Row;
 import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableDataClient;
 import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableTableAdminClient;
+import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.ByteString;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
+
   // Not copied from BigtableSinkConfig since it isn't present in its public API.
   public static long DEFAULT_BIGTABLE_RETRY_TIMEOUT_MILLIS = 90000;
 
@@ -130,7 +132,7 @@ public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
     waitForCondition(
         testConditionIgnoringTransientErrors(
             () -> {
-              bigtableAdmin.getTable(tableId);
+              Futures.getUnchecked(bigtableAdmin.getTableAsync(tableId));
               return true;
             }),
         DEFAULT_BIGTABLE_RETRY_TIMEOUT_MILLIS,
@@ -142,7 +144,8 @@ public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
     waitForCondition(
         testConditionIgnoringTransientErrors(
             () ->
-                bigtableAdmin.getTable(tableId).getColumnFamilies().stream()
+                Futures.getUnchecked(bigtableAdmin.getTableAsync(tableId)).getColumnFamilies()
+                    .stream()
                     .map(ColumnFamily::getId)
                     .collect(Collectors.toSet())
                     .equals(columnFamilies)),

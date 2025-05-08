@@ -145,7 +145,8 @@ public class ResourceAutoCreationIT extends BaseKafkaConnectBigtableIT {
     assertSingleDlqEntry(dlqTopic, KEY1, value, null);
 
     createTablesAndColumnFamilies(Map.of(testId, Set.of()));
-    assertTrue(bigtableAdmin.getTable(testId).getColumnFamilies().isEmpty());
+    assertTrue(
+        Futures.getUnchecked(bigtableAdmin.getTableAsync(testId)).getColumnFamilies().isEmpty());
     connect.kafka().produce(testId, KEY2, value);
     waitUntilBigtableTableHasExactSetOfColumnFamilies(testId, Set.of(testId));
     waitUntilBigtableContainsNumberOfRows(testId, 1);
@@ -219,7 +220,8 @@ public class ResourceAutoCreationIT extends BaseKafkaConnectBigtableIT {
     assertFalse(bigtableAdmin.listTables().contains(testId));
     connect.kafka().produce(testId, KEY1, rowDeletionValue);
     waitUntilBigtableTableExists(testId);
-    assertTrue(bigtableAdmin.getTable(testId).getColumnFamilies().isEmpty());
+    assertTrue(
+        Futures.getUnchecked(bigtableAdmin.getTableAsync(testId)).getColumnFamilies().isEmpty());
 
     assertSingleDlqEntry(dlqTopic, KEY1, null, null);
     assertConnectorAndAllTasksAreRunning(testId);

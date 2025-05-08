@@ -9,8 +9,6 @@ import java.util.List;
 public interface IBigtableTableAdminClient {
 
   List<String> listTables();
-  Table getTable(String id);
-  Table createTable(CreateTableRequest request);
 
   ApiFuture<Table> createTableAsync(CreateTableRequest request);
 
