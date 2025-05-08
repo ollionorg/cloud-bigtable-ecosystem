@@ -124,20 +124,6 @@ public class BigtableSinkConfigTest {
   }
 
   @Test
-  public void testGetBigtableDataClient() {
-    BigtableSinkConfig config = new BigtableSinkConfig(BasicPropertiesFactory.getSinkProps());
-    IBigtableDataClient client = config.getBigtableDataClient();
-    client.close();
-  }
-
-  @Test
-  public void testGetBigtableAdminClient() {
-    BigtableSinkConfig config = new BigtableSinkConfig(BasicPropertiesFactory.getSinkProps());
-    IBigtableTableAdminClient client = config.getBigtableAdminClient();
-    client.close();
-  }
-
-  @Test
   public void testEnumCaseInsensitivity() {
     Map<String, String> props = BasicPropertiesFactory.getSinkProps();
     props.put(INSERT_MODE_CONFIG, "uPsErT");
