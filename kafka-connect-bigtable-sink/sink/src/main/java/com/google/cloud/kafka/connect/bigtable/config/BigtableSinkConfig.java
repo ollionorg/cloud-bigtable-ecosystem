@@ -31,8 +31,8 @@ import com.google.cloud.bigtable.data.v2.stub.EnhancedBigtableStubSettings;
 import com.google.cloud.kafka.connect.bigtable.version.PackageMetadata;
 import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableDataClientWrapper;
 import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientWrapper;
-import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableDataClient;
-import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableTableAdminClient;
+import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableDataClientInterface;
+import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import java.io.ByteArrayInputStream;
@@ -442,10 +442,10 @@ public class BigtableSinkConfig extends AbstractConfig {
   }
 
   /**
-   * @return {@link IBigtableTableAdminClient} connected to a Cloud Bigtable instance configured as
+   * @return {@link BigtableTableAdminClientInterface} connected to a Cloud Bigtable instance configured as
    *     described in {@link BigtableSinkConfig#getDefinition()}.
    */
-  public IBigtableTableAdminClient getBigtableAdminClient() {
+  public BigtableTableAdminClientInterface getBigtableAdminClient() {
     Duration totalTimeout = getTotalRetryTimeout();
     RetrySettings defaultRetrySettings = getRetrySettings(totalTimeout, Duration.ZERO);
     // Retries of Admin API writes need to have a nontrivial initial delay to avoid hitting
@@ -456,7 +456,7 @@ public class BigtableSinkConfig extends AbstractConfig {
   }
 
   @VisibleForTesting
-  IBigtableTableAdminClient getBigtableAdminClient(
+  BigtableTableAdminClientInterface getBigtableAdminClient(
       RetrySettings defaultRetrySettings, RetrySettings adminApiWriteRetrySettings) {
     Optional<CredentialsProvider> credentialsProvider =
         getUserConfiguredBigtableCredentialsProvider();
@@ -509,7 +509,7 @@ public class BigtableSinkConfig extends AbstractConfig {
    * @return {@link BigtableDataClient} connected to Cloud Bigtable instance configured as described
    *     in {@link BigtableSinkConfig#getDefinition()}.
    */
-  public IBigtableDataClient getBigtableDataClient() {
+  public BigtableDataClientInterface getBigtableDataClient() {
     Duration totalTimeout = getTotalRetryTimeout();
     RetrySettings retrySettings = getRetrySettings(totalTimeout, Duration.ZERO);
     Optional<CredentialsProvider> credentialsProvider =
@@ -600,7 +600,7 @@ public class BigtableSinkConfig extends AbstractConfig {
    */
   @VisibleForTesting
   boolean isBigtableConfigurationValid() {
-    IBigtableTableAdminClient bigtable = null;
+    BigtableTableAdminClientInterface bigtable = null;
     try {
       RetrySettings retrySettings =
           getRetrySettings(BIGTABLE_CREDENTIALS_CHECK_TIMEOUT, Duration.ZERO);

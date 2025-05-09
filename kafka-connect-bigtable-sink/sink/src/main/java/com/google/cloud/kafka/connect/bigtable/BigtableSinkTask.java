@@ -36,8 +36,8 @@ import com.google.cloud.kafka.connect.bigtable.mapping.MutationData;
 import com.google.cloud.kafka.connect.bigtable.mapping.MutationDataBuilder;
 import com.google.cloud.kafka.connect.bigtable.mapping.ValueMapper;
 import com.google.cloud.kafka.connect.bigtable.version.PackageMetadata;
-import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableDataClient;
-import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableTableAdminClient;
+import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableDataClientInterface;
+import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
@@ -68,8 +68,8 @@ import org.slf4j.LoggerFactory;
  */
 public class BigtableSinkTask extends SinkTask {
   private BigtableSinkTaskConfig config;
-  private IBigtableDataClient bigtableData;
-  private IBigtableTableAdminClient bigtableAdmin;
+  private BigtableDataClientInterface bigtableData;
+  private BigtableTableAdminClientInterface bigtableAdmin;
   private KeyMapper keyMapper;
   private ValueMapper valueMapper;
   private BigtableSchemaManager schemaManager;
@@ -89,8 +89,8 @@ public class BigtableSinkTask extends SinkTask {
   @VisibleForTesting
   protected BigtableSinkTask(
       BigtableSinkTaskConfig config,
-      IBigtableDataClient bigtableData,
-      IBigtableTableAdminClient bigtableAdmin,
+      BigtableDataClientInterface bigtableData,
+      BigtableTableAdminClientInterface bigtableAdmin,
       KeyMapper keyMapper,
       ValueMapper valueMapper,
       BigtableSchemaManager schemaManager,

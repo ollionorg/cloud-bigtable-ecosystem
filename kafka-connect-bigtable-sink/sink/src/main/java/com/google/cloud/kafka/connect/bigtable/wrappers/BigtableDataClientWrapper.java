@@ -10,7 +10,7 @@ import com.google.cloud.bigtable.data.v2.models.RowMutation;
 import com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
 import javax.annotation.Nonnull;
 
-public class BigtableDataClientWrapper implements IBigtableDataClient {
+public class BigtableDataClientWrapper implements BigtableDataClientInterface {
 
   private final BigtableDataClient dataClient;
 

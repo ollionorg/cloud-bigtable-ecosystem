@@ -36,7 +36,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.cloud.kafka.connect.bigtable.util.BasicPropertiesFactory;
-import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableTableAdminClient;
+import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +138,7 @@ public class BigtableSinkConfigTest {
   public void testIsBigtableConfigurationValidBasicSuccess() {
     Map<String, String> props = BasicPropertiesFactory.getSinkProps();
     BigtableSinkConfig config = spy(new BigtableSinkConfig(props));
-    IBigtableTableAdminClient bigtable = mock(IBigtableTableAdminClient.class);
+    BigtableTableAdminClientInterface bigtable = mock(BigtableTableAdminClientInterface.class);
     doReturn(emptyList()).when(bigtable).listTables();
     doReturn(bigtable).when(config).getBigtableAdminClient(any(), any());
     assertTrue(config.isBigtableConfigurationValid());
@@ -157,7 +157,7 @@ public class BigtableSinkConfigTest {
   public void testIsBigtableConfigurationValidOperationError() {
     Map<String, String> props = BasicPropertiesFactory.getSinkProps();
     BigtableSinkConfig config = spy(new BigtableSinkConfig(props));
-    IBigtableTableAdminClient bigtable = mock(IBigtableTableAdminClient.class);
+    BigtableTableAdminClientInterface bigtable = mock(BigtableTableAdminClientInterface.class);
     doThrow(new RuntimeException()).when(bigtable).listTables();
     doReturn(bigtable).when(config).getBigtableAdminClient(any(), any());
     assertFalse(config.isBigtableConfigurationValid());

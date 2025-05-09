@@ -9,7 +9,11 @@ import com.google.cloud.bigtable.data.v2.models.RowMutation;
 import com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
 import javax.annotation.Nonnull;
 
-public interface IBigtableDataClient {
+/**
+ * This is an interface for com.google.cloud.bigtable.data.v2.BigtableDataClient which makes mocking
+ * easier.
+ */
+public interface BigtableDataClientInterface {
 
   Boolean checkAndMutateRow(ConditionalRowMutation mutation);
 

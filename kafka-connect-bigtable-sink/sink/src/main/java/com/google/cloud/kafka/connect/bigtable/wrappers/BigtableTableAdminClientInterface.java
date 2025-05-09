@@ -6,7 +6,12 @@ import com.google.cloud.bigtable.admin.v2.models.ModifyColumnFamiliesRequest;
 import com.google.cloud.bigtable.admin.v2.models.Table;
 import java.util.List;
 
-public interface IBigtableTableAdminClient {
+
+/**
+ * This is an interface for com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient which makes
+ * mocking easier.
+ */
+public interface BigtableTableAdminClientInterface {
 
   List<String> listTables();
 

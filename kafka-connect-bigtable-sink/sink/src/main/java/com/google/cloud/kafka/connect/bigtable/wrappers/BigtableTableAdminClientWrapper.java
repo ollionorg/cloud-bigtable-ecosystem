@@ -7,7 +7,7 @@ import com.google.cloud.bigtable.admin.v2.models.ModifyColumnFamiliesRequest;
 import com.google.cloud.bigtable.admin.v2.models.Table;
 import java.util.List;
 
-public class BigtableTableAdminClientWrapper implements IBigtableTableAdminClient {
+public class BigtableTableAdminClientWrapper implements BigtableTableAdminClientInterface {
 
   private final BigtableTableAdminClient tableAdminClient;
 
