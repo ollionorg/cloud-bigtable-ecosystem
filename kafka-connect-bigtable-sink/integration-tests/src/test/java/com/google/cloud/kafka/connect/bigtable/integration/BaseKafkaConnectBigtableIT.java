@@ -19,15 +19,13 @@ import static org.apache.kafka.test.TestUtils.waitForCondition;
 
 import com.google.api.gax.rpc.FailedPreconditionException;
 import com.google.api.gax.rpc.NotFoundException;
-import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.models.ColumnFamily;
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest;
 import com.google.cloud.bigtable.admin.v2.models.Table;
-import com.google.cloud.bigtable.data.v2.BigtableDataClient;
 import com.google.cloud.bigtable.data.v2.models.Query;
 import com.google.cloud.bigtable.data.v2.models.Row;
-import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableDataClient;
-import com.google.cloud.kafka.connect.bigtable.wrappers.IBigtableTableAdminClient;
+import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableDataClientInterface;
+import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
 import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.ByteString;
 import java.util.List;
@@ -50,8 +48,8 @@ public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
 
   private final Logger logger = LoggerFactory.getLogger(BaseKafkaConnectBigtableIT.class);
 
-  public IBigtableDataClient bigtableData;
-  public IBigtableTableAdminClient bigtableAdmin;
+  public BigtableDataClientInterface bigtableData;
+  public BigtableTableAdminClientInterface bigtableAdmin;
 
   @Before
   public void setUpBigtable() {
@@ -91,7 +89,7 @@ public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
     }
   }
 
-  public Map<ByteString, Row> readAllRows(IBigtableDataClient bigtable, String table) {
+  public Map<ByteString, Row> readAllRows(BigtableDataClientInterface bigtable, String table) {
     Integer numRecords = null;
     try {
       Query query = Query.create(table);
