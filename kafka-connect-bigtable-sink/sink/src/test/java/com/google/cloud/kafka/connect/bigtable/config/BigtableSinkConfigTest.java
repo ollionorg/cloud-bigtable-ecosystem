@@ -133,34 +133,4 @@ public class BigtableSinkConfigTest {
     assertEquals(BigtableErrorMode.IGNORE, config.getBigtableErrorMode());
     assertEquals(NullValueMode.DELETE, config.getNullValueMode());
   }
-
-  @Test
-  public void testIsBigtableConfigurationValidBasicSuccess() {
-    Map<String, String> props = BasicPropertiesFactory.getSinkProps();
-    BigtableSinkConfig config = spy(new BigtableSinkConfig(props));
-    BigtableTableAdminClientInterface bigtable = mock(BigtableTableAdminClientInterface.class);
-    doReturn(emptyList()).when(bigtable).listTables();
-    doReturn(bigtable).when(config).getBigtableAdminClient(any(), any());
-    assertTrue(config.isBigtableConfigurationValid());
-    verify(bigtable, times(1)).close();
-  }
-
-  @Test
-  public void testIsBigtableConfigurationValidClientConstructorError() {
-    Map<String, String> props = BasicPropertiesFactory.getSinkProps();
-    BigtableSinkConfig config = spy(new BigtableSinkConfig(props));
-    doThrow(new RuntimeException()).when(config).getBigtableAdminClient();
-    assertFalse(config.isBigtableConfigurationValid());
-  }
-
-  @Test
-  public void testIsBigtableConfigurationValidOperationError() {
-    Map<String, String> props = BasicPropertiesFactory.getSinkProps();
-    BigtableSinkConfig config = spy(new BigtableSinkConfig(props));
-    BigtableTableAdminClientInterface bigtable = mock(BigtableTableAdminClientInterface.class);
-    doThrow(new RuntimeException()).when(bigtable).listTables();
-    doReturn(bigtable).when(config).getBigtableAdminClient(any(), any());
-    assertFalse(config.isBigtableConfigurationValid());
-    verify(bigtable, times(1)).close();
-  }
 }

@@ -448,7 +448,7 @@ public class BigtableSinkTaskTest {
     doReturn(ByteString.copyFrom("ignored".getBytes(StandardCharsets.UTF_8)))
         .when(commonMutationData)
         .getRowKey();
-    doReturn(mock(Mutation.class)).when(commonMutationData).getInsertMutation();
+    doReturn(Mutation.create()).when(commonMutationData).getInsertMutation();
 
     // LinkedHashMap, because we mock consecutive return values of Bigtable client mock and thus
     // rely on the order.
