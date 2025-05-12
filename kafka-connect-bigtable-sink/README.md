@@ -154,6 +154,14 @@ For example the list: `username, post_id, time_stamp` when applied to a Kafka ke
 * Valid Values: 
 * Importance: medium
 
+`row.key.delimiter`
+
+The delimiter used in concatenating Kafka key fields in the row key. If this configuration is empty or unspecified, the key fields will be concatenated together directly.
+
+* Type: string
+* Default: ""
+* Valid Values:
+* Importance: low
 
 `table.name.format`
 
@@ -178,17 +186,6 @@ Defines what to do with `null`s within Kafka values. Supported modes are:
 * Default: WRITE
 * Valid Values: (case insensitive) [DELETE, IGNORE, WRITE]
 * Importance: medium
-
-
-`row.key.delimiter`
-
-The delimiter used in concatenating Kafka key fields in the row key. If this configuration is empty or unspecified, the key fields will be concatenated together directly.
-
-* Type: string
-* Default: ""
-* Valid Values: 
-* Importance: low
-
 
 ### Error Handling
 
