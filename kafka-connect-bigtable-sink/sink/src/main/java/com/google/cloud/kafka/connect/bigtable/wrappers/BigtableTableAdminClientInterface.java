@@ -17,6 +17,7 @@ public interface BigtableTableAdminClientInterface {
 
   ApiFuture<Table> createTableAsync(CreateTableRequest request);
 
+  Table getTable(String tableId);
   ApiFuture<Table> getTableAsync(String tableId);
 
   ApiFuture<Table> modifyFamiliesAsync(ModifyColumnFamiliesRequest request);

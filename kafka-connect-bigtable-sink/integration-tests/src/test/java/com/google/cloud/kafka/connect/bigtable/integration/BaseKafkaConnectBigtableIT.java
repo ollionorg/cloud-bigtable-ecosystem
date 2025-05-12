@@ -130,7 +130,7 @@ public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
     waitForCondition(
         testConditionIgnoringTransientErrors(
             () -> {
-              Futures.getUnchecked(bigtableAdmin.getTableAsync(tableId));
+              bigtableAdmin.getTable(tableId);
               return true;
             }),
         DEFAULT_BIGTABLE_RETRY_TIMEOUT_MILLIS,
@@ -142,7 +142,7 @@ public abstract class BaseKafkaConnectBigtableIT extends BaseKafkaConnectIT {
     waitForCondition(
         testConditionIgnoringTransientErrors(
             () ->
-                Futures.getUnchecked(bigtableAdmin.getTableAsync(tableId)).getColumnFamilies()
+                bigtableAdmin.getTable(tableId).getColumnFamilies()
                     .stream()
                     .map(ColumnFamily::getId)
                     .collect(Collectors.toSet())

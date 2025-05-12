@@ -26,6 +26,11 @@ public class BigtableTableAdminClientWrapper implements BigtableTableAdminClient
   }
 
   @Override
+  public Table getTable(String tableId) {
+    return tableAdminClient.getTable(tableId);
+  }
+
+  @Override
   public ApiFuture<Table> getTableAsync(String tableId) {
     return tableAdminClient.getTableAsync(tableId);
   }

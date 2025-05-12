@@ -21,16 +21,17 @@ import static org.junit.Assert.assertTrue;
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest;
 import com.google.cloud.kafka.connect.bigtable.config.BigtableSinkConfig;
 import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
-import com.google.common.util.concurrent.Futures;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class BigtableClientIT extends BaseIT {
+
   @Test
-  public void testClient() {
+  public void testClient() throws ExecutionException, InterruptedException {
     Map<String, String> props = baseConnectorProps();
     BigtableSinkConfig config = new BigtableSinkConfig(props);
 
@@ -40,7 +41,7 @@ public class BigtableClientIT extends BaseIT {
 
     CreateTableRequest createTableRequest = CreateTableRequest.of(tableId).addFamily(columnFamily);
     assertFalse(admin.listTables().contains(tableId));
-    Futures.getUnchecked(admin.createTableAsync(createTableRequest));
+    admin.createTableAsync(createTableRequest).get();
     assertTrue(admin.listTables().contains(tableId));
   }
 }
