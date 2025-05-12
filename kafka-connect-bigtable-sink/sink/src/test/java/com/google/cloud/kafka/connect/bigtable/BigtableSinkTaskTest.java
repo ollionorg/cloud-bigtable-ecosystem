@@ -46,6 +46,7 @@ import static org.mockito.MockitoAnnotations.openMocks;
 import com.google.api.gax.batching.Batcher;
 import com.google.api.gax.rpc.ApiException;
 import com.google.bigtable.admin.v2.Table;
+import com.google.cloud.bigtable.data.v2.BigtableDataClient;
 import com.google.cloud.bigtable.data.v2.models.Mutation;
 import com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
 import com.google.cloud.kafka.connect.bigtable.autocreate.BigtableSchemaManager;
@@ -63,7 +64,6 @@ import com.google.cloud.kafka.connect.bigtable.mapping.ValueMapper;
 import com.google.cloud.kafka.connect.bigtable.util.ApiExceptionFactory;
 import com.google.cloud.kafka.connect.bigtable.util.BasicPropertiesFactory;
 import com.google.cloud.kafka.connect.bigtable.util.FutureUtil;
-import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableDataClientInterface;
 import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
 import com.google.common.collect.Collections2;
 import com.google.protobuf.ByteString;
@@ -100,7 +100,7 @@ public class BigtableSinkTaskTest {
   TestBigtableSinkTask task;
   BigtableSinkTaskConfig config;
   @Mock
-  BigtableDataClientInterface bigtableData;
+  BigtableDataClient bigtableData;
   @Mock
   BigtableTableAdminClientInterface bigtableAdmin;
   @Mock KeyMapper keyMapper;
@@ -136,7 +136,7 @@ public class BigtableSinkTaskTest {
       int expectedDataCloseCallCount = dataIsNotNull ? 1 : 0;
 
       BigtableTableAdminClientInterface maybeAdmin = adminIsNotNull ? bigtableAdmin : null;
-      BigtableDataClientInterface maybeData = dataIsNotNull ? bigtableData : null;
+      BigtableDataClient maybeData = dataIsNotNull ? bigtableData : null;
       task = new TestBigtableSinkTask(null, maybeData, maybeAdmin, null, null, null, null);
       Batcher<RowMutationEntry, Void> batcher = mock(Batcher.class);
       doReturn(completedApiFuture(null)).when(batcher).closeAsync();
@@ -626,7 +626,7 @@ public class BigtableSinkTaskTest {
   private static class TestBigtableSinkTask extends BigtableSinkTask {
     public TestBigtableSinkTask(
         BigtableSinkTaskConfig config,
-        BigtableDataClientInterface bigtableData,
+        BigtableDataClient bigtableData,
         BigtableTableAdminClientInterface bigtableAdmin,
         KeyMapper keyMapper,
         ValueMapper valueMapper,

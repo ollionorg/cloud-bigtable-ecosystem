@@ -29,9 +29,7 @@ import com.google.cloud.bigtable.data.v2.BigtableDataClient;
 import com.google.cloud.bigtable.data.v2.BigtableDataSettings;
 import com.google.cloud.bigtable.data.v2.stub.EnhancedBigtableStubSettings;
 import com.google.cloud.kafka.connect.bigtable.version.PackageMetadata;
-import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableDataClientWrapper;
 import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientWrapper;
-import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableDataClientInterface;
 import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -509,7 +507,7 @@ public class BigtableSinkConfig extends AbstractConfig {
    * @return {@link BigtableDataClient} connected to Cloud Bigtable instance configured as described
    *     in {@link BigtableSinkConfig#getDefinition()}.
    */
-  public BigtableDataClientInterface getBigtableDataClient() {
+  public BigtableDataClient getBigtableDataClient() {
     Duration totalTimeout = getTotalRetryTimeout();
     RetrySettings retrySettings = getRetrySettings(totalTimeout, Duration.ZERO);
     Optional<CredentialsProvider> credentialsProvider =
@@ -586,7 +584,7 @@ public class BigtableSinkConfig extends AbstractConfig {
                   transientErrorsAfterSchemaModification));
     }
     try {
-      return new BigtableDataClientWrapper(BigtableDataClient.create(dataSettingsBuilder.build()));
+      return BigtableDataClient.create(dataSettingsBuilder.build());
     } catch (IOException e) {
       throw new RetriableException(e);
     }

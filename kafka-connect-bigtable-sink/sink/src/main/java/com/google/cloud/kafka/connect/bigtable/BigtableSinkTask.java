@@ -19,6 +19,7 @@ import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.batching.Batcher;
 import com.google.api.gax.rpc.ApiException;
+import com.google.cloud.bigtable.data.v2.BigtableDataClient;
 import com.google.cloud.bigtable.data.v2.models.ConditionalRowMutation;
 import com.google.cloud.bigtable.data.v2.models.Filters;
 import com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
@@ -36,7 +37,6 @@ import com.google.cloud.kafka.connect.bigtable.mapping.MutationData;
 import com.google.cloud.kafka.connect.bigtable.mapping.MutationDataBuilder;
 import com.google.cloud.kafka.connect.bigtable.mapping.ValueMapper;
 import com.google.cloud.kafka.connect.bigtable.version.PackageMetadata;
-import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableDataClientInterface;
 import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  */
 public class BigtableSinkTask extends SinkTask {
   private BigtableSinkTaskConfig config;
-  private BigtableDataClientInterface bigtableData;
+  private BigtableDataClient bigtableData;
   private BigtableTableAdminClientInterface bigtableAdmin;
   private KeyMapper keyMapper;
   private ValueMapper valueMapper;
@@ -89,7 +89,7 @@ public class BigtableSinkTask extends SinkTask {
   @VisibleForTesting
   protected BigtableSinkTask(
       BigtableSinkTaskConfig config,
-      BigtableDataClientInterface bigtableData,
+      BigtableDataClient bigtableData,
       BigtableTableAdminClientInterface bigtableAdmin,
       KeyMapper keyMapper,
       ValueMapper valueMapper,
