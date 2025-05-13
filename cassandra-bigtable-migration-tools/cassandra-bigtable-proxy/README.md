@@ -488,7 +488,7 @@ All list types follow the same storage pattern:
 
 ## Non-supported data types and limitations
 
-The proxy currently doesn't support the following data types: US-ASCII, blob, counter, date, decimal, duration, inet, smallint, time, timeuuid, tinyint, uuid, varchar, and var int.
+The proxy currently doesn't support the following data types: US-ASCII, blob, counter, date, decimal, duration, inet, smallint, time, timeuuid, tinyint, uuid, varchar, varint, frozen and user-defined types (UDT).
 
 ### Limitations with collection types
 
