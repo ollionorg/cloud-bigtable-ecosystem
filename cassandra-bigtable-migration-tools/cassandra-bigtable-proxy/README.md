@@ -486,11 +486,11 @@ Detailed document - [Limitations](/docs/limitations.md)
 All list types follow the same storage pattern:  
 **Col name as col family, current timestamp (with nanosecond precision) as column qualifier, list items as column value.**
 
-### Non-supported data types and limitations
+## Non-supported data types and limitations
 
 The proxy currently doesn't support the following data types: US-ASCII, blob, counter, date, decimal, duration, inet, smallint, time, timeuuid, tinyint, uuid, varchar, and var int.
 
-#### Limitations with collections
+### Limitations with collection types
 
 While we support complex data types such as lists, sets, and maps, our current implementation has limitations regarding complex update operations on these data types. Specifically, we do not support:
 
