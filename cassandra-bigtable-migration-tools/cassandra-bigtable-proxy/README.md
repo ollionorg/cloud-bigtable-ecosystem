@@ -486,9 +486,11 @@ Detailed document - [Limitations](/docs/limitations.md)
 All list types follow the same storage pattern:  
 **Col name as col family, current timestamp (with nanosecond precision) as column qualifier, list items as column value.**
 
-## Non-supported data types and limitations
+## Limitations
 
-The proxy currently doesn't support the following data types: US-ASCII, blob, counter, date, decimal, duration, inet, smallint, time, timeuuid, tinyint, uuid, varchar, varint, frozen and user-defined types (UDT).
+### Non-supported data types
+
+The proxy currently doesn't support the following data types: US-ASCII, blob, counter, date, decimal, duration, inet, smallint, time, timeuuid, tinyint, uuid, varint, frozen and user-defined types (UDT).
 
 ### Limitations with collection types
 
@@ -510,6 +512,8 @@ WHERE id = some_uuid;
 ```
 
 These limitations should be considered when designing and implementing operations involving complex data types in our system.
+
+Review detailed limitations [here](/docs/limitations.md).
 
 
 ## Run a `cassandra-to-bigtable-proxy` via systemd.

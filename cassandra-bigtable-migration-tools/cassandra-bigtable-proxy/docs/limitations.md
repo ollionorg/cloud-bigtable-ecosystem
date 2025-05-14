@@ -22,6 +22,29 @@ The Cassandra to Bigtable Proxy is intended to help you in migrating and integra
 All list types follow the same storage pattern:  
 **Col name as col family, current timestamp (with nanosecond precision) as column qualifier, list items as column value.**
 
+### Non-supported data types
+
+The proxy currently doesn't support the following data types: US-ASCII, blob, counter, date, decimal, duration, inet, smallint, time, timeuuid, tinyint, uuid, varint, frozen and user-defined types (UDT).
+
+### Limitations with collection types
+
+While we support complex data types such as lists, sets, and maps, our current implementation has limitations regarding complex update operations on these data types. Specifically, we do not support:
+
+- Updating or adding new keys to a map. 
+- Modifying existing keys in a map.
+```  
+UPDATE example_map 
+SET data_map['new_key'] = 10 
+WHERE id = some_uuid;
+```
+- Adding new values to a set.
+
+```
+UPDATE example_set 
+SET data_set = data_set + {'new_value'}
+WHERE id = some_uuid;
+```
+
 ## 2. Supported Functions
   We are only supporting these functions as of now.
 
