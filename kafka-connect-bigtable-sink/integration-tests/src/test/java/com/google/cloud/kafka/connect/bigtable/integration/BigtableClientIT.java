@@ -22,7 +22,6 @@ import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest;
 import com.google.cloud.kafka.connect.bigtable.config.BigtableSinkConfig;
 import com.google.cloud.kafka.connect.bigtable.wrappers.BigtableTableAdminClientInterface;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -31,7 +30,7 @@ import org.junit.runners.JUnit4;
 public class BigtableClientIT extends BaseIT {
 
   @Test
-  public void testClient() throws ExecutionException, InterruptedException {
+  public void testClient() {
     Map<String, String> props = baseConnectorProps();
     BigtableSinkConfig config = new BigtableSinkConfig(props);
 
@@ -41,7 +40,7 @@ public class BigtableClientIT extends BaseIT {
 
     CreateTableRequest createTableRequest = CreateTableRequest.of(tableId).addFamily(columnFamily);
     assertFalse(admin.listTables().contains(tableId));
-    admin.createTableAsync(createTableRequest).get();
+    admin.createTable(createTableRequest);
     assertTrue(admin.listTables().contains(tableId));
   }
 }

@@ -26,6 +26,11 @@ public class BigtableTableAdminClientWrapper implements BigtableTableAdminClient
   }
 
   @Override
+  public Table createTable(CreateTableRequest request) {
+    return tableAdminClient.createTable(request);
+  }
+
+  @Override
   public Table getTable(String tableId) {
     return tableAdminClient.getTable(tableId);
   }
