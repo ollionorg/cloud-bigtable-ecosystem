@@ -21,6 +21,7 @@ public interface BigtableTableAdminClientInterface {
   ApiFuture<Table> getTableAsync(String tableId);
 
   ApiFuture<Table> modifyFamiliesAsync(ModifyColumnFamiliesRequest request);
+  Table modifyFamilies(ModifyColumnFamiliesRequest request);
 
   void close();
 

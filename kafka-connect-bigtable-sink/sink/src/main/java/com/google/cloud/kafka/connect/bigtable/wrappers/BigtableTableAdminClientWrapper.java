@@ -41,6 +41,11 @@ public class BigtableTableAdminClientWrapper implements BigtableTableAdminClient
   }
 
   @Override
+  public Table modifyFamilies(ModifyColumnFamiliesRequest request) {
+    return tableAdminClient.modifyFamilies(request);
+  }
+
+  @Override
   public void close() {
     tableAdminClient.close();
   }
