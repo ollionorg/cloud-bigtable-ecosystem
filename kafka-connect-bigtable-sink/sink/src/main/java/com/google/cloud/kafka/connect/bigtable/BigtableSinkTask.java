@@ -208,6 +208,7 @@ public class BigtableSinkTask extends SinkTask {
           logger.debug("Skipped a record that maps to an empty value.");
         }
       } catch (Throwable t) {
+        logger.error("prepareRecords error");
         reportError(record, t);
       }
     }
@@ -350,10 +351,12 @@ public class BigtableSinkTask extends SinkTask {
     ResourceCreationResult resourceCreationResult = schemaManager.ensureTablesExist(okMutations);
     String errorMessage = "Table auto-creation failed.";
     for (SinkRecord record : resourceCreationResult.getBigtableErrors()) {
+      logger.error("autoCreateTablesAndHandleErrors1 error");
       reportError(record, new ConnectException(errorMessage));
       okMutations.remove(record);
     }
     for (SinkRecord record : resourceCreationResult.getDataErrors()) {
+      logger.error("autoCreateTablesAndHandleErrors2 error");
       reportError(record, new InvalidBigtableSchemaModificationException(errorMessage));
       okMutations.remove(record);
     }
@@ -376,10 +379,12 @@ public class BigtableSinkTask extends SinkTask {
         schemaManager.ensureColumnFamiliesExist(okMutations);
     String errorMessage = "Column family auto-creation failed.";
     for (SinkRecord record : resourceCreationResult.getBigtableErrors()) {
+      logger.error("autoCreateColumnFamiliesAndHandleErrors1 error");
       reportError(record, new ConnectException(errorMessage));
       okMutations.remove(record);
     }
     for (SinkRecord record : resourceCreationResult.getDataErrors()) {
+      logger.error("autoCreateColumnFamiliesAndHandleErrors2 error");
       reportError(record, new InvalidBigtableSchemaModificationException(errorMessage));
       okMutations.remove(record);
     }
@@ -498,6 +503,7 @@ public class BigtableSinkTask extends SinkTask {
         recordResult.getValue().get();
       } catch (ExecutionException | InterruptedException e) {
         SinkRecord record = recordResult.getKey();
+        logger.error("handleResults error");
         reportError(record, e);
       }
     }

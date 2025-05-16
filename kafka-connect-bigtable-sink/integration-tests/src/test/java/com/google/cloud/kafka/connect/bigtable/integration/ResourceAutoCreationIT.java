@@ -62,7 +62,8 @@ public class ResourceAutoCreationIT extends BaseKafkaConnectBigtableIT {
   private static final String COLUMN_QUALIFIER = "cq";
 
   @Test
-  public void testDisabledResourceAutoCreation() throws InterruptedException, ExecutionException {
+  public void testDisabledResourceAutoCreation()
+      throws InterruptedException, ExecutionException, TimeoutException {
     String dlqTopic = createDlq();
     Map<String, String> props = baseConnectorProps();
     configureDlq(props, dlqTopic);
@@ -98,6 +99,7 @@ public class ResourceAutoCreationIT extends BaseKafkaConnectBigtableIT {
     // With the table and column family created.
     createTablesAndColumnFamilies(Map.of(testId, Set.of(COLUMN_FAMILY1)));
     connect.kafka().produce(testId, KEY2, serializedValue1);
+    assertDlqSize(dlqTopic, 1);
     waitUntilBigtableContainsNumberOfRows(testId, 1);
     assertTrue(
         readAllRows(bigtableData, testId)
