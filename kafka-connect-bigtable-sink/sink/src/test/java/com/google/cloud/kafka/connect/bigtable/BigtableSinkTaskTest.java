@@ -104,7 +104,7 @@ public class BigtableSinkTaskTest {
   BigtableDataClient bigtableData;
   @Mock
   BigtableTableAdminClientInterface bigtableAdmin;
-  @Mockg
+  @Mock
   KeyMapper keyMapper;
   @Mock
   ValueMapper valueMapper;
