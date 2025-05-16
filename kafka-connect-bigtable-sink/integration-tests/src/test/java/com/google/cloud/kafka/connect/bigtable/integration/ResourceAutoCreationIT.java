@@ -95,7 +95,8 @@ public class ResourceAutoCreationIT extends BaseKafkaConnectBigtableIT {
     connect.kafka().produce(testId, KEY1, serializedValue1);
     assertSingleDlqEntry(dlqTopic, KEY1, null, null);
     assertConnectorAndAllTasksAreRunning(testId);
-
+    // wait for the missing table cache to clear...
+    Thread.sleep(15 * 1000);
     // With the table and column family created.
     createTablesAndColumnFamilies(Map.of(testId, Set.of(COLUMN_FAMILY1)));
     connect.kafka().produce(testId, KEY2, serializedValue1);
