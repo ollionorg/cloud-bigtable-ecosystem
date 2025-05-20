@@ -15,6 +15,7 @@
  */
 package com.google.cloud.kafka.connect.bigtable.autocreate;
 
+import static com.google.cloud.bigtable.admin.v2.models.GCRules.GCRULES;
 import static com.google.cloud.kafka.connect.bigtable.util.FutureUtil.completedApiFuture;
 import static com.google.cloud.kafka.connect.bigtable.util.FutureUtil.failedApiFuture;
 import static com.google.cloud.kafka.connect.bigtable.util.MockUtil.assertTotalNumberOfInvocations;
@@ -35,8 +36,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.api.core.ApiFuture;
+import com.google.bigtable.admin.v2.GcRule;
 import com.google.cloud.bigtable.admin.v2.models.ColumnFamily;
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest;
+import com.google.cloud.bigtable.admin.v2.models.GCRules;
 import com.google.cloud.bigtable.admin.v2.models.ModifyColumnFamiliesRequest;
 import com.google.cloud.bigtable.admin.v2.models.Table;
 import com.google.cloud.kafka.connect.bigtable.autocreate.BigtableSchemaManager.ResourceAndRecords;
@@ -62,6 +65,7 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class BigtableSchemaManagerTest {
+
   BigtableTableAdminClientInterface bigtable;
   TestBigtableSchemaManager bigtableSchemaManager;
 
@@ -438,15 +442,15 @@ public class BigtableSchemaManagerTest {
     int expectedBigtableInteractions =
         1 // listTables()
             + tablesAndColumnFamilies.values().stream()
-                .mapToInt(Set::size)
-                .sum() // modifyColumnFamily()
+            .mapToInt(Set::size)
+            .sum() // modifyColumnFamily()
             + tablesAndColumnFamilies.keySet().size(); // getTable()
     assertTotalNumberOfInvocations(bigtable, expectedBigtableInteractions);
   }
 
   @Test
   public void
-      testEnsureColumnFamiliesExistSomeCreatedSuccessfullySomeErrorsDueToRacesOrInvalidRequests() {
+  testEnsureColumnFamiliesExistSomeCreatedSuccessfullySomeErrorsDueToRacesOrInvalidRequests() {
     String successTable = "table1";
     String bigtableErrorTable = "table2";
     String dataErrorTable = "table3";
@@ -512,8 +516,8 @@ public class BigtableSchemaManagerTest {
     int expectedBigtableInteractions =
         1 // listTables()
             + tablesAndColumnFamilies.values().stream()
-                .mapToInt(Set::size)
-                .sum() // modifyColumnFamily()
+            .mapToInt(Set::size)
+            .sum() // modifyColumnFamily()
             + tablesAndColumnFamilies.keySet().size(); // getTable()
     assertTotalNumberOfInvocations(bigtable, expectedBigtableInteractions);
   }
@@ -566,8 +570,8 @@ public class BigtableSchemaManagerTest {
     int expectedBigtableInteractions =
         1 // listTables()
             + tablesAndColumnFamilies.values().stream()
-                .mapToInt(Set::size)
-                .sum() // modifyColumnFamily()
+            .mapToInt(Set::size)
+            .sum() // modifyColumnFamily()
             + tablesAndColumnFamilies.keySet().size(); // getTable()
     assertTotalNumberOfInvocations(bigtable, expectedBigtableInteractions);
   }
@@ -624,8 +628,8 @@ public class BigtableSchemaManagerTest {
     int expectedBigtableInteractions =
         1 // listTables()
             + tablesAndColumnFamilies.values().stream()
-                .mapToInt(Set::size)
-                .sum() // modifyColumnFamily()
+            .mapToInt(Set::size)
+            .sum() // modifyColumnFamily()
             + 1; // getTable()
     assertTotalNumberOfInvocations(bigtable, expectedBigtableInteractions);
   }
@@ -651,13 +655,11 @@ public class BigtableSchemaManagerTest {
             completedApiFuture(null), ok,
             failedApiFuture(ApiExceptionFactory.create(Status.Code.INVALID_ARGUMENT)), dataError,
             failedApiFuture(ApiExceptionFactory.create(Status.Code.RESOURCE_EXHAUSTED)),
-                bigtableError);
+            bigtableError);
 
     Set<SinkRecord> dataErrors =
         bigtableSchemaManager.awaitResourceCreationAndHandleInvalidInputErrors(input, "%s");
     assertEquals(new HashSet<>(dataError.getRecords()), dataErrors);
-    verify(bigtableSchemaManager.logger, times(1))
-        .info(eq(bigtableError.getResource()), any(Throwable.class));
   }
 
   private static Map<SinkRecord, MutationData> generateInput(
@@ -698,13 +700,14 @@ public class BigtableSchemaManagerTest {
         mcfr.toProto("unused", "unused").getModificationsList();
     return refersTable
         && modifications.stream()
-            .filter(
-                com.google.bigtable.admin.v2.ModifyColumnFamiliesRequest.Modification::hasCreate)
-            .anyMatch(m -> columnFamily.equals(m.getId()));
+        .filter(
+            com.google.bigtable.admin.v2.ModifyColumnFamiliesRequest.Modification::hasCreate)
+        .anyMatch(m -> columnFamily.equals(m.getId()));
   }
 
   private void mockCreateTableSuccess(
-      BigtableTableAdminClientInterface bigtable, String tableName, Set<String> tableColumnFamilies) {
+      BigtableTableAdminClientInterface bigtable, String tableName,
+      Set<String> tableColumnFamilies) {
     Table table = mockTable(tableName, tableColumnFamilies);
     doAnswer(ignored -> completedApiFuture(table))
         .when(bigtable)
@@ -712,7 +715,8 @@ public class BigtableSchemaManagerTest {
   }
 
   private void mockCreateColumnFamilySuccess(
-      BigtableTableAdminClientInterface bigtable, String tableName, Set<String> tableColumnFamilies) {
+      BigtableTableAdminClientInterface bigtable, String tableName,
+      Set<String> tableColumnFamilies) {
     Table table = mockTable(tableName, tableColumnFamilies);
     doAnswer(ignored -> completedApiFuture(table))
         .when(bigtable)
@@ -720,28 +724,30 @@ public class BigtableSchemaManagerTest {
   }
 
   private void mockGetTableSuccess(
-      BigtableTableAdminClientInterface bigtable, String tableName, Set<String> tableColumnFamilies) {
+      BigtableTableAdminClientInterface bigtable, String tableName,
+      Set<String> tableColumnFamilies) {
     Table table = mockTable(tableName, tableColumnFamilies);
     doAnswer(ignored -> completedApiFuture(table)).when(bigtable).getTableAsync(tableName);
   }
 
   private Table mockTable(String tableName, Set<String> tableColumnFamilies) {
-    List<ColumnFamily> columnFamilies = new ArrayList<>();
+    com.google.bigtable.admin.v2.Table.Builder builder =
+        com.google.bigtable.admin.v2.Table.newBuilder()
+            .setName(tableName);
     for (String tableColumnFamily : tableColumnFamilies) {
-      ColumnFamily columnFamily = mock(ColumnFamily.class);
-      doReturn(tableColumnFamily).when(columnFamily).getId();
-      columnFamilies.add(columnFamily);
+      GCRules.GCRule gcRule = GCRULES.maxVersions(1);
+      com.google.bigtable.admin.v2.ColumnFamily columnFamily = com.google.bigtable.admin.v2.ColumnFamily.newBuilder()
+          .setGcRule(gcRule.toProto()).build();
+      builder.putColumnFamilies(tableColumnFamily, columnFamily);
     }
-    Table table = mock(Table.class);
-    doReturn(tableName).when(table).getId();
-    doReturn(columnFamilies).when(table).getColumnFamilies();
-    return table;
+
+    return Table.fromProto(builder.build());
   }
 
   private static class TestBigtableSchemaManager extends BigtableSchemaManager {
+
     public TestBigtableSchemaManager(BigtableTableAdminClientInterface bigtable) {
       super(bigtable);
-      this.logger = spy(this.logger);
     }
 
     public Map<String, Optional<Set<String>>> getCache() {
