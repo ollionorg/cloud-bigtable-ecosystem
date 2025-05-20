@@ -733,7 +733,7 @@ public class BigtableSchemaManagerTest {
   private Table mockTable(String tableName, Set<String> tableColumnFamilies) {
     com.google.bigtable.admin.v2.Table.Builder builder =
         com.google.bigtable.admin.v2.Table.newBuilder()
-            .setName(tableName);
+            .setName("projects/unused/instances/unused/tables/"+tableName);
     for (String tableColumnFamily : tableColumnFamilies) {
       GCRules.GCRule gcRule = GCRULES.maxVersions(1);
       com.google.bigtable.admin.v2.ColumnFamily columnFamily = com.google.bigtable.admin.v2.ColumnFamily.newBuilder()
