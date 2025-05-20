@@ -474,29 +474,19 @@ public class KeyMapperTest {
     final String fieldNameIntegerMap = "IntegerMap";
     final String fieldNameStringMap = "StringMap";
     final Map<Integer, Boolean> integerMap = new HashMap<>();
-    final Map<String, Boolean> stringMap = new HashMap<>();
+    integerMap.put(1, true);
+    integerMap.put(2, true);
+    integerMap.put(3, true);
+    integerMap.put(4, false);
+    integerMap.put(5, true);
 
-    for (int n = 2; n <= 10; n++) {
-      boolean isPrime = true;
-      for (int d : integerMap.keySet()) {
-        if (n % d == 0) {
-          isPrime = false;
-          break;
-        }
-      }
-      integerMap.put(n, isPrime);
-    }
-    for (int n = 2; n <= 10; n++) {
-      boolean isPrime = true;
-      for (String s : stringMap.keySet()) {
-        Integer d = Integer.parseInt(s);
-        if (n % d == 0) {
-          isPrime = false;
-          break;
-        }
-      }
-      stringMap.put(Integer.toString(n), isPrime);
-    }
+    final Map<String, Boolean> stringMap = new HashMap<>();
+    stringMap.put("6", false);
+    stringMap.put("7", true);
+    stringMap.put("8", false);
+    stringMap.put("9", false);
+    stringMap.put("10", false);
+
     Schema kafkaConnectSchema =
         SchemaBuilder.struct()
             .field(
@@ -504,6 +494,8 @@ public class KeyMapperTest {
             .field(
                 fieldNameStringMap, SchemaBuilder.map(Schema.STRING_SCHEMA, Schema.BOOLEAN_SCHEMA))
             .build();
+
+    System.out.println(integerMap.toString() + DELIMITER + stringMap.toString());
 
     Struct kafkaConnectStruct = new Struct(kafkaConnectSchema);
     kafkaConnectStruct.put(fieldNameIntegerMap, integerMap);
