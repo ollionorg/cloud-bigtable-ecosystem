@@ -495,7 +495,7 @@ public class KeyMapperTest {
             .field(
                 fieldNameStringMap, SchemaBuilder.map(Schema.STRING_SCHEMA, Schema.BOOLEAN_SCHEMA))
             .build();
-    
+
     Struct kafkaConnectStruct = new Struct(kafkaConnectSchema);
     kafkaConnectStruct.put(fieldNameIntegerMap, integerMap);
     kafkaConnectStruct.put(fieldNameStringMap, stringMap);
