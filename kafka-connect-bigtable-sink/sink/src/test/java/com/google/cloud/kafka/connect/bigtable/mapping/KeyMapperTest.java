@@ -505,10 +505,10 @@ public class KeyMapperTest {
             .getBytes(StandardCharsets.UTF_8));
     assertArrayEquals(
         calculateKey(List.of(fieldNameIntegerMap), DELIMITER, kafkaConnectStruct),
-        integerMap.toString().getBytes(StandardCharsets.UTF_8));
+        "{1=true, 2=true, 3=true, 4=false, 5=true}".getBytes(StandardCharsets.UTF_8));
     assertArrayEquals(
         calculateKey(List.of(fieldNameStringMap), DELIMITER, kafkaConnectStruct),
-        stringMap.toString().getBytes(StandardCharsets.UTF_8));
+        "{6=false, 7=true, 8=false, 9=false, 10=false}".getBytes(StandardCharsets.UTF_8));
     // Accessing map keys is not supported.
     assertThrows(
         DataException.class,
