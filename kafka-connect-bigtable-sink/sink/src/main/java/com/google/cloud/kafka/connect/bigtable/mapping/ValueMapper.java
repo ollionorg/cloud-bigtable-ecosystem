@@ -239,7 +239,7 @@ public class ValueMapper {
    * @return {@link ObjectMapper} that can serialize all the Kafka Connect types.
    */
   @VisibleForTesting
-  public static ObjectMapper getJsonMapper() {
+  protected static ObjectMapper getJsonMapper() {
     ObjectMapper mapper = new ObjectMapper();
     SimpleModule mapperModule = new SimpleModule("KafkaConnectSerializer");
     mapperModule.addSerializer(Struct.class, new StructJsonSerializer(Struct.class));
