@@ -1,6 +1,7 @@
 # Kafka Connect Bigtable Sink Connector
 
-This sink connector is for writing Kafka data to the Google Bigtable database.
+This [Kafka Connect Sink](https://kafka.apache.org/documentation/#connect) is
+for writing Kafka data to the Google Bigtable database.
 This was designed to stream data into Bigtable with as little
 latency as possible.
 
@@ -53,9 +54,8 @@ result in the corresponding row being deleted.
 
 ## Configuration
 
-To use this sink connector, set the connector class to the following:
-
-`connector.class = com.google.cloud.kafka.connect.bigtable.BigtableSinkConnector`
+See [config/](./config/bigtable-kafka-sink-connector.properties) for a sample
+config file.
 
 ### Connectivity
 
@@ -284,13 +284,46 @@ trying other error handling mechanisms.
 
 ## Installation
 
-1. Build the Jar TODO elaborate
-2. Create a **plugin directory**, if you don't have one already.
-3. Add the **plugin directory** path to your Connector properties file, if you
+### Prerequisites
+
+* **Kafka** - you must have a Kafka cluster with data in a topic. This contains
+  the data that the Bigtable Sink Connector will transfer. See
+  the [Kafka Quickstart](https://kafka.apache.org/quickstart).
+* **Kafka Connect** - you must have a Kafka Connect cluster running. This is
+  where the Bigtable Sink Connector will run.
+  See [Running Connect](https://kafka.apache.org/documentation/#connect_running).
+* **Bigtable Instance** - this is where the Kafka data will be written to.
+  See [Bigtable on Google Cloud](https://cloud.google.com/bigtable?hl=en).
+
+Follow these steps
+
+1. Build the Jar with `mvn clean package -Dmaven.test.skip`
+2. Create a **plugin directory**, if you don't have one already. You may already
+   have one at `/usr/local/share/kafka/plugins`.
+3. Add the **plugin directory** path to `plugin.path` in your Kafka Connect
+   .properties file, if you
    haven't already.
-4. Copy the JAR file to into your **plugin directory**
+4. Copy the JAR file into your **plugin directory**.
 5. Restart the Kafka Connect workers, so they can load the new plugin.
 6. Repeat these steps for every machine in your Kafka Connect cluster.
+
+## Running the Sink
+
+Once you've performed the above installation, you're ready to run the sink!
+
+1. Make a copy of
+   the [properties file](./config/bigtable-kafka-sink-connector.properties) and
+   update the configuration options accordingly.
+2. Start Kafka Connect with your connector with the following command:
+
+```shell
+bin/connect-standalone.sh config/connect-standalone.properties connector1.properties [connector2.properties ...]
+```
+
+When running the connector on a Kafka cluster in distributed mode, "the
+connector configurations are not passed on the command line. Instead, use the
+REST API described below to create, modify, and destroy
+connectors" ([Kafka User Guide](http://kafka.apache.org/documentation.html#connect_running)).
 
 ## Code organization
 
