@@ -282,7 +282,15 @@ trying other error handling mechanisms.
 * Valid Values: [0,...]
 * Importance: medium
 
-## Usage
+## Installation
+
+1. Build the Jar TODO elaborate
+2. Create a **plugin directory**, if you don't have one already.
+3. Add the **plugin directory** path to your Connector properties file, if you
+   haven't already.
+4. Copy the JAR file to into your **plugin directory**
+5. Restart the Kafka Connect workers, so they can load the new plugin.
+6. Repeat these steps for every machine in your Kafka Connect cluster.
 
 ## Code organization
 
