@@ -36,7 +36,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -62,7 +61,7 @@ public class ValueMapperTest {
   @Test
   public void testBoolean() {
     Boolean value = true;
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -74,7 +73,7 @@ public class ValueMapperTest {
   @Test
   public void testString() {
     String value = "rrrrrrr";
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -86,7 +85,7 @@ public class ValueMapperTest {
   @Test
   public void testLong() {
     Long value = 9223372036854775807L;
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -98,7 +97,7 @@ public class ValueMapperTest {
   @Test
   public void testInteger() {
     Integer value = -2147483648;
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -110,7 +109,7 @@ public class ValueMapperTest {
   @Test
   public void testShort() {
     Short value = 32767;
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -122,7 +121,7 @@ public class ValueMapperTest {
   @Test
   public void testByte() {
     Byte value = -128;
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -146,7 +145,7 @@ public class ValueMapperTest {
   @Test
   public void testFloat() {
     Float value = 128.37157f;
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -158,7 +157,7 @@ public class ValueMapperTest {
   @Test
   public void testDouble() {
     Double value = 128.37157;
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -170,7 +169,7 @@ public class ValueMapperTest {
   @Test
   public void testDoubleSpecial() {
     Double value = Double.NaN;
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -182,7 +181,7 @@ public class ValueMapperTest {
   @Test
   public void testDate() {
     Date date = new Date(1732822801000L);
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(date.getTime()));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(date.getTime()));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, date);
@@ -194,7 +193,7 @@ public class ValueMapperTest {
   @Test
   public void testDecimal() {
     BigDecimal value = new BigDecimal("0.300000000000000000000000000000001");
-    ByteString expected = ByteString.copyFrom(Bytes.toBytes(value));
+    ByteString expected = ByteString.copyFrom(ByteUtils.toBytes(value));
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.IGNORE);
     MutationDataBuilder mutationDataBuilder = getRecordMutationDataBuilder(mapper, value);
@@ -232,7 +231,7 @@ public class ValueMapperTest {
               DEFAULT_COLUMN_FAMILY,
               DEFAULT_COLUMN_BYTES,
               TIMESTAMP,
-              ByteString.copyFrom(Bytes.toBytes(value)));
+              ByteString.copyFrom(ByteUtils.toBytes(value)));
     }
     ValueMapper mapper =
         new TestValueMapper(DEFAULT_COLUMN_FAMILY, DEFAULT_COLUMN, NullValueMode.WRITE);
@@ -242,7 +241,7 @@ public class ValueMapperTest {
             DEFAULT_COLUMN_FAMILY,
             DEFAULT_COLUMN_BYTES,
             TIMESTAMP,
-            ByteString.copyFrom(Bytes.toBytes(value)));
+            ByteString.copyFrom(ByteUtils.toBytes(value)));
     assertTotalNumberOfInvocations(mutationDataBuilder, 1);
   }
 
@@ -260,7 +259,7 @@ public class ValueMapperTest {
             DEFAULT_COLUMN_FAMILY,
             ByteString.copyFrom(key.getBytes(StandardCharsets.UTF_8)),
             TIMESTAMP,
-            ByteString.copyFrom(Bytes.toBytes(value)));
+            ByteString.copyFrom(ByteUtils.toBytes(value)));
 
     assertTotalNumberOfInvocations(mutationDataBuilder, 1);
   }
@@ -318,13 +317,13 @@ public class ValueMapperTest {
             setColumnFamily,
             ByteString.copyFrom(setColumn.getBytes(StandardCharsets.UTF_8)),
             TIMESTAMP,
-            ByteString.copyFrom(Bytes.toBytes(value)));
+            ByteString.copyFrom(ByteUtils.toBytes(value)));
     verify(mutationDataBuilder, times(1))
         .setCell(
             DEFAULT_COLUMN_FAMILY,
             ByteString.copyFrom(setRoot.getBytes(StandardCharsets.UTF_8)),
             TIMESTAMP,
-            ByteString.copyFrom(Bytes.toBytes(rootValue)));
+            ByteString.copyFrom(ByteUtils.toBytes(rootValue)));
     verify(mutationDataBuilder, times(1))
         .deleteCells(
             deleteColumnFamily,
@@ -557,7 +556,7 @@ public class ValueMapperTest {
             outerField,
             ByteString.copyFrom(innerField.getBytes(StandardCharsets.UTF_8)),
             TIMESTAMP,
-            ByteString.copyFrom(Bytes.toBytes(value)));
+            ByteString.copyFrom(ByteUtils.toBytes(value)));
     assertTotalNumberOfInvocations(mutationDataBuilder, 1);
     assertTrue(mutationDataBuilder.maybeBuild(TARGET_TABLE_NAME, ROW_KEY).isPresent());
   }
@@ -605,7 +604,7 @@ public class ValueMapperTest {
             DEFAULT_COLUMN_FAMILY,
             ByteString.copyFrom(field.getBytes(StandardCharsets.UTF_8)),
             TIMESTAMP,
-            ByteString.copyFrom(Bytes.toBytes(value)));
+            ByteString.copyFrom(ByteUtils.toBytes(value)));
     assertTotalNumberOfInvocations(mutationDataBuilder, 1);
     assertTrue(mutationDataBuilder.maybeBuild(TARGET_TABLE_NAME, ROW_KEY).isPresent());
   }

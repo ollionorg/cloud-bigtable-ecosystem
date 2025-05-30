@@ -30,3 +30,9 @@ Guidelines](https://opensource.google/conduct/).
 All submissions, including submissions by project members, require review. We
 use [GitHub pull requests](https://docs.github.com/articles/about-pull-requests)
 for this purpose.
+
+### Licenses
+
+Generate the NOTICES file with [go-licenses](https://github.com/google/go-licenses) by running: 
+
+`go-licenses report github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy  --template third_party/license-template.tpl > NOTICES`
