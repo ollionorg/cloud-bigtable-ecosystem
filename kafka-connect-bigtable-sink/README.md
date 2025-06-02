@@ -282,26 +282,14 @@ trying other error handling mechanisms.
 * Valid Values: [0,...]
 * Importance: medium
 
-## Installation
+## Running the Connector
 
-### Prerequisites
-
-* **Kafka** - you must have a Kafka cluster with data in a topic. This contains
-  the data that the Bigtable Sink Connector will transfer. See
-  the [Kafka Quickstart](https://kafka.apache.org/quickstart).
-* **Kafka Connect** - you must have a Kafka Connect cluster running. This is
-  where the Bigtable Sink Connector will run.
-  See [Running Connect](https://kafka.apache.org/documentation/#connect_running).
-* **Bigtable Instance** - this is where the Kafka data will be written to.
-  See [Bigtable on Google Cloud](https://cloud.google.com/bigtable?hl=en).
-
-Follow these steps
+The following steps are to run in standalone mode. They can be easily adapted
+for running Kafka Connect in distributed mode using
+the [REST API](http://kafka.apache.org/documentation.html#connect_running).
 
 1. Build the Jar with `mvn clean package -Dmaven.test.skip` from the `sink/`
    folder.
-   > Note: Please use the same Kafka API major version as that used by the
-   connector. Otherwise, the connector may not work properly. Check the Kafka
-   version used by the connector in [pom.xml](./pom.xml).
 2. Copy the `target/sink...-jar-with-dependencies.jar` JAR file into your
    **plugin directory**. The plugin directory can be any of the directories
    specified by
@@ -310,16 +298,12 @@ Follow these steps
 3. Make a copy of
    the [properties file](./config/bigtable-kafka-sink-connector.properties) and
    update the configuration options accordingly.
-4. Finally, start Kafka Connect with your connector by running the following command:
+4. Finally, start Kafka Connect with your connector by running the following
+   command:
 
 ```shell
 bin/connect-standalone.sh config/connect-standalone.properties connector1.properties [connector2.properties ...]
 ```
-
-When running the connector on a Kafka cluster in distributed mode, "the
-connector configurations are not passed on the command line. Instead, use the
-REST API described below to create, modify, and destroy
-connectors" ([Kafka User Guide](http://kafka.apache.org/documentation.html#connect_running)).
 
 ## Code organization
 
