@@ -299,24 +299,18 @@ Follow these steps
 
 1. Build the Jar with `mvn clean package -Dmaven.test.skip` from the `sink/`
    folder.
-2. Create a **plugin directory**, if you don't have one already. You may already
-   have one at `/usr/local/share/kafka/plugins`.
-3. Add the **plugin directory** path to `plugin.path` in your Kafka Connect
-   .properties file, if you haven't already.
-4. Copy the `target/sink...-jar-with-dependencies.jar` JAR file into your
-   **plugin directory**.
-5. Restart the Kafka Connect workers, so they can load the new plugin.
-6. Repeat these steps for every machine in your Kafka Connect cluster.
-
-## Running the Sink
-
-Once you've performed the above installation, you're ready to run the sink!
-
-1. Make a copy of
+   > Note: Please use the same Kafka API major version as that used by the
+   connector. Otherwise, the connector may not work properly. Check the Kafka
+   version used by the connector in [pom.xml](./pom.xml).
+2. Copy the `target/sink...-jar-with-dependencies.jar` JAR file into your
+   **plugin directory**. The plugin directory can be any of the directories
+   specified by
+   the [plugin.path](https://kafka.apache.org/documentation/#connectconfigs_plugin.path)
+   config in your Kafka Connect .properties file.
+3. Make a copy of
    the [properties file](./config/bigtable-kafka-sink-connector.properties) and
    update the configuration options accordingly.
-   > Note: Please use the same Kafka API major version as that used by the connector. Otherwise, the connector may not work properly. Check the Kafka version used by the connector in [pom.xml](./pom.xml).
-2. Start Kafka Connect with your connector with the following command:
+4. Finally, start Kafka Connect with your connector by running the following command:
 
 ```shell
 bin/connect-standalone.sh config/connect-standalone.properties connector1.properties [connector2.properties ...]
