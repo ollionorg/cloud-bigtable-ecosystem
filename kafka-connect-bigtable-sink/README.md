@@ -1,4 +1,4 @@
-# Kafka Connect Bigtable Sink Connector
+# Kafka Connect Bigtable sink connector
 
 This [Kafka Connect Sink](https://kafka.apache.org/documentation/#connect) is
 for writing Kafka data to the Google Bigtable database.
