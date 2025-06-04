@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.google.bigtable.cassandra;
+package com.google.bigtable.cassandra.internal;
 
 import com.google.bigtable.cassandra.BigtableCqlConfiguration;
 import com.google.common.base.Preconditions;
@@ -57,7 +57,6 @@ class ProxyImpl implements Proxy {
   private static final String DATA_CENTER_ENV_VAR = "DATA_CENTER";
   private static final String PROXY_BINARY_NAME = "cassandra-to-bigtable-proxy";
   private static final String PROXY_TEMP_DIR_PREFIX = "bigtable_cassandra_proxy_";
-  private static final String WINDOWS_EXE_EXTENSION = ".exe";
   private static final String PROXY_CONFIG_FILENAME = "config.yaml";
   private static final int UNSPECIFIED_PORT = 0;
   private static final String PROXY_LOCAL_HOSTNAME = "localhost";
@@ -97,12 +96,13 @@ class ProxyImpl implements Proxy {
   }
 
   private void setupProxy() throws IOException {
-    // TODO: handle potential race between finding a free port and another process taking it
     int proxyPort = findFreeProxyPort();
 
     // Create temp directory
     Path tempProxyDir = Files.createTempDirectory(PROXY_TEMP_DIR_PREFIX);
-    LOGGER.debug("Proxy temp directory: " + tempProxyDir.toAbsolutePath());
+    if (!Files.getPosixFilePermissions(tempProxyDir).equals(PosixFilePermissions.fromString(PERMS_700))) {
+      throw new IllegalStateException("Incorrect directory permissions");
+    }
     tempProxyDir.toFile().deleteOnExit();
 
     // Copy proxy binary to temp directory
@@ -141,14 +141,19 @@ class ProxyImpl implements Proxy {
     String proxyConfigFilePath = configTempPath.toAbsolutePath().toString();
     try (BufferedWriter writer = new BufferedWriter(new FileWriter(proxyConfigFilePath))) {
       writer.write(proxyConfigContents);
-      LOGGER.debug("Successfully wrote proxy config to " + proxyConfigFilePath);
+      LOGGER.debug("Successfully created proxy config");
       return configTempPath;
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to write proxy config", e);
+      throw new IllegalStateException("Failed to create proxy config", e);
     }
   }
 
   private Path copyProxyBinaryToTempDir(Path tempProxyDir) throws IOException {
+    // Check OS
+    if (OsUtils.isWindows()) {
+      throw new IllegalStateException("Windows is currently not supported");
+    }
+
     // Copy proxy binary from resources
     try (InputStream inputStream = ProxyImpl.class.getClassLoader()
         .getResourceAsStream(PROXY_BINARY_NAME)) {
@@ -156,25 +161,19 @@ class ProxyImpl implements Proxy {
         throw new IOException("Proxy binary not found. Expected to find: " + PROXY_BINARY_NAME);
       }
 
-      // Determine OS-specific binary name
-      String os = System.getProperty("os.name").trim().toLowerCase();
-      boolean isWindows = os.contains("win");
-      String fullProxyBinaryName =
-          isWindows ? PROXY_BINARY_NAME + WINDOWS_EXE_EXTENSION : PROXY_BINARY_NAME;
-
       // Copy proxy binary to temp directory
-      Path targetProxyBinaryPath = tempProxyDir.resolve(fullProxyBinaryName);
+      Path targetProxyBinaryPath = tempProxyDir.resolve(PROXY_BINARY_NAME);
       Files.copy(inputStream, targetProxyBinaryPath);
       targetProxyBinaryPath.toFile().deleteOnExit();
 
-      // Set file permissions
+      // If Posix permissions are supported, set file permissions
       if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
-        // If Posix permissions are supported
         Files.setPosixFilePermissions(targetProxyBinaryPath, PosixFilePermissions.fromString(PERMS_700));
-      } else {
-        if (!targetProxyBinaryPath.toFile().setExecutable(true)) {
-          throw new IOException("Failed to make proxy binary executable");
+        if (!Files.getPosixFilePermissions(targetProxyBinaryPath).equals(PosixFilePermissions.fromString(PERMS_700))) {
+          throw new IllegalStateException("Incorrect file permissions");
         }
+      } else {
+        throw new IllegalStateException("File system not supported");
       }
 
       return targetProxyBinaryPath;
@@ -260,7 +259,7 @@ class ProxyImpl implements Proxy {
 
   private void startProxyProcess(ProcessBuilder pb) throws IOException {
     // Start the process
-    LOGGER.debug("Starting proxy with command: " + pb.command());
+    LOGGER.debug("Starting proxy");
     try {
       proxyProcess = pb.start();
 

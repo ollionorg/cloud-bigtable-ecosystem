@@ -12,21 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.google.bigtable.cassandra;
+package com.google.bigtable.cassandra.internal;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.google.bigtable.cassandra.internal.BigtableCqlSessionUtilsInternal;
+final class OsUtils {
 
-public class BigtableCqlSessionFactory {
+  private OsUtils() {}
 
-  private final BigtableCqlConfiguration bigtableCqlConfiguration;
-
-  public BigtableCqlSessionFactory(BigtableCqlConfiguration bigtableCqlConfiguration) {
-    this.bigtableCqlConfiguration = bigtableCqlConfiguration;
+  static boolean isWindows() {
+    return getOsName().contains("win");
   }
 
-  public CqlSession newSession() {
-    return BigtableCqlSessionUtilsInternal.newSession(bigtableCqlConfiguration);
+  static String getOsName() {
+    return System.getProperty("os.name").trim().toLowerCase();
   }
 
 }
