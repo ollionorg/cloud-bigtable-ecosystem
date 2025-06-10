@@ -43,7 +43,6 @@ Create a service account and grant it Bigtable Administrator (`roles/bigtable.ad
 Download its key.
 
 ##### Configure the permissions for integration tests
-Note that we provide the credentials not only to our sink, but also to Confluent's (in ConfluentCompatibilityIT).
 
 <!-- TODO: update this section when transitioning to kokoro -->
 If you want to use Application Default Credentials, configure the machine appropriately (on a workstation, log in with `gcloud` into an account with Bigtable Administrator permissions to the instance created in one of the previous steps).
