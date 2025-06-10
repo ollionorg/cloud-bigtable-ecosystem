@@ -205,6 +205,28 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>${antrun.version}</version>
+                <executions>
+                    <execution>
+                        <id>install-plugin</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${google.sink.package.plugin.dir}"/>
+                                <copy todir="${google.sink.package.plugin.dir}">
+                                    <fileset dir="${google.sink.package.path}"/>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>${maven.clean.version}</version>
                 <configuration>
