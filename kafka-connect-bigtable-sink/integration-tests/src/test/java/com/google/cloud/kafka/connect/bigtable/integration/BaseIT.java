@@ -34,8 +34,6 @@ import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.storage.StringConverter;
 
 public abstract class BaseIT {
-  // The Confluent's sink cannot use Application Default Credentials. We set the credentials
-  // explicitly (rather than use ADC) to avoid having a special case for ConfluentCompatibilityIT.
   public static final String CREDENTIALS_PATH_ENV_VAR = "GOOGLE_APPLICATION_CREDENTIALS";
   public static final String CONNECTOR_CLASS_NAME =
       "com.google.cloud.kafka.connect.bigtable.BigtableSinkConnector";
