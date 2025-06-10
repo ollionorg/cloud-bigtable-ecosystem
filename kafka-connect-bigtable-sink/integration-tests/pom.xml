@@ -32,8 +32,6 @@
         <maven.clean.version>3.4.1</maven.clean.version>
 
         <integration.test.plugin.path>${project.basedir}/integration_test_plugins</integration.test.plugin.path>
-        <confluent.sink.url>https://hub-downloads.confluent.io/api/plugins/confluentinc/kafka-connect-gcp-bigtable/versions/2.0.28/confluentinc-kafka-connect-gcp-bigtable-2.0.28.zip</confluent.sink.url>
-        <confluent.sink.filename>confluentsink.zip</confluent.sink.filename>
         <google.sink.package.path>${project.basedir}/../sink/target/sink-${project.version}-package</google.sink.package.path>
         <google.sink.package.plugin.dir>${integration.test.plugin.path}/google-sink</google.sink.package.plugin.dir>
     </properties>
@@ -203,36 +201,6 @@
                             <goal>verify</goal>
                             <goal>integration-test</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>${antrun.version}</version>
-                <executions>
-                    <execution>
-                        <id>download-and-unzip-confluent-sink</id>
-                        <phase>pre-integration-test</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <get src="${confluent.sink.url}"
-                                     dest="${confluent.sink.filename}"
-                                     skipexisting="true"
-                                />
-                                <unzip
-                                    src="${confluent.sink.filename}"
-                                    dest="${integration.test.plugin.path}"
-                                />
-                                <mkdir dir="${google.sink.package.plugin.dir}"/>
-                                <copy todir="${google.sink.package.plugin.dir}">
-                                    <fileset dir="${google.sink.package.path}"/>
-                                </copy>
-                            </target>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
