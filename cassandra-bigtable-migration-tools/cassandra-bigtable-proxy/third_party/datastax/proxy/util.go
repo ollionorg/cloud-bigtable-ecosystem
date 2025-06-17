@@ -270,32 +270,169 @@ func addSystemKeyspacesToMetadata(tableMetadata map[string]map[string]map[string
 		if _, exists := tableMetadata[ks]; !exists {
 			tableMetadata[ks] = make(map[string]map[string]*types.Column)
 		}
-		// Add system_schema.keyspaces table as an example
+		// Add system_schema tables
 		if ks == "system_schema" {
-			tableName := "keyspaces"
-			if _, exists := tableMetadata[ks][tableName]; !exists {
-				tableMetadata[ks][tableName] = make(map[string]*types.Column)
+			// Add tables table
+			if _, exists := tableMetadata[ks]["tables"]; !exists {
+				tableMetadata[ks]["tables"] = make(map[string]*types.Column)
 			}
-			// Add columns for system_schema.keyspaces
-			columns := []struct {
-				Name string
-				Type datatype.DataType
-			}{
-				{"keyspace_name", datatype.Varchar},
-				{"durable_writes", datatype.Boolean},
-				{"replication", datatype.NewMapType(datatype.Varchar, datatype.Varchar)},
+			for _, col := range parser.SystemSchemaTablesColumns {
+				tableMetadata[ks]["tables"][col.Name] = &types.Column{
+					ColumnName:   col.Name,
+					CQLType:      col.Type,
+					IsPrimaryKey: col.Name == "keyspace_name" || col.Name == "table_name",
+					KeyType: func() string {
+						if col.Name == "keyspace_name" || col.Name == "table_name" {
+							return utilities.KEY_TYPE_PARTITION
+						}
+						return utilities.KEY_TYPE_REGULAR
+					}(),
+				}
 			}
-			for _, col := range columns {
-				tableMetadata[ks][tableName][col.Name] = &types.Column{
+
+			// Add columns table
+			if _, exists := tableMetadata[ks]["columns"]; !exists {
+				tableMetadata[ks]["columns"] = make(map[string]*types.Column)
+			}
+			for _, col := range parser.SystemSchemaColumnsColumns {
+				tableMetadata[ks]["columns"][col.Name] = &types.Column{
+					ColumnName:   col.Name,
+					CQLType:      col.Type,
+					IsPrimaryKey: col.Name == "keyspace_name" || col.Name == "table_name" || col.Name == "column_name",
+					KeyType: func() string {
+						if col.Name == "keyspace_name" || col.Name == "table_name" || col.Name == "column_name" {
+							return utilities.KEY_TYPE_PARTITION
+						}
+						return utilities.KEY_TYPE_REGULAR
+					}(),
+				}
+			}
+
+			// Add keyspaces table
+			if _, exists := tableMetadata[ks]["keyspaces"]; !exists {
+				tableMetadata[ks]["keyspaces"] = make(map[string]*types.Column)
+			}
+			for _, col := range parser.SystemSchemaKeyspacesColumns {
+				tableMetadata[ks]["keyspaces"][col.Name] = &types.Column{
 					ColumnName:   col.Name,
 					CQLType:      col.Type,
 					IsPrimaryKey: col.Name == "keyspace_name",
 					KeyType: func() string {
 						if col.Name == "keyspace_name" {
 							return utilities.KEY_TYPE_PARTITION
-						} else {
-							return utilities.KEY_TYPE_REGULAR
 						}
+						return utilities.KEY_TYPE_REGULAR
+					}(),
+				}
+			}
+		}
+		// Add system tables
+		if ks == "system" {
+			// Add local table
+			if _, exists := tableMetadata[ks]["local"]; !exists {
+				tableMetadata[ks]["local"] = make(map[string]*types.Column)
+			}
+			// Add columns for system.local
+			columns := []struct {
+				Name string
+				Type datatype.DataType
+			}{
+				{"key", datatype.Varchar},
+				{"bootstrapped", datatype.Varchar},
+				{"broadcast_address", datatype.Inet},
+				{"cluster_name", datatype.Varchar},
+				{"cql_version", datatype.Varchar},
+				{"data_center", datatype.Varchar},
+				{"gossip_generation", datatype.Int},
+				{"host_id", datatype.Uuid},
+				{"listen_address", datatype.Inet},
+				{"native_protocol_version", datatype.Varchar},
+				{"partitioner", datatype.Varchar},
+				{"rack", datatype.Varchar},
+				{"release_version", datatype.Varchar},
+				{"rpc_address", datatype.Inet},
+				{"schema_version", datatype.Uuid},
+				{"thrift_version", datatype.Varchar},
+				{"tokens", datatype.NewSetType(datatype.Varchar)},
+			}
+			for _, col := range columns {
+				tableMetadata[ks]["local"][col.Name] = &types.Column{
+					ColumnName:   col.Name,
+					CQLType:      col.Type,
+					IsPrimaryKey: col.Name == "key",
+					KeyType: func() string {
+						if col.Name == "key" {
+							return utilities.KEY_TYPE_PARTITION
+						}
+						return utilities.KEY_TYPE_REGULAR
+					}(),
+				}
+			}
+
+			// Add peers table
+			if _, exists := tableMetadata[ks]["peers"]; !exists {
+				tableMetadata[ks]["peers"] = make(map[string]*types.Column)
+			}
+			// Add columns for system.peers
+			peerColumns := []struct {
+				Name string
+				Type datatype.DataType
+			}{
+				{"peer", datatype.Inet},
+				{"data_center", datatype.Varchar},
+				{"host_id", datatype.Uuid},
+				{"preferred_ip", datatype.Inet},
+				{"rack", datatype.Varchar},
+				{"release_version", datatype.Varchar},
+				{"rpc_address", datatype.Inet},
+				{"schema_version", datatype.Uuid},
+				{"tokens", datatype.NewSetType(datatype.Varchar)},
+			}
+			for _, col := range peerColumns {
+				tableMetadata[ks]["peers"][col.Name] = &types.Column{
+					ColumnName:   col.Name,
+					CQLType:      col.Type,
+					IsPrimaryKey: col.Name == "peer",
+					KeyType: func() string {
+						if col.Name == "peer" {
+							return utilities.KEY_TYPE_PARTITION
+						}
+						return utilities.KEY_TYPE_REGULAR
+					}(),
+				}
+			}
+
+			// Add peers_v2 table
+			if _, exists := tableMetadata[ks]["peers_v2"]; !exists {
+				tableMetadata[ks]["peers_v2"] = make(map[string]*types.Column)
+			}
+			// Add columns for system.peers_v2
+			peerV2Columns := []struct {
+				Name string
+				Type datatype.DataType
+			}{
+				{"peer", datatype.Inet},
+				{"data_center", datatype.Varchar},
+				{"host_id", datatype.Uuid},
+				{"native_address", datatype.Inet},
+				{"native_port", datatype.Int},
+				{"preferred_ip", datatype.Inet},
+				{"rack", datatype.Varchar},
+				{"release_version", datatype.Varchar},
+				{"rpc_address", datatype.Inet},
+				{"schema_version", datatype.Uuid},
+				{"tokens", datatype.NewSetType(datatype.Varchar)},
+			}
+			for _, col := range peerV2Columns {
+				tableMetadata[ks]["peers_v2"][col.Name] = &types.Column{
+					ColumnName:   col.Name,
+					CQLType:      col.Type,
+					IsPrimaryKey: col.Name == "peer",
+					KeyType: func() string {
+						if col.Name == "peer" {
+							return utilities.KEY_TYPE_PARTITION
+						}
+						return utilities.KEY_TYPE_REGULAR
 					}(),
 				}
 			}
