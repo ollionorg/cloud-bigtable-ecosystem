@@ -490,7 +490,8 @@ func resolveAndListen(bind string, useUnixSocket bool, unixSocketPath, certFile,
 		logger.Debug("Successfully created Unix Domain Socket listener\n")
 
 		// Set socket permissions
-		if err := os.Chmod(unixSocketPath, 0666); err != nil {
+		// it is important for the socket permission to stay 0600 (DO NOT CHANGE)
+		if err := os.Chmod(unixSocketPath, 0600); err != nil {
 			return nil, fmt.Errorf("failed to set socket permissions: %v", err)
 		}
 		logger.Debug("Set socket permissions\n")

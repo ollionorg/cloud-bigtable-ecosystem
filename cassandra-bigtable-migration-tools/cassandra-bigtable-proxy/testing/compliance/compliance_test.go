@@ -56,6 +56,13 @@ var (
 	ZONE              = os.Getenv("ZONE")
 )
 
+// BIGTABLE_CASSANDRA_INSTANCE_MAPPING maps Cassandra keyspaces to Bigtable instances for compliance testing.
+// This mapping should exist in the configuration of proxy's config.yaml.
+var BIGTABLE_CASSANDRA_INSTANCE_MAPPING = map[string]string{
+	"bigtabledevinstance": "bigtabledevinstance",
+	"cassandrakeyspace":   "bt-instance",
+}
+
 var (
 	session        *gocql.Session
 	customComparer = cmp.FilterValues(func(x, y interface{}) bool {
@@ -210,14 +217,8 @@ func TestMain(m *testing.M) {
 }
 
 func setupAndRunBigtableProxyLocal(m *testing.M) {
-	var BIGTABLE_CASSANDRA_INSTANCE_MAPPING map[string]string
-	err := json.Unmarshal([]byte(BIGTABLE_INSTANCE), &BIGTABLE_CASSANDRA_INSTANCE_MAPPING)
-	if err != nil {
-		utility.LogFatal(fmt.Sprintf("error while unmarshalling bigtable_cassandra_instance_mapping - %v", err))
-		return
-	}
 	for _, value := range BIGTABLE_CASSANDRA_INSTANCE_MAPPING {
-		err = schema_setup.SetupBigtableInstance(GCP_PROJECT_ID, value, ZONE)
+		err := schema_setup.SetupBigtableInstance(GCP_PROJECT_ID, value, ZONE)
 		if err != nil {
 			utility.LogFatal(fmt.Sprintf("Error while setting bigtable schema- %v", err))
 			return
@@ -233,7 +234,7 @@ func setupAndRunBigtableProxyLocal(m *testing.M) {
 
 	defer session.Close()
 
-	err = schema_setup.SetupBigtableSchema(session, "schema_setup/setup.sql")
+	err := schema_setup.SetupBigtableSchema(session, "schema_setup/setup.sql")
 	if err != nil {
 		utility.LogFatal(fmt.Sprintf("Error while setting bigtable schema- %v", err))
 		return
@@ -260,11 +261,11 @@ func setupAndRunCassandraLocal(m *testing.M) int {
 	session, _ = cluster.CreateSession()
 	defer session.Close()
 
-	var BIGTABLE_CASSANDRA_INSTANCE_MAPPING map[string]string
-	err := json.Unmarshal([]byte(BIGTABLE_INSTANCE), &BIGTABLE_CASSANDRA_INSTANCE_MAPPING)
-	if err != nil {
-		utility.LogFatal(fmt.Sprintf("error while unmarshalling bigtable_cassandra_instance_mapping - %v", err))
-		return 1
+	for key := range BIGTABLE_CASSANDRA_INSTANCE_MAPPING {
+		if err := schema_setup.CreateKeyspace(session, key); err != nil {
+			utility.LogFatal(fmt.Sprintf("Error setting up Cassandra schema: %v", err))
+			return 1
+		}
 	}
 
 	for key := range BIGTABLE_CASSANDRA_INSTANCE_MAPPING {

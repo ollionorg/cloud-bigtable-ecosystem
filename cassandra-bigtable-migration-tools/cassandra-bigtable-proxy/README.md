@@ -1,4 +1,4 @@
-# Cassandra to Cloud Bigtable Proxy Adaptor
+# Cassandra to Cloud Bigtable Proxy Adapter
 
 ## Current Released Version
 
@@ -479,7 +479,7 @@ Detailed document - [Limitations](./docs/limitations.md)
   print("Delete Successful")
   ```
 
-- CQL Data Types compatibility:
+## Supported data types
 
  
   | CQL Type                 | Supported |                         Cloud Bigtable Mapping                          |
@@ -492,34 +492,10 @@ Detailed document - [Limitations](./docs/limitations.md)
   | float                    |     ✓     |                                RAW BYTES                                |
   | double                   |     ✓     |                                RAW BYTES                                |
   | boolean                  |     ✓     |                                RAW BYTES                                |
-  | map<text, text>          |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<text, int>           |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<text, bigint>        |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<text, float>         |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<text, double>        |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<text, boolean>       |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<text, timestamp>     |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<timestamp, text>     |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<timestamp, int>      |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<timestamp, bigint>   |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<timestamp, float>    |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<timestamp, double>   |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<timestamp, boolean>  |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | map<timestamp, timestamp>|     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
-  | set&lt;text&gt;          |     ✓     | Col name as col family, SET key as column qualifier, value remain empty |
-  | set&lt;int&gt;           |     ✓     | Col name as col family, SET key as column qualifier, value remain empty |
-  | set&lt;bigint&gt;        |     ✓     | Col name as col family, SET key as column qualifier, value remain empty |
-  | set&lt;float&gt;         |     ✓     | Col name as col family, SET key as column qualifier, value remain empty |
-  | set&lt;double&gt;        |     ✓     | Col name as col family, SET key as column qualifier, value remain empty |
-  | set&lt;boolean&gt;       |     ✓     | Col name as col family, SET key as column qualifier, value remain empty |
-  | set&lt;timestamp&gt;     |     ✓     | Col name as col family, SET key as column qualifier, value remain empty |
-  | list&lt;text&gt;         |     ✓     | Col name as col family, current timestamp as column qualifier, list items as value |
-  | list&lt;int&gt;          |     ✓     | Col name as col family, current timestamp as column qualifier, list items as value |
-  | list&lt;bigint&gt;       |     ✓     | Col name as col family, current timestamp as column qualifier, list items as value |
-  | list&lt;float&gt;        |     ✓     | Col name as col family, current timestamp as column qualifier, list items as value |
-  | list&lt;double&gt;       |     ✓     | Col name as col family, current timestamp as column qualifier, list items as value |
-  | list&lt;boolean&gt;      |     ✓     | Col name as col family, current timestamp as column qualifier, list items as value |
-  | list&lt;timestamp&gt;    |     ✓     | Col name as col family, current timestamp as column qualifier, list items as value |
+  | map<key, value>          |     ✓     |   Col name as col family, MAP key as column qualifier, value as value   |
+  | set&lt;item&gt;          |     ✓     | Col name as col family, SET item as column qualifier, value remain empty |
+  | list&lt;item&gt;         |     ✓     | Col name as col family, current timestamp as column qualifier, list items as value |
+
 
 All list types follow the same storage pattern:  
 **Col name as col family, current timestamp (with nanosecond precision) as column qualifier, list items as column value.**
