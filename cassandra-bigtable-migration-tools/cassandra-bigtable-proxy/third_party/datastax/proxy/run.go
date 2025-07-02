@@ -239,7 +239,7 @@ func Run(ctx context.Context, args []string) int {
 	}
 	defer logger.Sync()
 	if cfg.Version {
-		cliCtx.Printf("Version - " + proxyReleaseVersion)
+		cliCtx.Printf("Version - %s", proxyReleaseVersion)
 		return 0
 	}
 
@@ -482,7 +482,7 @@ func resolveAndListen(bind string, useUnixSocket bool, unixSocketPath, certFile,
 		if err := os.RemoveAll(unixSocketPath); err != nil {
 			return nil, fmt.Errorf("failed to remove existing socket file: %v", err)
 		}
-		logger.Debug(fmt.Sprintf("Creating Unix Domain Socket"))
+		logger.Debug("Creating Unix Domain Socket")
 		listener, err := net.Listen("unix", unixSocketPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Unix Domain Socket: %v", err)
