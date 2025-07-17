@@ -17,7 +17,6 @@
 package compliance
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -29,8 +28,6 @@ import (
 	"testing"
 	"time"
 
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/testing/compliance/schema_setup"
 	"github.com/GoogleCloudPlatform/cloud-bigtable-ecosystem/cassandra-bigtable-migration-tools/cassandra-bigtable-proxy/testing/compliance/utility"
 	"github.com/gocql/gocql"
@@ -119,50 +116,6 @@ type TestCase struct {
 	Operations     []Operation `json:"operations"`
 	SuccessMessage string      `json:"success_message"`
 	FailureMessage string      `json:"failure_message"`
-}
-
-// fetchAndStoreCredentials() retrieves GCP service account credentials from Google Secret Manager,
-// stores them locally, and writes the credentials to a file for use by the application.
-// This function ensures that required credentials are available for authentication in the integration test environment.
-//
-// Steps:
-// 1. Validates if the secret path is set through the environment variable `INTEGRATION_TEST_CRED_PATH`.
-// 2. Initializes a Secret Manager client.
-// 3. Accesses the specified secret version to retrieve the credential payload.
-// 4. Creates a local directory to store the credentials if it doesn't already exist.
-// 5. Writes the credentials to a file (`service-account.json`) for subsequent use by the Bigtable proxy or Cassandra container.
-//
-// Returns an error if any step fails, providing detailed information about the failure.
-func fetchAndStoreCredentials(ctx context.Context) error {
-	if secretPath == "" {
-		return fmt.Errorf("ENV INTEGRATION_TEST_CRED_PATH IS NOT SET")
-	}
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create secret manager client: %v", err)
-	}
-	defer client.Close()
-
-	accessRequest := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: secretPath,
-	}
-
-	result, err := client.AccessSecretVersion(ctx, accessRequest)
-	if err != nil {
-		return fmt.Errorf("failed to access secret version: %v", err)
-	}
-
-	if err := os.MkdirAll(credentialsPath, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create directory: %v", err)
-	}
-
-	credentials := string(result.Payload.Data)
-	err = os.WriteFile(credentialsFilePath, []byte(credentials), 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write credentials to file: %v", err)
-	}
-
-	return nil
 }
 
 // TestMain() is the entry point for the test suite. It configures the environment based on command-line
